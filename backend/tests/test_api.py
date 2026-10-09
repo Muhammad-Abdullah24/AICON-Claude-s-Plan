@@ -117,6 +117,25 @@ def test_margin_with_support_price_for_wheat_only(client):
     assert client.get("/api/margin", params={"crop": "cotton", "price": 9000}).json()["support_price"] is None
 
 
+def test_wheat_carries_the_models_direction_call_and_shap_reasons(client):
+    q = {"crop": "wheat", "mandi": "bahawalpur"}
+    f = client.get("/api/forecast", params=q).json()
+    assert f["direction"]["call"] in ("UP", "DOWN") and f["model"] == "baseline_persistence_band"
+    e = client.get("/api/explain", params=q).json()
+    assert e["source"] == "shap" and e["direction"] == f["direction"] and len(e["reasons"]) >= 2
+    assert client.get("/api/forecast", params={"crop": "cotton", "mandi": "bahawalpur"}).json()["direction"] is None
+    # The time machine reaches the model too: the 2025 crash and rally weeks get the calls that came true.
+    calls = [client.get("/api/forecast", params={**q, "as_of": d}).json()["direction"]["call"]
+             for d in ("2025-03-24", "2025-08-04")]
+    assert calls == ["DOWN", "UP"]
+
+
+def test_history_shows_gaps_and_frozen_weeks(client):
+    h = client.get("/api/history", params={"crop": "wheat", "mandi": "bahawalpur", "as_of": "2026-10-09"}).json()
+    assert len(h["weekly"]) == 52 and any(p["frozen"] for p in h["weekly"])   # the 2026 summer freeze
+    assert all(p["price"] is None or p["price"] > 0 for p in h["weekly"])
+
+
 def test_crop_plan_ranks_by_profit(client):
     p = client.get("/api/crop-plan", params={"mandi": "rahim_yar_khan", "land_area_acres": 5}).json()
     profits = [i["expected_profit"] for i in p["items"]]
@@ -125,7 +144,9 @@ def test_crop_plan_ranks_by_profit(client):
     assert "irri" in p["not_available"] and p["is_estimate"] is True
     for i in p["items"]:
         assert i["harvest_price_low"] <= i["harvest_price_estimate"] <= i["harvest_price_high"]
-        assert i["expected_profit"] == pytest.approx(i["profit_per_acre"] * 5, rel=1e-6)
+        # The engine rounds profit per acre to whole rupees, so the total can differ by up to half a rupee an acre.
+        assert i["expected_profit"] == pytest.approx(i["profit_per_acre"] * 5, abs=0.5 * 5)
+        assert i["profit_per_acre_low"] <= i["profit_per_acre"] <= i["profit_per_acre_high"]
 
 
 def test_history_has_twelve_seasonal_months(client):

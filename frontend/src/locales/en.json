@@ -53,8 +53,13 @@
       "MEDIUM": "Somewhat sure",
       "LOW": "Not sure"
     },
-    "baseline": "Simple estimate for now: the price stays the same, with the range of past 4-week swings.",
+    "baseline": "Price estimate: today's price, with the range of past 4-week swings. Our model did not predict prices better than this, so we show this simple estimate.",
     "disclaimer": "This is an estimate, not a guarantee."
+  },
+  "direction": {
+    "UP": "Our model: the price is likely to rise in the next 4 weeks.",
+    "DOWN": "Our model: the price is likely to fall in the next 4 weeks.",
+    "accuracy": "(It called {{pct}}% of the big moves in 2025 right. Not a price forecast.)"
   },
   "actions": {
     "why": "Why?",
@@ -96,6 +101,7 @@
     "acres": "acres",
     "profitTotal": "Expected profit on your land",
     "profitAcre": "{{amount}} per acre",
+    "profitRange": "(in past years: {{low}} to {{high}})",
     "harvestPrice": "Harvest price estimate: {{price}} ({{low}} to {{high}})",
     "basedOn": "Based on the mandi price of {{month}}: {{price}}",
     "risk": "Price risk",

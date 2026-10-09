@@ -235,9 +235,10 @@ def log_chat(farmer_id: str | None, role: str, text: str, used_fallback: bool = 
 
 
 def last_alert(farmer_id: str, crop: str) -> dict | None:
-    """The newest alert raised for this crop (sent, or tried and failed): what the next check compares with."""
+    """The newest signal the farmer was told for this crop (sent, tried and failed, or the silent first
+    BASELINE): what the next check compares with. SUPPRESSED alerts were not told, so they do not count."""
     row = connect().execute(
-        "SELECT * FROM alerts WHERE farmer_id = ? AND crop = ? AND status IN ('SENT', 'FAILED') "
+        "SELECT * FROM alerts WHERE farmer_id = ? AND crop = ? AND status IN ('SENT', 'FAILED', 'BASELINE') "
         "ORDER BY for_date DESC, created_at DESC LIMIT 1", (farmer_id, crop)).fetchone()
     return dict(row) if row else None
 

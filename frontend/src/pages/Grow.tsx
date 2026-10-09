@@ -95,7 +95,10 @@ function CropCard({ item }: { item: CropPlanItem }) {
         {profit >= 0 ? '+' : '−'}
         {formatRs(Math.abs(profit))}
       </p>
-      <p className="text-sm text-slate">{t('grow.profitAcre', { amount: formatRs(item.profit_per_acre) })}</p>
+      <p className="text-sm text-slate">
+        {t('grow.profitAcre', { amount: formatRs(item.profit_per_acre) })}{' '}
+        {t('grow.profitRange', { low: formatRs(item.profit_per_acre_low), high: formatRs(item.profit_per_acre_high) })}
+      </p>
       <p className="text-sm">
         {t('grow.harvestPrice', {
           price: formatRs(item.harvest_price_estimate),
@@ -111,7 +114,7 @@ function CropCard({ item }: { item: CropPlanItem }) {
       <p className="text-sm">
         {item.best_sell_month == null || item.best_sell_gain_pct == null
           ? t('grow.noBestSell')
-          : item.best_sell_gain_pct <= 0
+          : item.sell_at_harvest
             ? t('grow.sellAtHarvest', { month: t(`months.${item.best_sell_month}`) })
             : t('grow.bestSell', { month: t(`months.${item.best_sell_month}`), gain: item.best_sell_gain_pct.toFixed(1) })}
       </p>
@@ -125,7 +128,7 @@ function CropCard({ item }: { item: CropPlanItem }) {
   )
 }
 
-/** Twelve months: sowing and harvest from the crop calendar, and the best month to sell. */
+/** Twelve months: sowing and harvest from the crop calendar, and the selling window (the best month ringed). */
 function MonthStrip({ item }: { item: CropPlanItem }) {
   const { t } = useTranslation()
   return (
@@ -134,10 +137,11 @@ function MonthStrip({ item }: { item: CropPlanItem }) {
         {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
           const sow = inSeason(m, item.sowing_months)
           const harvest = inSeason(m, item.harvest_months)
-          const sell = item.best_sell_month === m
+          const sell = item.sell_window_months.includes(m)
+          const best = item.best_sell_month === m
           const bg = sell ? 'bg-field' : harvest ? 'bg-wheat' : sow ? 'bg-ink/70' : 'bg-line'
           return (
-            <li key={m} title={t(`months.${m}`)} className={`h-4 rounded-sm ${bg} ${sell ? 'ring-2 ring-field/40' : ''}`}>
+            <li key={m} title={t(`months.${m}`)} className={`h-4 rounded-sm ${bg} ${best ? 'ring-2 ring-field/40' : ''}`}>
               <span className="sr-only">{t(`months.${m}`)}</span>
             </li>
           )

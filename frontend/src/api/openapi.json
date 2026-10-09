@@ -1249,6 +1249,17 @@
             "type": "integer",
             "title": "Rupee Impact"
           },
+          "arhti_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arhti Pct"
+          },
           "prices_as_of": {
             "type": "string",
             "format": "date",
@@ -1269,6 +1280,16 @@
               }
             ],
             "title": "Price Unchanged Since"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectionCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "model": {
             "type": "string",
@@ -1325,9 +1346,8 @@
           "kind": {
             "type": "string",
             "enum": [
-              "FIRST",
-              "SIGNAL_CHANGE",
-              "PRICE_MOVE"
+              "SELL_SIGNAL",
+              "PRICE_SPIKE"
             ],
             "title": "Kind"
           },
@@ -1347,6 +1367,17 @@
             "type": "string",
             "format": "date",
             "title": "Prices As Of"
+          },
+          "change_4w_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change 4W Pct"
           }
         },
         "additionalProperties": false,
@@ -1374,13 +1405,17 @@
             "type": "array",
             "title": "Items"
           },
+          "suppressed": {
+            "type": "integer",
+            "title": "Suppressed"
+          },
           "skipped": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
                   "weekly_limit",
-                  "no_change"
+                  "no_event"
                 ]
               },
               {
@@ -1436,6 +1471,7 @@
         "required": [
           "farmer_id",
           "items",
+          "suppressed",
           "skipped"
         ],
         "title": "AlertResult"
@@ -1974,6 +2010,25 @@
             ],
             "title": "Best Sell Gain Pct"
           },
+          "sell_at_harvest": {
+            "type": "boolean",
+            "title": "Sell At Harvest"
+          },
+          "sell_window_months": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Sell Window Months"
+          },
+          "profit_per_acre_low": {
+            "type": "number",
+            "title": "Profit Per Acre Low"
+          },
+          "profit_per_acre_high": {
+            "type": "number",
+            "title": "Profit Per Acre High"
+          },
           "is_stale": {
             "type": "boolean",
             "title": "Is Stale"
@@ -2001,6 +2056,10 @@
           "harvest_months",
           "best_sell_month",
           "best_sell_gain_pct",
+          "sell_at_harvest",
+          "sell_window_months",
+          "profit_per_acre_low",
+          "profit_per_acre_high",
           "is_stale"
         ],
         "title": "CropPlanItem"
@@ -2090,6 +2149,49 @@
         ],
         "title": "DataSourceInfo"
       },
+      "DirectionCall": {
+        "properties": {
+          "call": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN"
+            ],
+            "title": "Call"
+          },
+          "validation_accuracy_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Accuracy Pct"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "call",
+          "validation_accuracy_pct",
+          "model_version"
+        ],
+        "title": "DirectionCall",
+        "description": "Owner B's model: likely up or down over 4 weeks, with no price number (docs/MODEL_CARD.md). Wheat only."
+      },
       "ExplainResponse": {
         "properties": {
           "data_source": {
@@ -2131,6 +2233,16 @@
               "facts"
             ],
             "title": "Source"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectionCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reasons": {
             "items": {
@@ -2561,6 +2673,16 @@
               }
             ],
             "title": "Price Unchanged Since"
+          },
+          "direction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectionCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "history": {
             "items": {
@@ -3090,8 +3212,25 @@
             "title": "Date"
           },
           "price": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Price"
+          },
+          "frozen": {
+            "type": "boolean",
+            "title": "Frozen",
+            "default": false
+          },
+          "filled": {
+            "type": "boolean",
+            "title": "Filled",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -3100,7 +3239,8 @@
           "date",
           "price"
         ],
-        "title": "PricePoint"
+        "title": "PricePoint",
+        "description": "One week. `price` is None for a week with no AMIS price: draw a gap, never join across it."
       },
       "PriceRange": {
         "properties": {

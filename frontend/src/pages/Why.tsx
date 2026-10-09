@@ -5,6 +5,7 @@ import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip,
 import { api, type ForecastResponse } from '../api/client'
 import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
+import { DirectionLine } from '../components/DirectionLine'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
@@ -32,6 +33,7 @@ export function Why() {
         {explain.status === 'error' && <ErrorBox error={explain.error} onRetry={reloadExplain} />}
         {explain.status === 'ok' && (
           <>
+            <DirectionLine direction={explain.data.direction} />
             <ul className="space-y-2">
               {explain.data.reasons.map((r) => (
                 <li key={r.text_en} className="flex gap-2 text-base">
@@ -64,7 +66,7 @@ function ForecastChart({ f, lang }: { f: ForecastResponse; lang: Lang }) {
   const points = useMemo(() => {
     const p: { date: string; price?: number; band?: [number, number] }[] = f.history.map((h) => ({
       date: h.date,
-      price: h.price,
+      price: h.price ?? undefined, // a week without an AMIS price is a gap, never a joined line
     }))
     const last = p[p.length - 1]
     if (last) last.band = [last.price ?? f.current_price, last.price ?? f.current_price]

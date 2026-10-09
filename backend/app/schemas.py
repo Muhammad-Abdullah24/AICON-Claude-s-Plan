@@ -90,8 +90,18 @@ class PriceRange(Strict):
 
 
 class PricePoint(Strict):
+    """One week. `price` is None for a week with no AMIS price: draw a gap, never join across it."""
     date: dt.date
-    price: float
+    price: float | None
+    frozen: bool = False            # inside a stretch where AMIS repeated the same price ("price unchanged")
+    filled: bool = False            # a short gap forward-filled by the cleaning step
+
+
+class DirectionCall(Strict):
+    """Owner B's model: likely up or down over 4 weeks, with no price number (docs/MODEL_CARD.md). Wheat only."""
+    call: Literal["UP", "DOWN"]
+    validation_accuracy_pct: float | None   # share of 2025 moves over 3% it called right
+    model_version: str | None
 
 
 class WeatherNow(Strict):
@@ -123,6 +133,7 @@ class ForecastResponse(Labelled):
     model: str
     is_stale: bool
     price_unchanged_since: dt.date | None
+    direction: DirectionCall | None = None
     history: list[PricePoint]       # weekly, at most 52 weeks, never after prices_as_of
 
 
@@ -136,7 +147,8 @@ class ExplainResponse(Labelled):
     crop: CropId
     mandi: MandiId
     prices_as_of: dt.date
-    source: Literal["shap", "facts"]   # "facts" until Owner B's SHAP explanations exist
+    source: Literal["shap", "facts"]   # "shap" where Owner B's model explains its direction call (wheat)
+    direction: DirectionCall | None = None
     reasons: list[Reason]
 
 
@@ -173,12 +185,14 @@ class AdviceResponse(Labelled):
     current_price: float
     predicted_price: float
     range: PriceRange
-    gross_gain: int                 # quantity x (forecast - today)
-    interest_cost: int              # quantity x today x interest for 4 weeks
+    gross_gain: int                 # quantity x (forecast - today), after the farmer's arhti if they set one
+    interest_cost: int              # quantity x today x yearly rate x 4 / 52
     rupee_impact: int               # gross_gain - interest_cost
+    arhti_pct: float | None = None  # the farmer's own commission, from their profile
     prices_as_of: dt.date
     is_stale: bool
     price_unchanged_since: dt.date | None
+    direction: DirectionCall | None = None
     model: str
 
 
@@ -259,6 +273,10 @@ class CropPlanItem(Strict):
     harvest_months: tuple[int, int]
     best_sell_month: int | None
     best_sell_gain_pct: float | None    # median price gain at that month vs the harvest month, after interest
+    sell_at_harvest: bool               # holding past the harvest month usually does not beat the interest
+    sell_window_months: list[int]       # the best month and its neighbours within 1 point of it
+    profit_per_acre_low: float          # with the lowest and highest harvest ratio seen across years
+    profit_per_acre_high: float
     is_stale: bool
 
 
@@ -353,16 +371,18 @@ class ChatResponse(Strict):
 class AlertItem(Strict):
     crop: CropId
     mandi: MandiId
-    kind: Literal["FIRST", "SIGNAL_CHANGE", "PRICE_MOVE"]
+    kind: Literal["SELL_SIGNAL", "PRICE_SPIKE"]     # Owner B's alert_check events
     signal: Signal
     current_price: float
     prices_as_of: dt.date
+    change_4w_pct: float | None = None
 
 
 class AlertResult(Strict):
     farmer_id: str                  # never the phone number
-    items: list[AlertItem]
-    skipped: Literal["weekly_limit", "no_change"] | None
+    items: list[AlertItem]          # the one alert sent (or due, on a dry run)
+    suppressed: int                 # other events held back by the one-a-week limit
+    skipped: Literal["weekly_limit", "no_event"] | None
     message: str | None = None
     status: Literal["SENT", "FAILED"] | None = None     # None on a dry run or when nothing was due
     channel: Literal["whatsapp", "sms"] | None = None

@@ -4,7 +4,7 @@
 
 Team Claude's Plan · Build With AI, AICON'26, SEECS NUST · Agricultural Operations
 
-> **Status (10 Oct 2026): real data end to end.** Every screen and endpoint runs on real AMIS mandi prices for wheat, cotton, IRRI and Super Basmati rice at Bahawalpur, Vehari and Rahim Yar Khan. Until the trained model lands, the 4-week forecast is a labelled baseline (today's price, with the range of past 4-week swings, which held the real price 81% of the time on 2025 data). The plan is in [`docs/PLAN.md`](docs/PLAN.md); the API contract is [`backend/app/schemas.py`](backend/app/schemas.py) and blueprint section 12.
+> **Status (10 Oct 2026): real data end to end.** Every screen and endpoint runs on real AMIS mandi prices for wheat, cotton, IRRI and Super Basmati rice at Bahawalpur, Vehari and Rahim Yar Khan. The 4-week price forecast is a labelled baseline (today's price, with the range of past 4-week swings, which held the real price 81% of the time on 2025 data), because the trained XGBoost model did not beat it on prices; for wheat, the model's direction call ("likely to rise / fall", right on 72% of 2025's big moves) and its SHAP reasons are shown alongside ([`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)). The plan is in [`docs/PLAN.md`](docs/PLAN.md); the API contract is [`backend/app/schemas.py`](backend/app/schemas.py) and blueprint section 12.
 
 ## Run locally
 
@@ -73,7 +73,7 @@ data/processed/ (AMIS prices, runtime tables)  ──▶  ml/ (features, gate, s
 ```
 
 - **The contract is code.** `backend/app/schemas.py` defines every API request and response. The front end's TypeScript types are generated from it, and CI fails if they drift.
-- **One service layer.** `backend/app/services.py` answers the web app, WhatsApp and chat, so every channel gives the same numbers. It uses Owner B's model as soon as `ml/forecast/predict.py` exists, and the labelled baseline until then.
+- **One service layer, one engine.** `backend/app/services.py` answers the web app, WhatsApp and chat, so every channel gives the same numbers. Forecasts come from `ml/forecast/predict.py` (the labelled baseline price, plus the model's wheat direction call) and every decision from the engine in `ml/decision/`.
 - **Time machine.** Every price endpoint takes `as_of=YYYY-MM-DD` and never looks at a price after that date (the backup demo weeks in `docs/DEMO.md` use it).
 - **Honest labels.** Every price says where it came from (`data_source`), its own "as of" date, whether it is stale (over 56 days old) and whether AMIS has repeated the same price for weeks (`price_unchanged_since`).
 - **Demo login.** The invented demo farmer "Ahmed" logs in with phone `+920000000001`. Farmers, logs and alerts live in SQLite (`var/farmsight.sqlite`, not in git).
@@ -128,6 +128,7 @@ Tools used for the data, outside this repo: Node.js scripts (built-in `http`) to
 ### Libraries and tools
 
 - Backend: FastAPI, Pydantic, Uvicorn, python-dotenv, python-multipart, SQLite (Python standard library); tests with pytest and httpx2; lint with Ruff.
+- Forecast model: XGBoost (with its SHAP contributions) and NumPy (SciPy comes with XGBoost), for the wheat direction call and its reasons (`ml/forecast/`, `docs/MODEL_CARD.md`).
 - Live services: Open-Meteo forecast API (weather), Meta WhatsApp Cloud API (messages), Google Gemini API (`gemini-3.5-flash-lite`, free tier) for rephrasing chat answers; prompts word for word in `docs/PROMPTS.md`, and every number in an answer is checked against the farmer's own advice before it is shown.
 - Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint.
 - Fonts (bundled): Noto Nastaliq Urdu, IBM Plex Sans, IBM Plex Mono, all under the SIL Open Font License.

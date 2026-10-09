@@ -1129,17 +1129,17 @@ backup demo weeks (section 14, `docs/DEMO.md`) give the answer the app would hav
 | `POST` | `/api/farmers` | Public | Register; returns profile and JWT. 409 if the phone exists | UC-11 |
 | `GET` | `/api/farmers/me` | Farmer | Own profile with crops (crop, preferred mandi, harvest quantity) | UC-11 |
 | `PUT` | `/api/farmers/me` | Farmer | Update profile, alerts on/off | UC-11, UC-10 |
-| `GET` | `/api/forecast?crop=&mandi=&as_of=` | Public | Today and 4-week price with range, change %, trend, volatility, confidence, stale/frozen flags, 52-week history, weather | UC-01, UC-13 |
-| `GET` | `/api/explain?crop=&mandi=&as_of=` | Public | 3–5 reasons in Urdu and English (`source`: `shap` from the model, or `facts` until it exists) | UC-02 |
-| `GET` | `/api/advice?crop=&mandi=&quantity_maund=&as_of=` | Public (profile quantity used when logged in) | SELL/WAIT, confidence, expected price, gross gain, interest cost, net rupee impact. Logged in the `recommendations` table | UC-03 |
+| `GET` | `/api/forecast?crop=&mandi=&as_of=` | Public | Today and 4-week price with range, trend, volatility, confidence, stale/frozen flags, the model's `direction` call (wheat; else null), 52-week history (gaps as `price: null`) | UC-01, UC-13 |
+| `GET` | `/api/explain?crop=&mandi=&as_of=` | Public | Reasons in Urdu and English: `source: shap` (the model's SHAP reasons for its wheat direction call) or `facts` (recent trend, seasonal level, stale or frozen price) | UC-02 |
+| `GET` | `/api/advice?crop=&mandi=&quantity_maund=&as_of=` | Public (profile quantity and arhti used when logged in) | SELL/WAIT, confidence, expected price, gross gain, interest cost (4 weeks), net rupee impact, `direction`. Decided by `ml.decision.advise`. Logged in the `recommendations` table | UC-03 |
 | `GET` | `/api/compare-mandis?crop=&mandi=&quantity_maund=&as_of=` | Public | Net price per mandi after estimated transport from the farmer's mandi, best first; mandis without data or with stale data flagged | UC-04 |
-| `GET` | `/api/crop-plan?mandi=&land_area_acres=&as_of=` | Public (profile used when logged in) | Ranked crops: harvest price estimate and range, profit per acre and for the land, risk, season months, best selling month after interest | UC-05, UC-06 |
+| `GET` | `/api/crop-plan?mandi=&land_area_acres=&as_of=` | Public (profile used when logged in) | Ranked crops (`ml.decision.crop_plan`): harvest price estimate and range, profit per acre (with past-years range) and for the land, risk, season months, selling window after interest (`sell_at_harvest`, `sell_window_months`) | UC-05, UC-06 |
 | `POST` | `/api/offer-check` | Public | `{crop, mandi, offer_price, quantity_maund}` → below / fair / above. Fair range = lowest to highest mandi price in the last 14 days | UC-07 |
 | `GET` | `/api/margin?crop=&price=&arhti_pct=` | Public | Cost of production, own arhti commission, profit; latest wheat support price with its status | UC-08 |
-| `GET` | `/api/history?crop=&mandi=&as_of=` | Public | 52 weekly prices and the monthly seasonal pattern (% of trend) | UC-12 |
+| `GET` | `/api/history?crop=&mandi=&as_of=` | Public | 52 weeks (`price: null` for a week without an AMIS price, `frozen` where AMIS repeated a price) and the monthly seasonal pattern (% of trend) | UC-12 |
 | `GET` | `/api/weather?mandi=` | Public | Current weather (live, or cached/offline with `cached: true`), with the Open-Meteo attribution | UC-13 |
 | `POST` | `/api/chat` | Public (profile used when logged in) | `{question, crop?, mandi?}` → text answer from the farmer's own advice; `used_fallback` when the template was used | UC-09 |
-| `POST` | `/api/alerts/run?as_of=&dry_run=` | `X-Admin-Token` (team only) | Run one price-alert check now (also scheduled by `FS_ALERTS_EVERY_HOURS`); `dry_run` returns the messages without sending | UC-10 |
+| `POST` | `/api/alerts/run?as_of=&dry_run=` | `X-Admin-Token` (team only) | Run one price-alert check now (`ml.decision.alert_check`: SELL_SIGNAL or PRICE_SPIKE, one a week; also scheduled by `FS_ALERTS_EVERY_HOURS`); `dry_run` returns the messages without sending | UC-10 |
 | `POST` | `/api/chat/voice` | Farmer | *Not built (A10).* Audio upload → transcript for confirmation | UC-09 |
 | `GET` | `/webhooks/whatsapp` | Verify token | Meta webhook verification handshake | – |
 | `POST` | `/webhooks/whatsapp` | Meta signature | Incoming WhatsApp text, replies and delivery status | UC-09, UC-10 |
@@ -1154,8 +1154,8 @@ old; `price_unchanged_since` is set when the latest price sits in a frozen AMIS 
 
 ### Example: `GET /api/advice?crop=wheat&mandi=bahawalpur&quantity_maund=100`
 
-Real output on 10 Oct 2026, before Usman's model (the baseline keeps today's price and takes the range from past
-4-week swings):
+Real output on 10 Oct 2026 with Owner B's deployed model: the price and range are the baseline (today's price, range
+from past 4-week swings; the model did not beat it on prices), and `direction` is the model's wheat call:
 
 ```json
 {
@@ -1173,17 +1173,19 @@ Real output on 10 Oct 2026, before Usman's model (the baseline keeps today's pri
   "predicted_price": 3820.0,
   "range": { "low": 3606.53, "high": 4071.04 },
   "gross_gain": 0,
-  "interest_cost": 5253,
-  "rupee_impact": -5253,
+  "interest_cost": 4848,
+  "rupee_impact": -4848,
   "prices_as_of": "2026-10-09",
   "is_stale": false,
   "price_unchanged_since": null,
+  "direction": { "call": "UP", "validation_accuracy_pct": 72.0, "model_version": "xgb-20261009" },
   "model": "baseline_persistence_band"
 }
 ```
 
-> `interest_cost` = 100 × 3,820 × 1.375% (16.5% a year, charged as one month for the 4-week wait). WAIT only when the
-> expected price is at least 5% above today; `rupee_impact` = gross gain − interest.
+> `interest_cost` = 100 × 3,820 × 16.5% × 4 / 52 (`ml.decision.advise`). WAIT only when the expected price is at least
+> 5% above today; `rupee_impact` = gross gain − interest. `direction` is "likely up / likely down" with no price: shown
+> only where the model proved skill (wheat), and switchable in `ml/forecast/predict.py`.
 
 ---
 

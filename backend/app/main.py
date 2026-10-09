@@ -159,8 +159,8 @@ def forecast(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> ForecastRespon
         range={"low": round(f["q10"], 2), "high": round(f["q90"], 2)}, horizon_weeks=services.HORIZON_WEEKS,
         trend=f["trend"], volatility=f["volatility"], confidence=f["confidence"],
         model=f.get("model_version", services.BASELINE_MODEL), is_stale=f["is_stale"],
-        price_unchanged_since=f["price_unchanged_since"],
-        history=[{"date": d, "price": p} for d, p in h["weekly"]],
+        price_unchanged_since=f["price_unchanged_since"], direction=f.get("direction"),
+        history=h["weekly"],
         data_source=f.get("data_source", "amis"), is_synthetic=bool(f.get("is_synthetic", False)),
     )
 
@@ -171,14 +171,15 @@ def explain(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> ExplainResponse
     f = _guard(services.forecast, c, m, as_of)
     reasons = services.get_explanation(c, m, as_of)
     return ExplainResponse(**LABEL, crop=crop, mandi=mandi, prices_as_of=f["prices_as_of"],
-                           source="shap" if f.get("shap") else "facts", reasons=reasons)
+                           source="shap" if f.get("shap") else "facts", direction=f.get("direction"),
+                           reasons=reasons)
 
 
 @router.get("/history", response_model=HistoryResponse)
 def history(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> HistoryResponse:
     h = _guard(services.history, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], as_of)
     return HistoryResponse(**LABEL, crop=crop, mandi=mandi, unit="40kg", prices_as_of=h["prices_as_of"],
-                           weekly=[{"date": d, "price": p} for d, p in h["weekly"]], seasonal=h["seasonal"],
+                           weekly=h["weekly"], seasonal=h["seasonal"],
                            sowing_months=h["sowing_months"], harvest_months=h["harvest_months"])
 
 
@@ -194,7 +195,8 @@ def current_weather(mandi: MandiId) -> WeatherResponse:
 def advice(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None, as_of: AsOf = None,
            farmer: dict | None = Depends(optional_farmer)) -> AdviceResponse:  # noqa: B008
     qty = _quantity(farmer, crop, quantity_maund)
-    a = _guard(services.get_advice, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, None, as_of)
+    arhti = (farmer or {}).get("arhti_commission_pct")
+    a = _guard(services.get_advice, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, None, as_of, arhti)
     if farmer:
         db.log_recommendation(farmer["id"], crop, mandi, a)
     keep = AdviceResponse.model_fields.keys() - {"crop", "mandi"}
@@ -253,11 +255,8 @@ def run_alerts(as_of: AsOf = None, dry_run: bool = False,
     if not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
         raise HTTPException(401, "Wrong or missing X-Admin-Token.")
     results = alerts.run(as_of=as_of, dry_run=dry_run)
-    out = [{**r, "items": [{"crop": i["crop"], "mandi": i["mandi"], "kind": i["kind"], "signal": i["advice"]["signal"],
-                            "current_price": i["advice"]["current_price"], "prices_as_of": i["advice"]["prices_as_of"]}
-                           for i in r["items"]]} for r in results]
-    return AlertRunResponse(as_of=as_of or dt.date.today(), dry_run=dry_run, farmers_checked=len(out),
-                            sent=sum(1 for r in out if r.get("status") == "SENT"), results=out)
+    return AlertRunResponse(as_of=as_of or dt.date.today(), dry_run=dry_run, farmers_checked=len(results),
+                            sent=sum(1 for r in results if r.get("status") == "SENT"), results=results)
 
 
 # ---------------------------------------------------------------- farmers and login

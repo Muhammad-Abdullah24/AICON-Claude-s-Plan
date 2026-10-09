@@ -1,4 +1,4 @@
-"""Price alerts (C9): when they fire, the one-a-week limit, delivery failures, and the on-demand route."""
+"""Price alerts (C9 on Owner B's alert_check): when they fire, the weekly limit, delivery failures, the route."""
 
 import datetime as dt
 import sqlite3
@@ -18,18 +18,19 @@ def fresh_db():
 
 
 @pytest.fixture
-def fake_advice(monkeypatch):
-    """Advice the test controls: {crop_option: (signal, price)}."""
-    table = {"Wheat": ("SELL", 3800.0), "Cotton": ("WAIT", 9000.0)}
+def market(monkeypatch):
+    """Advice and 4-week moves the test controls: {crop_option: [signal, price, change_4w_pct, frozen]}."""
+    table = {"Wheat": ["SELL", 3800.0, 0.0, False], "Cotton": ["SELL", 9000.0, 0.0, False]}
 
     def get_advice(crop_option, mandi, quantity_maund=100, phone=None, as_of=None):
-        signal, price = table[crop_option]
+        signal, price, _, _ = table[crop_option]
         return {"crop_option": crop_option, "mandi": mandi, "current_price": price, "predicted_price": price,
-                "range": {"low": price * 0.95, "high": price * 1.05}, "signal": signal, "confidence": "MEDIUM",
-                "quantity_maund": quantity_maund, "rupee_impact": -100, "interest_cost": 100,
+                "range": {"low": price * 0.9, "high": price * 1.1}, "signal": signal, "confidence": "MEDIUM",
+                "quantity_maund": quantity_maund, "rupee_impact": -100, "interest_cost": 100, "is_stale": False,
                 "prices_as_of": (as_of or DAY).isoformat(), "is_synthetic": False}
 
     monkeypatch.setattr(services, "get_advice", get_advice)
+    monkeypatch.setattr(alerts, "recent_change", lambda crop, mandi, as_of: (table[crop][2], table[crop][3]))
     return table
 
 
@@ -42,63 +43,77 @@ class Outbox:
         return self.ok
 
 
-def test_first_check_sends_one_message_with_every_crop(fresh_db, fake_advice):
+def later(days):
+    return DAY + dt.timedelta(days=days)
+
+
+def test_first_check_is_silent_then_a_signal_change_alerts(fresh_db, market):
     out = Outbox()
     [r] = alerts.run(send=out, as_of=DAY)
-    assert r["status"] == "SENT" and r["channel"] == "whatsapp"
-    assert [i["kind"] for i in r["items"]] == ["FIRST", "FIRST"]
-    assert len(out.sent) == 1
+    assert r["skipped"] == "no_event" and out.sent == []
+    market["Wheat"][0] = "WAIT"
+    [r] = alerts.run(send=out, as_of=later(1))
+    assert r["status"] == "SENT" and [(i["crop"], i["kind"]) for i in r["items"]] == [("wheat", "SELL_SIGNAL")]
     phone, text, summary = out.sent[0]
-    assert phone == "920000000001" and alerts.HEADER in text and "گندم" in text and "کپاس" in text
+    assert phone == "920000000001" and alerts.HEADER in text and alerts.SIGNAL_CHANGED in text
     assert "\n" not in summary and "Rs 3,800" in summary
 
 
-def test_at_most_one_message_a_week(fresh_db, fake_advice):
+def test_a_move_outside_the_band_alerts_but_not_when_frozen(fresh_db, market):
+    out = Outbox()
+    market["Cotton"][2:] = [-15.0, True]    # outside the ±10% band, but a frozen AMIS stretch
+    [r] = alerts.run(send=out, as_of=DAY)
+    assert r["skipped"] == "no_event"
+    market["Cotton"][3] = False
+    [r] = alerts.run(send=out, as_of=later(1))
+    assert [(i["crop"], i["kind"], i["change_4w_pct"]) for i in r["items"]] == [("cotton", "PRICE_SPIKE", -15.0)]
+    assert "15% گرا" in out.sent[0][1]
+
+
+def test_one_alert_a_week_and_the_rest_are_suppressed(fresh_db, market):
     out = Outbox()
     alerts.run(send=out, as_of=DAY)
-    fake_advice["Wheat"] = ("WAIT", 4200.0)
-    [r] = alerts.run(send=out, as_of=DAY + dt.timedelta(days=6))
+    market["Wheat"][0], market["Cotton"][2] = "WAIT", 20.0
+    [r] = alerts.run(send=out, as_of=later(1))
+    assert r["items"][0]["kind"] == "SELL_SIGNAL" and r["suppressed"] == 1   # signal changes outrank price moves
+    [r] = alerts.run(send=out, as_of=later(6))
     assert r["skipped"] == "weekly_limit" and len(out.sent) == 1
-    [r] = alerts.run(send=out, as_of=DAY + dt.timedelta(days=7))
-    assert [(i["crop"], i["kind"]) for i in r["items"]] == [("wheat", "SIGNAL_CHANGE")]
+    [r] = alerts.run(send=out, as_of=later(8))
+    assert [(i["crop"], i["kind"]) for i in r["items"]] == [("cotton", "PRICE_SPIKE")]
 
 
-def test_no_alert_without_a_change_and_big_moves_alert(fresh_db, fake_advice):
-    out = Outbox()
-    alerts.run(send=out, as_of=DAY)
-    fake_advice["Cotton"] = ("WAIT", 9000.0 * 1.05)   # under the 10% move
-    [r] = alerts.run(send=out, as_of=DAY + dt.timedelta(days=7))
-    assert r["skipped"] == "no_change" and len(out.sent) == 1
-    fake_advice["Cotton"] = ("WAIT", 9000.0 * 1.12)
-    [r] = alerts.run(send=out, as_of=DAY + dt.timedelta(days=14))
-    assert [i["kind"] for i in r["items"]] == ["PRICE_MOVE"]
-
-
-def test_failed_delivery_is_recorded_and_sms_is_the_fallback(fresh_db, fake_advice):
-    [r] = alerts.run(send=Outbox(ok=False), as_of=DAY)
+def test_failed_delivery_is_recorded_and_sms_is_the_fallback(fresh_db, market):
+    alerts.run(send=Outbox(), as_of=DAY)
+    market["Wheat"][0] = "WAIT"
+    [r] = alerts.run(send=Outbox(ok=False), as_of=later(1))
     assert r["status"] == "FAILED"
-    # A failed alert still counts as raised (no repeat of the same news), but not against the weekly limit.
-    [r] = alerts.run(send=Outbox(ok=False), sms=Outbox(), as_of=DAY + dt.timedelta(days=1))
-    assert r["skipped"] == "no_change"
-    fake_advice["Wheat"] = ("WAIT", 4000.0)
+    market["Wheat"][0] = "SELL"
     sms = Outbox()
-    [r] = alerts.run(send=Outbox(ok=False), sms=sms, as_of=DAY + dt.timedelta(days=2))
+    [r] = alerts.run(send=Outbox(ok=False), sms=sms, as_of=later(2))   # a failure does not use up the week
     assert r["status"] == "SENT" and r["channel"] == "sms" and len(sms.sent) == 1
 
 
-def test_dry_run_writes_nothing_and_alerts_off_means_no_check(fresh_db, fake_advice):
+def test_dry_run_writes_nothing_and_alerts_off_means_no_check(fresh_db, market):
+    alerts.run(send=Outbox(), as_of=DAY)
+    market["Wheat"][0] = "WAIT"
     out = Outbox()
-    [r] = alerts.run(send=out, as_of=DAY, dry_run=True)
+    [r] = alerts.run(send=out, as_of=later(1), dry_run=True)
     assert r["message"] and "status" not in r and out.sent == []
     assert db.last_sent_date(db.get_farmer_by_phone("+920000000001")["id"]) is None
     db.set_alerts_by_phone("+920000000001", False)
-    assert alerts.run(send=out, as_of=DAY) == []
+    assert alerts.run(send=out, as_of=later(1)) == []
 
 
-def test_real_data_alert_for_the_demo_farmer(fresh_db):
-    [r] = alerts.run(send=Outbox(), as_of=DAY, dry_run=True)
-    assert {i["crop"] for i in r["items"]} == {"wheat", "cotton"}
-    assert all(i["advice"]["prices_as_of"] <= DAY.isoformat() for i in r["items"])
+def test_real_data_replays_the_april_2025_wheat_drop(fresh_db):
+    [r] = alerts.run(send=Outbox(), as_of=dt.date(2025, 4, 21), dry_run=True)
+    [item] = r["items"]
+    assert (item["crop"], item["kind"]) == ("wheat", "PRICE_SPIKE") and item["change_4w_pct"] < -15
+    assert item["prices_as_of"] <= "2025-04-21"
+
+
+def test_recent_change_uses_only_weeks_up_to_as_of():
+    change, _ = alerts.recent_change("Wheat", "BahawalPur", dt.date(2025, 4, 21))
+    assert change == pytest.approx(-19.72, abs=0.01)
 
 
 def test_old_databases_gain_the_new_alert_columns(tmp_path):
@@ -115,7 +130,7 @@ def test_old_databases_gain_the_new_alert_columns(tmp_path):
 
 
 def test_route_needs_the_admin_token(client, monkeypatch, fresh_db):
-    url = "/api/alerts/run?as_of=2025-03-24&dry_run=true"
+    url = "/api/alerts/run?as_of=2025-04-21&dry_run=true"
     monkeypatch.delenv("FS_ADMIN_TOKEN", raising=False)
     assert client.post(url).status_code == 503
     monkeypatch.setenv("FS_ADMIN_TOKEN", "letmein")
@@ -125,4 +140,4 @@ def test_route_needs_the_admin_token(client, monkeypatch, fresh_db):
     assert r.status_code == 200
     body = r.json()
     assert body["dry_run"] is True and body["sent"] == 0 and body["farmers_checked"] == 1
-    assert "phone" not in str(body) and body["results"][0]["message"]
+    assert "phone" not in str(body) and body["results"][0]["items"][0]["kind"] == "PRICE_SPIKE"

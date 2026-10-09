@@ -34,6 +34,7 @@ export type ChatResponse = S['ChatResponse']
 export type CropId = ForecastResponse['crop']
 export type MandiId = S['ForecastResponse']['mandi']
 export type Signal = AdviceResponse['signal']
+export type DirectionCall = S['DirectionCall']
 
 /** Input limits, read from the backend's schema so the two can never disagree. */
 export const QUANTITY_MAX: number = spec.components.schemas.OfferCheckRequest.properties.quantity_maund.maximum

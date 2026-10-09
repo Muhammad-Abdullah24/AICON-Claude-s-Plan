@@ -1,20 +1,21 @@
-"""Price alerts (task C9, blueprint UC-10): tell a farmer on WhatsApp when the advice for one of their crops changes.
+"""Price alerts (task C9, blueprint UC-10): tell a farmer on WhatsApp when something changes for one of their crops.
 
-A check looks at every farmer with alerts on and every crop in their profile, through the same service layer as the
-web app, so an alert always matches what the app says. A crop raises an alert when:
+A check looks at every farmer with alerts on and every crop in their profile. The advice comes from the same
+service layer as the web app, and the decision is Owner B's `ml.decision.alert_check` (B8):
 
-    FIRST         nothing was sent for it before
-    SIGNAL_CHANGE the signal flipped (SELL <-> WAIT) since the last alert
-    PRICE_MOVE    today's price moved at least PRICE_MOVE_PCT since the last alert
+    SELL_SIGNAL  the signal changed (SELL <-> WAIT) since the last one the farmer was told
+    PRICE_SPIKE  the latest price moved more in 4 weeks than the forecast band allows (not for frozen or stale
+                 prices, where a jump is a reporting artifact or old news)
 
-At most one message per farmer per week (all changed crops go in that one message). Dates are the check's as-of
-date, so replaying past weeks with `as_of` (the demo time machine) behaves like the real weeks did.
+At most one alert per farmer every 7 days, across all their crops; the most important event is sent and the rest
+are recorded as SUPPRESSED. The first check for a crop records its signal silently (BASELINE), so a later change
+can be noticed. Dates are the check's as-of date, so replaying past weeks with `as_of` (the demo time machine)
+behaves as those weeks did; the candidates are built here for that reason, with only data up to `as_of`.
 
-The rule lives here until Owner B's `alert_check()` (task B8) exists in ml/decision; then this calls it instead.
 SMS fallback: when WhatsApp fails and an SMS sender is given (task A11), the same text goes by SMS.
 
 Scheduling: FS_ALERTS_EVERY_HOURS > 0 runs the check in the background while the server is up (off by default).
-`POST /api/alerts/run` runs it on demand (needs FS_ADMIN_TOKEN), with `dry_run` to see the messages without sending.
+`POST /api/alerts/run` runs it on demand (needs FS_ADMIN_TOKEN), with `dry_run` to see the result without sending.
 
 WhatsApp only delivers free text within 24 hours of the farmer's last message. Outside that window Meta requires an
 approved template: set FS_WA_ALERT_TEMPLATE to its name (one body parameter, filled with a one-line summary).
@@ -30,67 +31,92 @@ from datetime import date
 
 from backend.app import db, services
 from backend.app.channels import reply
-from backend.app.ids import CROP_TO_DATA, MANDI_TO_DATA
+from backend.app.ids import CROP_FROM_DATA, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_TO_DATA
+from ml import decision
 
 log = logging.getLogger("farmsight.alerts")
 
-PRICE_MOVE_PCT = 10.0
-MIN_DAYS_BETWEEN = 7
 HEADER = "🔔 فارم سائٹ الرٹ"
 FOOTER = "الرٹ بند کرنے کے لیے 'بند' لکھیں۔"
-WHY_UR = {
-    "FIRST": "آپ کی فصل کا تازہ مشورہ",
-    "SIGNAL_CHANGE": "مشورہ بدل گیا ہے",
-    "PRICE_MOVE": "ریٹ میں بڑی تبدیلی",
-}
+SIGNAL_CHANGED = "مشورہ بدل گیا ہے"
 
 SendFn = Callable[[str, str, str], bool]   # (phone digits, full text, one-line summary) -> delivered?
 
 
-def _kind(last: dict | None, advice: dict) -> str | None:
-    if last is None:
-        return "FIRST"
-    if last["signal"] != advice["signal"]:
-        return "SIGNAL_CHANGE"
-    if last["price"] and abs(advice["current_price"] / last["price"] - 1) * 100 >= PRICE_MOVE_PCT:
-        return "PRICE_MOVE"
-    return None
+def recent_change(crop_option: str, mandi: str, as_of: date | None) -> tuple[float | None, bool]:
+    """(% change of the latest observed weekly price vs exactly 4 weeks earlier, either week frozen), using only
+    weeks on or before `as_of`. The change is None when the earlier week has no real price."""
+    from ml.forecast.history import history  # noqa: PLC0415 (Owner B; loads the weekly table once)
+    h = history(crop_option, mandi, as_of, weeks=5)
+    if h is None or len(h["weeks"]) < 5:
+        return None, False
+    earlier, latest = h["weeks"][0], h["weeks"][-1]
+    frozen = earlier["frozen"] or latest["frozen"]
+    if earlier["price"] is None or earlier["filled"] or latest["price"] is None:
+        return None, frozen
+    return round((latest["price"] / earlier["price"] - 1) * 100, 2), frozen
 
 
-def _summary(items: list[dict]) -> str:
-    """One line per alert for the WhatsApp template parameter (Meta rejects newlines there)."""
-    parts = []
-    for i in items:
-        a = i["advice"]
-        crop = reply.CROP_UR.get(a["crop_option"], a["crop_option"])
-        mandi = reply.MANDI_UR.get(a["mandi"], a["mandi"])
-        parts.append(f"{crop} {mandi}: {reply.SIGNAL[a['signal']][1]}، آج {reply.rs(a['current_price'])} فی من")
-    return " | ".join(parts)
+def _candidate(advice: dict, previous_signal: str | None, as_of: date | None) -> dict:
+    """alert_check's input for one crop, like ml.decision.inputs.alert_candidate but honouring as_of."""
+    change, frozen = recent_change(advice["crop_option"], advice["mandi"], as_of)
+    now = advice["current_price"]
+    return {
+        "crop_option": advice["crop_option"], "mandi": advice["mandi"], "signal": advice["signal"],
+        "previous_signal": previous_signal, "prices_as_of": advice["prices_as_of"], "change_4w_pct": change,
+        "band_q10_pct": (advice["range"]["low"] / now - 1) * 100,
+        "band_q90_pct": (advice["range"]["high"] / now - 1) * 100,
+        "is_frozen": frozen, "is_stale": advice["is_stale"],
+    }
 
 
-def message_for(items: list[dict]) -> str:
-    blocks = [f"{WHY_UR[i['kind']]}:\n{reply.advice_text(i['advice'])}" for i in items]
-    return reply.clip("\n\n".join([HEADER, *blocks, FOOTER]), 4096)
+def _why_ur(event: dict) -> str:
+    if event["type"] == "SELL_SIGNAL":
+        return SIGNAL_CHANGED
+    moved = "بڑھا" if event["direction"] == "UP" else "گرا"
+    return f"ریٹ 4 ہفتوں میں {abs(event['change_4w_pct']):.0f}% {moved}، جو عام اتار چڑھاؤ سے زیادہ ہے"
+
+
+def message_for(event: dict, advice: dict) -> tuple[str, str]:
+    """(full WhatsApp text, one-line summary for a template parameter: Meta rejects newlines there)."""
+    text = reply.clip("\n\n".join([HEADER, f"{_why_ur(event)}:\n{reply.advice_text(advice)}", FOOTER]), 4096)
+    crop = reply.CROP_UR.get(advice["crop_option"], advice["crop_option"])
+    mandi = reply.MANDI_UR.get(advice["mandi"], advice["mandi"])
+    summary = (f"{crop} {mandi}: {_why_ur(event)}۔ {reply.SIGNAL[advice['signal']][1]}، "
+               f"آج {reply.rs(advice['current_price'])} فی من")
+    return text, summary
 
 
 def check_farmer(farmer: dict, today: date, as_of: date | None) -> dict:
-    """What an alert check would send this farmer today. Reads the database, never writes."""
-    last_sent = db.last_sent_date(farmer["id"])
-    if last_sent and 0 <= (today - date.fromisoformat(last_sent)).days < MIN_DAYS_BETWEEN:
-        return {"farmer_id": farmer["id"], "items": [], "skipped": "weekly_limit"}
-    items = []
+    """What a check would do for this farmer today. Reads the database, never writes."""
+    advice, candidates, baseline = {}, [], []
     for c in farmer["crops"]:
         crop, mandi = CROP_TO_DATA.get(c["crop"]), MANDI_TO_DATA.get(c["preferred_mandi"])
         if crop is None or mandi is None:
             continue
         try:
-            advice = services.get_advice(crop, mandi, c["harvest_quantity_maund"], as_of=as_of)
+            a = services.get_advice(crop, mandi, c["harvest_quantity_maund"], as_of=as_of)
         except LookupError:
             continue   # no price for this crop at this mandi (e.g. IRRI at Rahim Yar Khan)
-        kind = _kind(db.last_alert(farmer["id"], c["crop"]), advice)
-        if kind:
-            items.append({"crop": c["crop"], "mandi": c["preferred_mandi"], "kind": kind, "advice": advice})
-    return {"farmer_id": farmer["id"], "items": items, "skipped": None if items else "no_change"}
+        advice[crop] = a
+        last = db.last_alert(farmer["id"], c["crop"])
+        if last is None:
+            baseline.append(a)
+        candidates.append(_candidate(a, last["signal"] if last else None, as_of))
+    last_sent = db.last_sent_date(farmer["id"])
+    result = decision.alert_check(candidates, date.fromisoformat(last_sent) if last_sent else None, today)
+    return {"farmer_id": farmer["id"], "result": result, "advice": advice, "baseline": baseline}
+
+
+def _item(event: dict, advice: dict) -> dict:
+    return {"crop": CROP_FROM_DATA[event["crop_option"]], "mandi": MANDI_FROM_DATA[event["mandi"]],
+            "kind": event["type"], "signal": advice["signal"], "current_price": advice["current_price"],
+            "prices_as_of": advice["prices_as_of"], "change_4w_pct": event.get("change_4w_pct")}
+
+
+def _record(farmer_id: str, event: dict, advice: dict, today: date, status: str, text: str) -> str:
+    return db.add_alert(farmer_id, CROP_FROM_DATA[event["crop_option"]], MANDI_FROM_DATA[event["mandi"]],
+                        event["type"], advice["signal"], advice["current_price"], today.isoformat(), status, text)
 
 
 def run(send: SendFn | None = None, as_of: date | None = None, dry_run: bool = False,
@@ -100,22 +126,32 @@ def run(send: SendFn | None = None, as_of: date | None = None, dry_run: bool = F
     send = send or whatsapp_send
     results = []
     for farmer in db.list_alert_farmers():
-        r = check_farmer(farmer, today, as_of)
-        if r["items"]:
-            text, summary = message_for(r["items"]), _summary(r["items"])
-            r["message"] = text
+        c = check_farmer(farmer, today, as_of)
+        res = c["result"]
+        out = {"farmer_id": farmer["id"], "items": [], "suppressed": len(res["suppressed"]),
+               "skipped": {"NO_EVENT": "no_event", "ALERTED_THIS_WEEK": "weekly_limit"}.get(res["reason"])}
+        if res["send"]:
+            event = res["alert"]
+            a = c["advice"][event["crop_option"]]
+            text, summary = message_for(event, a)
+            out["items"], out["message"] = [_item(event, a)], text
             if not dry_run:
                 channel, ok = "whatsapp", bool(send(farmer["phone"], text, summary))
                 if not ok and sms is not None:
                     channel, ok = "sms", bool(sms(farmer["phone"], text, summary))
                 status = "SENT" if ok else "FAILED"
-                alert_id = None
-                for i in r["items"]:
-                    alert_id = db.add_alert(farmer["id"], i["crop"], i["mandi"], i["kind"], i["advice"]["signal"],
-                                            i["advice"]["current_price"], today.isoformat(), status, text)
+                alert_id = _record(farmer["id"], event, a, today, status, text)
                 db.log_message(farmer["id"], channel, "out", text, status, alert_id)
-                r["status"], r["channel"] = status, channel
-        results.append(r)
+                out["status"], out["channel"] = status, channel
+        if not dry_run:
+            for e in res["suppressed"]:
+                _record(farmer["id"], e, c["advice"][e["crop_option"]], today, "SUPPRESSED", "")
+            sent_crop = res["alert"]["crop_option"] if res["send"] else None
+            for a in c["baseline"]:
+                if a["crop_option"] != sent_crop:
+                    _record(farmer["id"], {"type": "BASELINE", "crop_option": a["crop_option"], "mandi": a["mandi"]},
+                            a, today, "BASELINE", "")
+        results.append(out)
     sent = sum(1 for r in results if r.get("status") == "SENT")
     log.info("alert check %s: %d farmers, %d sent%s", today, len(results), sent, " (dry run)" if dry_run else "")
     return results

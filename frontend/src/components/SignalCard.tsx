@@ -4,6 +4,7 @@ import type { AdviceResponse, Signal } from '../api/client'
 import { useAppState } from '../appState'
 import { formatRs } from '../lib/format'
 import { DataLabel } from './DataLabel'
+import { DirectionLine } from './DirectionLine'
 
 /** Blueprint signal colours: SELL green, WAIT amber; always with an icon and a word. */
 const STYLE: Record<Signal, { band: string; text: string; icon: string }> = {
@@ -56,6 +57,9 @@ export function SignalCard({ advice }: { advice: AdviceResponse }) {
         {t(`signal.confidenceLevels.${advice.confidence}`)}
       </p>
       {advice.model.startsWith('baseline') && <p className="mt-1 text-xs text-slate">{t('signal.baseline')}</p>}
+      <div className="mt-2">
+        <DirectionLine direction={advice.direction} />
+      </div>
 
       <div className="mt-3 space-y-1">
         <p className="text-sm font-bold">{t('signal.disclaimer')}</p>

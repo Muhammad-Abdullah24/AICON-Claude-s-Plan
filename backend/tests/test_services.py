@@ -4,6 +4,7 @@ import types
 import pytest
 
 from backend.app import services
+from ml.decision import inputs as engine_inputs
 
 
 def test_advice_uses_the_latest_real_price():
@@ -14,12 +15,18 @@ def test_advice_uses_the_latest_real_price():
     assert a["range"]["low"] < a["current_price"] < a["range"]["high"]
 
 
-def test_rupee_impact_is_gain_minus_interest_rounded_half_up():
+def test_rupee_impact_is_gain_minus_four_weeks_of_interest():
+    # Owner B's engine charges interest for the 4-week horizon: yearly rate x 4 / 52.
     a = services.get_advice("Wheat", "BahawalPur", 100)
-    interest = 100 * a["current_price"] * services._data()["interest_pct_month"] / 100
-    assert a["interest_cost"] == services._round(interest)
+    interest = 100 * a["current_price"] * engine_inputs.interest_pct_per_year() / 100 * 4 / 52
+    assert a["interest_cost"] == round(interest)
     assert a["rupee_impact"] == a["gross_gain"] - a["interest_cost"]
-    assert services._round(5252.5) == 5253
+
+
+def test_the_farmers_arhti_commission_comes_off_both_prices():
+    plain = services.get_advice("Wheat", "BahawalPur", 100)
+    with_arhti = services.get_advice("Wheat", "BahawalPur", 100, arhti_pct=2)
+    assert with_arhti["interest_cost"] < plain["interest_cost"] and with_arhti["arhti_pct"] == 2
 
 
 def test_baseline_never_says_wait():

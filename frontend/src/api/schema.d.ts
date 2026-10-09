@@ -354,6 +354,8 @@ export interface components {
             interest_cost: number;
             /** Rupee Impact */
             rupee_impact: number;
+            /** Arhti Pct */
+            arhti_pct?: number | null;
             /**
              * Prices As Of
              * Format: date
@@ -363,6 +365,7 @@ export interface components {
             is_stale: boolean;
             /** Price Unchanged Since */
             price_unchanged_since: string | null;
+            direction?: components["schemas"]["DirectionCall"] | null;
             /** Model */
             model: string;
         };
@@ -382,7 +385,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "FIRST" | "SIGNAL_CHANGE" | "PRICE_MOVE";
+            kind: "SELL_SIGNAL" | "PRICE_SPIKE";
             /**
              * Signal
              * @enum {string}
@@ -395,6 +398,8 @@ export interface components {
              * Format: date
              */
             prices_as_of: string;
+            /** Change 4W Pct */
+            change_4w_pct?: number | null;
         };
         /** AlertResult */
         AlertResult: {
@@ -402,8 +407,10 @@ export interface components {
             farmer_id: string;
             /** Items */
             items: components["schemas"]["AlertItem"][];
+            /** Suppressed */
+            suppressed: number;
             /** Skipped */
-            skipped: ("weekly_limit" | "no_change") | null;
+            skipped: ("weekly_limit" | "no_event") | null;
             /** Message */
             message?: string | null;
             /** Status */
@@ -584,6 +591,14 @@ export interface components {
             best_sell_month: number | null;
             /** Best Sell Gain Pct */
             best_sell_gain_pct: number | null;
+            /** Sell At Harvest */
+            sell_at_harvest: boolean;
+            /** Sell Window Months */
+            sell_window_months: number[];
+            /** Profit Per Acre Low */
+            profit_per_acre_low: number;
+            /** Profit Per Acre High */
+            profit_per_acre_high: number;
             /** Is Stale */
             is_stale: boolean;
         };
@@ -616,6 +631,21 @@ export interface components {
             /** Covers */
             covers: string;
         };
+        /**
+         * DirectionCall
+         * @description Owner B's model: likely up or down over 4 weeks, with no price number (docs/MODEL_CARD.md). Wheat only.
+         */
+        DirectionCall: {
+            /**
+             * Call
+             * @enum {string}
+             */
+            call: "UP" | "DOWN";
+            /** Validation Accuracy Pct */
+            validation_accuracy_pct: number | null;
+            /** Model Version */
+            model_version: string | null;
+        };
         /** ExplainResponse */
         ExplainResponse: {
             /** Data Source */
@@ -642,6 +672,7 @@ export interface components {
              * @enum {string}
              */
             source: "shap" | "facts";
+            direction?: components["schemas"]["DirectionCall"] | null;
             /** Reasons */
             reasons: components["schemas"]["Reason"][];
         };
@@ -792,6 +823,7 @@ export interface components {
             is_stale: boolean;
             /** Price Unchanged Since */
             price_unchanged_since: string | null;
+            direction?: components["schemas"]["DirectionCall"] | null;
             /** History */
             history: components["schemas"]["PricePoint"][];
         };
@@ -998,7 +1030,10 @@ export interface components {
              */
             prices_as_of: string;
         };
-        /** PricePoint */
+        /**
+         * PricePoint
+         * @description One week. `price` is None for a week with no AMIS price: draw a gap, never join across it.
+         */
         PricePoint: {
             /**
              * Date
@@ -1006,7 +1041,17 @@ export interface components {
              */
             date: string;
             /** Price */
-            price: number;
+            price: number | null;
+            /**
+             * Frozen
+             * @default false
+             */
+            frozen: boolean;
+            /**
+             * Filled
+             * @default false
+             */
+            filled: boolean;
         };
         /** PriceRange */
         PriceRange: {
