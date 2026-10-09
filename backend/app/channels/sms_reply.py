@@ -24,11 +24,12 @@ MANDI_RU = {"BahawalPur": "Bahawalpur", "Vehari": "Vehari", "RahimYarKhan": "Rah
 SIGNAL_RU = {"SELL": "bech dein", "WAIT": "ruk jayen"}
 CONFIDENCE_RU = {"HIGH": "zyada", "MEDIUM": "darmiyana", "LOW": "kam"}
 CHOICE_RU = {"advice": "Rate/mashwara", "compare": "Mandiyan", "why": "Kyun", "alerts_on": "Alert on",
-             "alerts_off": "Alert band", "menu": "Menu"}
+             "alerts_off": "Alert band", "menu": "Menu", "confirm": "Theek hai", "correct": "Durust karein"}
 
 BRAND = "FarmSight"
 MENU_TAIL = "Ya likhein: gandum bahawalpur 100 man"
-MENU_NOTE = {"expired": "Pichli baat ka waqt khatam.", "no_session": "Yeh number kis sawal ka hai, maloom nahi."}
+MENU_NOTE = {"expired": "Pichli baat ka waqt khatam.", "no_session": "Yeh number kis sawal ka hai, maloom nahi.",
+             "voice_unclear": "Awaz saaf samajh nahi aayi."}
 INVALID = "Ghalat number."
 ASK = {"ask_crop": "Fasal?", "ask_variety": "Kon se chawal?", "ask_mandi": "Mandi?",
        "ask_quantity": "Kitne man? Sirf number likhein, jaise 100."}
@@ -178,5 +179,9 @@ def render(r: Reply) -> str:
         return fit([NO_DATA.format(mandi=name(d["mandi"]), crop=name(d["crop_option"]))], (), ch)
     if k == "not_ready":
         return NOT_READY
+    if k == "voice_confirm":   # SMS has no voice notes; kept so every reply kind has an SMS form
+        qty = f"{d['quantity_maund']:g} man" if d.get("quantity_maund") else "?"
+        heard = f"Suna: {name(d.get('crop_option')) or '?'}, {name(d.get('mandi')) or '?'}, {qty}. Theek hai?"
+        return fit([*invalid, heard], (), ch)
     # "chat": SMS has no AI chat (it would answer in Urdu script and cost a model call per text)
     return fit([SORRY], (), ch)

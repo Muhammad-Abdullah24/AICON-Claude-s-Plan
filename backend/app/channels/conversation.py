@@ -16,6 +16,8 @@ Rules:
   A full query answers at once; part of one ("gandum") fills in the step it answers.
 - The session lasts SESSION_MINUTES; an expired one counts as none. Only codes and numbers are kept, never text.
 - Turning alerts on or off is returned as `alert_action` for the channel to apply; the engine does not write.
+- A transcribed voice note (`heard`, task A10) is never acted on directly: the farmer first sees what was heard
+  and replies 1 (right) or 2 (correct it). A low-confidence or unusable transcript goes to the main menu.
 """
 
 from __future__ import annotations
@@ -34,9 +36,9 @@ SESSION_MINUTES = int(os.environ.get("FS_CHANNEL_SESSION_MINUTES", "30"))
 DEFAULT_QUANTITY_MAUND = 100   # only for a full free-text query without a quantity, as before; the reply says so
 MAX_QUANTITY_MAUND = 100_000
 
-MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE = (
-    "menu", "crop", "rice_variety", "mandi", "quantity", "post_advice")
-STEPS = (MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE)
+MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE, VOICE_CONFIRM = (
+    "menu", "crop", "rice_variety", "mandi", "quantity", "post_advice", "voice_confirm")
+STEPS = (MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE, VOICE_CONFIRM)
 ADVICE, COMPARE, WHY = "advice", "compare", "why"
 RICE = "rice"   # draft crop while the variety is still unknown
 
@@ -83,7 +85,7 @@ class State:
 @dataclass(frozen=True)
 class Reply:
     kind: str     # menu | post_menu | ask_crop | ask_variety | ask_mandi | ask_quantity | advice | why | compare
-                  # | alerts | no_data | not_ready | not_understood | chat
+                  # | alerts | no_data | not_ready | not_understood | chat | voice_confirm | not_registered
     data: dict[str, Any] = field(default_factory=dict)
     choices: tuple[tuple[str, str], ...] = ()   # (number, code) the farmer can reply with, in order
 
@@ -106,6 +108,9 @@ def _numbered(items: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
     return tuple((str(i), item) for i, item in enumerate(items, 1)) + (("0", MENU),)
 
 
+VOICE_CHOICES = (("1", "confirm"), ("2", "correct"), ("0", MENU))
+
+
 def post_choices(alerts_enabled: bool) -> tuple[tuple[str, str], ...]:
     return (("1", WHY), ("2", COMPARE), ("3", "alerts_off" if alerts_enabled else "alerts_on"), ("0", MENU))
 
@@ -116,6 +121,27 @@ def handle(text: str, state: State | None, provider: AdviceProvider, *, phone: s
            alerts_enabled: bool = False, options: Options | None = None) -> Outcome:
     """The reply to one message and the session after it. `state` is what the store had (None if nothing)."""
     return _Engine(provider, phone, alerts_enabled, options or default_options()).run(text, state, now)
+
+
+def heard(transcript: str, confidence: float | None, state: State | None, provider: AdviceProvider, *,
+          phone: str, now: datetime, min_confidence: float, alerts_enabled: bool = False,
+          options: Options | None = None) -> Outcome:
+    """A transcribed voice note. Nothing is answered from it until the farmer confirms what was heard.
+    `confidence` None (the transcriber gives no score) still goes to confirmation, which is the real safeguard;
+    a score below `min_confidence`, or a transcript naming no crop and no mandi, goes to the main menu."""
+    engine = _Engine(provider, phone, alerts_enabled, options or default_options())
+    expired = state is not None and state.expires_at is not None and state.expires_at <= now
+    base = State() if expired or state is None else state
+    p = parse(transcript)
+    usable = p.kind == "query" and (p.crop_option or p.mandi or "variety" in p.missing)
+    if (confidence is not None and confidence < min_confidence) or not usable:
+        out = engine._menu(base, note="voice_unclear")
+    else:
+        crop = RICE if "variety" in p.missing else p.crop_option
+        s = replace(base, step=VOICE_CONFIRM, pending=ADVICE, draft_crop=crop, draft_mandi=p.mandi,
+                    draft_quantity=p.quantity_maund)
+        out = engine._confirm(s)
+    return replace(out, expired=expired) if expired else out
 
 
 class _Engine:
@@ -172,6 +198,13 @@ class _Engine:
         if s.step == MANDI:
             if 1 <= n <= len(self.o.mandis):
                 return self._advance(replace(s, draft_mandi=self.o.mandis[n - 1]))
+            return self._invalid(s)
+        if s.step == VOICE_CONFIRM:
+            if n == 1:   # the farmer confirmed: continue as if they had typed it (missing pieces are asked)
+                return self._advance(replace(s, pending=ADVICE))
+            if n == 2:   # wrong: start the guided flow from the crop, keeping nothing that was heard
+                return self._advance(replace(s, pending=ADVICE, draft_crop=None, draft_mandi=None,
+                                             draft_quantity=None))
             return self._invalid(s)
         # POST_ADVICE
         if n == 1:
@@ -239,7 +272,14 @@ class _Engine:
         return Outcome(Reply("ask_quantity", {**data, "crop_option": s.draft_crop, "mandi": s.draft_mandi},
                              (("0", MENU),)), s, "save")
 
+    def _confirm(self, s: State, invalid: bool = False) -> Outcome:
+        return Outcome(Reply("voice_confirm", {"invalid": invalid, "crop_option": s.draft_crop,
+                                               "mandi": s.draft_mandi, "quantity_maund": s.draft_quantity},
+                             VOICE_CHOICES), s, "save")
+
     def _invalid(self, s: State) -> Outcome:
+        if s.step == VOICE_CONFIRM:
+            return self._confirm(s, invalid=True)
         if s.step == MENU:
             return Outcome(Reply("menu", {"invalid": True}, MAIN_CHOICES), s, "save")
         if s.step == POST_ADVICE:
@@ -354,11 +394,16 @@ def _alerts_status(provider: AdviceProvider, phone: str) -> bool | None:
         return None
 
 
-def converse(channel: str, phone: str, text: str, provider: AdviceProvider, now: datetime) -> Reply:
+def converse(channel: str, phone: str, text: str, provider: AdviceProvider, now: datetime, *,
+             voice_confidence: float | None = None, from_voice: bool = False, min_confidence: float = 1.0) -> Reply:
     """Load the session, decide the reply, apply an alert change, save the session. WhatsApp and SMS both call
-    this, so they cannot drift apart; only the wording differs."""
+    this, so they cannot drift apart; only the wording differs. `from_voice`: `text` is a transcript."""
     status = _alerts_status(provider, phone)
-    out = handle(text, load(channel, phone), provider, phone=phone, now=now, alerts_enabled=bool(status))
+    if from_voice:
+        out = heard(text, voice_confidence, load(channel, phone), provider, phone=phone, now=now,
+                    min_confidence=min_confidence, alerts_enabled=bool(status))
+    else:
+        out = handle(text, load(channel, phone), provider, phone=phone, now=now, alerts_enabled=bool(status))
     r = out.reply
     if out.alert_action is not None:
         try:

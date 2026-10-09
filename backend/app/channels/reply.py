@@ -33,7 +33,9 @@ NO_DATA = "{mandi} منڈی میں {crop} کا ریٹ ہمارے پاس موجو
 NOT_READY = "یہ سروس ابھی تیار ہو رہی ہے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔"
 STOPPED = "الرٹس بند کر دیے گئے۔ دوبارہ شروع کرنے کے لیے 'شروع' لکھیں۔"
 STARTED = "الرٹس دوبارہ شروع کر دیے گئے۔"
-VOICE_SOON = "وائس نوٹ کی سہولت جلد آ رہی ہے۔ ابھی لکھ کر بھیجیں، مثلاً: گندم بہاولپور 100 من"
+VOICE_SOON = ("وائس نوٹ کی سہولت ابھی دستیاب نہیں۔ لکھ کر بھیجیں، مثلاً: گندم بہاولپور 100 من\n"
+              "یا مینو کے لیے 0 لکھیں۔")
+VOICE_FAILED = "وائس نوٹ سنا نہیں جا سکا۔ لکھ کر بھیجیں، یا مینو کے لیے 0 لکھیں۔"
 SYNTHETIC = "⚠️ مصنوعی ڈیٹا (synthetic)، اصل قیمت نہیں"
 DISCLAIMER = "یہ اندازہ ہے، گارنٹی نہیں۔"
 DEFAULT_QUANTITY_MAUND = 100
@@ -103,6 +105,7 @@ def clip(text: str, limit: int = MAX_BODY) -> str:
 CHOICE_UR = {
     "advice": "ریٹ اور مشورہ", "compare": "منڈیوں کا موازنہ", "why": "مشورے کی وجہ",
     "alerts_on": "الرٹ چالو", "alerts_off": "الرٹ بند", "menu": "مینو", "rice": "چاول",
+    "confirm": "درست ہے", "correct": "درست کریں",
 }
 SHORT_UR = {"why": "کیوں؟", "compare": "منڈیاں", "alerts_on": "الرٹ چالو", "alerts_off": "الرٹ بند", "menu": "مینو"}
 MENU_HEAD = "فارم سائٹ مینو: نمبر لکھ کر بھیجیں"
@@ -110,7 +113,10 @@ MENU_TAIL = "یا سیدھا لکھیں، مثلاً: گندم بہاولپور 
 MENU_NOTE = {
     "expired": "پچھلی بات چیت کا وقت ختم ہو گیا، دوبارہ شروع کریں۔",
     "no_session": "یہ نمبر کس سوال کا جواب ہے، معلوم نہیں۔ مینو سے چنیں:",
+    "voice_unclear": "وائس نوٹ صاف سمجھ نہیں آیا۔ لکھ کر بھیجیں یا مینو سے چنیں:",
 }
+HEARD = "میں نے سنا: {heard}۔ کیا یہ درست ہے؟"
+NOT_HEARD = "؟"  # a piece the voice note did not contain
 INVALID = "یہ انتخاب درست نہیں۔"
 ASK_NUMBERED = {"ask_crop": "کون سی فصل؟", "ask_variety": "کون سے چاول؟", "ask_mandi": "کون سی منڈی؟"}
 ASK_QUANTITY = "کتنے من؟ صرف تعداد لکھیں، مثلاً 100"
@@ -141,3 +147,11 @@ def buttons_for(choices) -> list[tuple[str, str]]:
         elif code in ALERT_BUTTON:
             out.append(ALERT_BUTTON[code])
     return out[:3]
+
+
+def heard_text(crop_option: str | None, mandi: str | None, quantity_maund: float | None) -> str:
+    """What the voice note was understood to say, before anything is done with it."""
+    qty = f"{quantity_maund:g} من" if quantity_maund else NOT_HEARD
+    parts = [choice_label(crop_option) if crop_option else NOT_HEARD,
+             choice_label(mandi) if mandi else NOT_HEARD, qty]
+    return HEARD.format(heard="، ".join(parts))

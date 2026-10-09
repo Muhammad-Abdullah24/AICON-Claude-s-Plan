@@ -38,7 +38,7 @@ from fastapi.responses import PlainTextResponse
 
 from backend.app import db
 from backend.app.channels import conversation as conv
-from backend.app.channels import reply
+from backend.app.channels import reply, voice
 from backend.app.channels.provider import AdviceProvider, get_provider
 from backend.app.chat import service as chat_service
 from backend.app.chat.llm import get_llm
@@ -203,6 +203,9 @@ def render(r: conv.Reply, chat: ChatFn | None, phone: str) -> dict:
         return text_message("\n".join([head, reply.ASK_NUMBERED["ask_mandi"], reply.choice_lines(ch)]))
     if k == "not_ready":
         return text_message(reply.NOT_READY)
+    if k == "voice_confirm":
+        heard = reply.heard_text(d["crop_option"], d["mandi"], d["quantity_maund"])
+        return text_message("\n".join([*invalid, heard, reply.choice_lines(ch)]))
     if k == "chat" and chat is not None:
         return _answer(chat(d["question"], d["crop_option"], d["mandi"], d["quantity_maund"], phone), ch)
     return _answer(reply.SORRY, ch)   # a free question, but no chat function was given
@@ -212,11 +215,31 @@ def respond(msg: dict, provider: AdviceProvider, chat: ChatFn | None = None, now
     """The reply to one incoming message, as a Cloud API message object. The conversation engine decides; the
     session is read from and saved to the database (backend/app/db.py), so a restart does not lose it."""
     phone = msg.get("from", "")
-    if msg.get("type") in ("audio", "voice"):
-        return text_message(reply.VOICE_SOON)  # task A10
     if not db.digits(phone):
         return text_message(reply.HELP)
-    r = conv.converse(CHANNEL, phone, message_text(msg) or "", provider, now or datetime.now(UTC))
+    now = now or datetime.now(UTC)
+    if msg.get("type") in ("audio", "voice"):
+        return _voice(msg, phone, provider, chat, now)
+    r = conv.converse(CHANNEL, phone, message_text(msg) or "", provider, now)
+    return render(r, chat, phone)
+
+
+def _voice(msg: dict, phone: str, provider: AdviceProvider, chat: ChatFn | None, now: datetime) -> dict:
+    """Task A10, off unless FS_VOICE_NOTES=1 and a transcriber is registered (channels/voice.py). Either way the
+    farmer is never answered from an unconfirmed transcript."""
+    settings = voice.get_voice_settings()
+    pair, media = voice.pipeline(settings), voice.media_id(msg)
+    if pair is None:
+        return text_message(reply.VOICE_SOON)
+    if media is None:
+        return text_message(reply.VOICE_FAILED)
+    try:
+        t = voice.transcribe_note(media, *pair, settings)
+    except voice.VoiceFailed as e:
+        log.warning("WhatsApp voice note not transcribed: %s", e)
+        return text_message(reply.VOICE_FAILED)
+    r = conv.converse(CHANNEL, phone, t.text, provider, now, from_voice=True, voice_confidence=t.confidence,
+                      min_confidence=settings.min_confidence)
     return render(r, chat, phone)
 
 
