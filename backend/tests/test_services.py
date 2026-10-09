@@ -33,6 +33,11 @@ def test_stale_series_have_low_confidence():
     assert a["is_stale"] and a["confidence"] == "LOW"
 
 
+def test_a_stale_starting_price_is_never_low_risk_in_the_crop_plan():
+    items = {i["crop_option"]: i for i in services.crop_plan("BahawalPur", 10)["items"]}
+    assert items["SuperBasmati"]["is_stale"] and items["SuperBasmati"]["risk_level"] != "LOW"
+
+
 def test_no_data_raises_lookup_error():
     with pytest.raises(LookupError):
         services.get_advice("IRRI", "RahimYarKhan")

@@ -5,6 +5,7 @@
  * (npm run gen:api). Never write an API type by hand: if the backend changes a field, regenerate and
  * TypeScript shows every place to fix.
  */
+import { replayDate } from '../lib/replay'
 import spec from './openapi.json'
 import type { components } from './schema'
 
@@ -115,22 +116,24 @@ function query(params: Record<string, string | number | null | undefined>): stri
   return s ? `?${s}` : ''
 }
 
-type Pair = { crop: string; mandi: string; as_of?: string | null }
+type Pair = { crop: string; mandi: string }
+/** Price endpoints carry the replay date (lib/replay.ts) when the demo is replaying a past week. */
+const priced = (params: Record<string, string | number | null | undefined>) => query({ ...params, as_of: replayDate })
 const post = (body: unknown) => ({ method: 'POST', body: JSON.stringify(body) })
 
 export const api = {
   meta: (signal?: AbortSignal) => request<Meta>('/api/meta', { signal }),
-  forecast: (p: Pair, signal?: AbortSignal) => request<ForecastResponse>(`/api/forecast${query(p)}`, { signal }),
-  explain: (p: Pair, signal?: AbortSignal) => request<ExplainResponse>(`/api/explain${query(p)}`, { signal }),
-  history: (p: Pair, signal?: AbortSignal) => request<HistoryResponse>(`/api/history${query(p)}`, { signal }),
+  forecast: (p: Pair, signal?: AbortSignal) => request<ForecastResponse>(`/api/forecast${priced(p)}`, { signal }),
+  explain: (p: Pair, signal?: AbortSignal) => request<ExplainResponse>(`/api/explain${priced(p)}`, { signal }),
+  history: (p: Pair, signal?: AbortSignal) => request<HistoryResponse>(`/api/history${priced(p)}`, { signal }),
   advice: (p: Pair & { quantity_maund?: number }, signal?: AbortSignal) =>
-    request<AdviceResponse>(`/api/advice${query(p)}`, { signal }),
+    request<AdviceResponse>(`/api/advice${priced(p)}`, { signal }),
   compare: (p: Pair & { quantity_maund?: number }, signal?: AbortSignal) =>
-    request<CompareResponse>(`/api/compare-mandis${query(p)}`, { signal }),
+    request<CompareResponse>(`/api/compare-mandis${priced(p)}`, { signal }),
   cropPlan: (p: { mandi?: string; land_area_acres?: number }, signal?: AbortSignal) =>
-    request<CropPlanResponse>(`/api/crop-plan${query(p)}`, { signal }),
+    request<CropPlanResponse>(`/api/crop-plan${priced(p)}`, { signal }),
   offerCheck: (body: { crop: string; mandi: string; offer_price: number; quantity_maund: number }) =>
-    request<OfferCheckResponse>('/api/offer-check', post(body)),
+    request<OfferCheckResponse>(`/api/offer-check${priced({})}`, post(body)),
   margin: (p: { crop: string; price: number; arhti_pct?: number | null }, signal?: AbortSignal) =>
     request<MarginResponse>(`/api/margin${query(p)}`, { signal }),
   weather: (mandi: string, signal?: AbortSignal) =>
