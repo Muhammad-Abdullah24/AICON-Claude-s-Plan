@@ -56,6 +56,7 @@ Ask the human before touching any other path.
 - Rebuild seasonal tables (Owner A): .venv/Scripts/python -m ml.seasonal.tables
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
+- Train the forecast models (Owner B; first: pip install -r ml/forecast/requirements.txt): .venv/Scripts/python -m ml.forecast.train [--quantiles] [--predictions preds.csv] [--save]
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

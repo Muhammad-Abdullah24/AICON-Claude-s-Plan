@@ -143,6 +143,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [ ] **H-C8** (from A7) `docs/DEMO.md`: show "AMIS mandi price, as of <date>" on the headline card; backup weeks are 2025-03-24 (−19.7%, sell early) and 2025-08-04 (+48.6%, wait), and 2026-03-16 only after the final test run; avoid 2026-08-31 and 2026-09-07 (frozen artifacts); prepare the Rs 5,300 answer (open-market rate; AMIS mandis 3,475–4,700). Details: `docs/DATA_NOTES.md` section A7.
 - [ ] **H-C9** (from A2/A5/A6/A12, A4) Add the new commands to the README "Common tasks". Paste the ready-made dataset rows from `docs/DATA_NOTES.md` section A4 into the README acknowledgements, and fix the "Pre-existing work" wording (the AMIS scraping scripts were written and run on 9 Oct 2026; see A4).
 - [ ] **H-C10** (from A4) Open-Meteo's CC BY 4.0 licence needs a link wherever weather data is shown: add "Weather data by Open-Meteo.com" linking to https://open-meteo.com/ on every screen with weather (and the README). Credit "Source: AMIS Punjab" on every price.
+- [ ] **H-C11** (from B3) Training needs `numpy` and `xgboost` (`ml/forecast/requirements.txt`). Add both to the README acknowledgements. CI does not install them, so `ml/forecast/test_train.py` is skipped there; add `pip install -r ml/forecast/requirements.txt` to the CI backend job to run it. When B6 lands, the runtime `predict.py` needs `xgboost` in `backend/requirements.txt` (B will say when).
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
@@ -173,7 +174,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 **B · Usman**
 - [ ] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
 - [ ] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
-- [ ] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
+- [x] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
 
 **C · Abd**
 - [ ] **C1** (M) Replace the API contract in `schemas.py` with blueprint section 12 (forecast, explain, advice, compare-mandis, crop-plan, offer-check, margin, history, weather, meta, auth, farmers, chat). Stub every endpoint with placeholder data (`is_synthetic: true`). Regenerate front-end types. *Done when* CI is green and `/docs` lists every endpoint.
