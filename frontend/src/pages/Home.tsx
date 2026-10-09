@@ -4,13 +4,15 @@ import { Link } from 'react-router'
 import { api } from '../api/client'
 import { useAppState } from '../appState'
 import { OfferCheck } from '../components/OfferCheck'
-import { SelectionBar } from '../components/SelectionBar'
 import { SignalCard } from '../components/SignalCard'
 import { ErrorBox, Loading } from '../components/Status'
 import { WeatherLine } from '../components/WeatherLine'
 import { useAsync } from '../lib/useAsync'
 
-/** Answer first (blueprint section 11): the SELL / WAIT card, then the four big actions. */
+/**
+ * Check a buyer's offer first: that is the decision a farmer faces at the gate. The market outlook (the price
+ * estimate, the model's direction call and the sell/wait card) follows as secondary context, then the actions.
+ */
 export function Home() {
   const { t } = useTranslation()
   const { selection, quantity } = useAppState()
@@ -20,19 +22,29 @@ export function Home() {
   )
 
   const actions = [
-    { to: '/why', label: t('actions.why') },
     { to: '/compare', label: t('actions.compare') },
+    { to: '/why', label: t('actions.why') },
     { to: '/grow', label: t('actions.grow') },
     { to: '/chat', label: t('actions.ask') },
   ]
 
   return (
-    <div className="space-y-5">
-      <SelectionBar withQuantity />
-      {advice.status === 'loading' && <Loading />}
-      {advice.status === 'error' && <ErrorBox error={advice.error} onRetry={reload} />}
-      {advice.status === 'ok' && <SignalCard advice={advice.data} />}
-      <WeatherLine mandi={selection.mandi} />
+    <div className="space-y-6">
+      <OfferCheck />
+
+      <section className="space-y-3" aria-labelledby="outlook-title" data-testid="market-outlook">
+        <div>
+          <h2 id="outlook-title" className="text-lg font-bold">
+            {t('outlook.title')}
+          </h2>
+          <p className="text-sm text-slate">{t('outlook.note')}</p>
+        </div>
+        {advice.status === 'loading' && <Loading />}
+        {advice.status === 'error' && <ErrorBox error={advice.error} onRetry={reload} />}
+        {advice.status === 'ok' && <SignalCard advice={advice.data} secondary />}
+        <WeatherLine mandi={selection.mandi} />
+      </section>
+
       <nav className="grid grid-cols-2 gap-3" aria-label={t('app.name')}>
         {actions.map((a) => (
           <Link
@@ -44,7 +56,6 @@ export function Home() {
           </Link>
         ))}
       </nav>
-      <OfferCheck />
     </div>
   )
 }

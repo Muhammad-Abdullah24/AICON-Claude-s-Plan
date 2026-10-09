@@ -1,10 +1,10 @@
 {
   "app": {
     "name": "FarmSight",
-    "tagline": "When to sell, where to sell, what to grow"
+    "tagline": "Check a buyer's offer before you sell"
   },
   "nav": {
-    "home": "Advice",
+    "home": "Check offer",
     "why": "Why",
     "compare": "Mandis",
     "grow": "What to grow",
@@ -68,14 +68,72 @@
     "ask": "Ask a question"
   },
   "offer": {
-    "title": "A buyer offered you",
-    "placeholder": "Price per maund",
-    "check": "Check the offer",
-    "below": "{{diff}} per maund below the fair range",
-    "above": "{{diff}} per maund above the fair range",
-    "fair": "Within the fair range",
-    "fairRange": "Fair range (what this mandi paid in the last {{days}} days): {{low}} to {{high}}",
-    "total": "On {{qty}} maund: {{total}}"
+    "title": "Check a buyer's offer",
+    "intro": "Before you agree, see how the offer compares with prices recently reported at the mandi, and with other mandis after transport.",
+    "label": "The buyer offered (Rs per maund, 40 kg)",
+    "placeholder": "e.g. 3514",
+    "check": "Check my offer",
+    "status": {
+      "below": "Below the recent reference range",
+      "within": "Within the recent reference range",
+      "above": "Above the recent reference range",
+      "limited": "Reference data is limited"
+    },
+    "buyerOffer": "Buyer's offer",
+    "referencePrice": "Latest reported mandi price",
+    "referenceRange": "Recent reference range",
+    "grossBasis": "The offer is treated as the buyer's gross quoted price per maund, before any commission you pay.",
+    "reportedDays": "AMIS reported a price on {{days}} of the last {{window}} days.",
+    "vsReference": {
+      "below": "Your offer is {{diff}} per maund below the latest reported price.",
+      "above": "Your offer is {{diff}} per maund above the latest reported price.",
+      "equal": "Your offer equals the latest reported price."
+    },
+    "totalFor": "Difference on your {{qty}} maund, compared with the latest reported price",
+    "totalVsRange": "Compared with the nearest edge of the recent range: {{total}}",
+    "limited": {
+      "LIMITED_SAME_PRICE": "AMIS reported the same reference price on all {{days}} reported days.",
+      "LIMITED_STALE": "The latest reported price is from {{date}}, more than 8 weeks ago.",
+      "LIMITED_FROZEN": "AMIS has shown the same price since {{date}}, which often means it was not updated.",
+      "LIMITED_FEW_DAYS": "AMIS reported a price on only {{days}} of the last {{window}} days."
+    },
+    "limitedOffer": {
+      "below": "The offer is {{diff}} below that reported reference, but FarmSight cannot treat this as a reliable market range.",
+      "above": "The offer is {{diff}} above that reported reference, but FarmSight cannot treat this as a reliable market range.",
+      "equal": "The offer equals that reported reference, but FarmSight cannot treat this as a reliable market range."
+    },
+    "commission": "Commission at the rate you entered ({{pct}}%): about {{perMaund}} per maund, {{total}} on your quantity. Your own estimate; not used in the comparison above.",
+    "nextSteps": {
+      "title": "Before you decide",
+      "askReason": "Ask the buyer how the price was set, and whether quality or grade changed it.",
+      "compare": "Compare nearby mandis after transport (below).",
+      "reference": "You can use these reported prices as an independent reference when you negotiate.",
+      "constraints": "If you are tied by credit, transport or an urgent need for cash, FarmSight cannot remove that constraint."
+    },
+    "alternatives": {
+      "title": "Other mandis after estimated transport",
+      "noData": "no price reported",
+      "unknown": "reference too weak to compare",
+      "better": "estimated better after transport",
+      "higherNotBetter": "higher mandi price, but not estimated better after transport",
+      "notBetter": "not estimated better after transport",
+      "line": "Reported {{price}} − transport {{transport}} (estimate) = {{net}} per maund",
+      "vsOffer": "Compared with the offer, on {{qty}} maund: {{total}}",
+      "verify": "Before you travel, check that a buyer is there and what their terms are.",
+      "open": "Open mandi comparison"
+    },
+    "assumptions": {
+      "title": "Not included, and assumptions",
+      "QUALITY_GRADE_NOT_INCLUDED": "Crop quality, grade and moisture are not included; they can change the price you are offered.",
+      "BUYER_TERMS_NOT_INCLUDED": "Buyer terms (when you are paid, deductions, credit) are not included.",
+      "TRANSPORT_IS_ESTIMATE": "Transport costs are estimates from road distance, not quotes.",
+      "COMMISSION_NOT_INCLUDED": "No commission is included."
+    },
+    "referenceOnly": "These are reported mandi prices: a reference for negotiation, not a promise of what you will get. Timing, transport, credit and the actual auction can change the price you receive."
+  },
+  "outlook": {
+    "title": "Market outlook",
+    "note": "The price estimate and our model's signal, as background. Our forecasts were tested and are not reliable enough to tell you to hold your crop."
   },
   "why": {
     "title": "Why this advice",

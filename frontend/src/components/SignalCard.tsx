@@ -14,9 +14,9 @@ const STYLE: Record<Signal, { band: string; text: string; icon: string }> = {
 
 /**
  * The SELL / WAIT answer as a parchi: the slip an arhti hands a farmer. Every number comes from the API;
- * the component only lays it out.
+ * the component only lays it out. On Home it is `secondary`: market outlook under the offer check, smaller.
  */
-export function SignalCard({ advice }: { advice: AdviceResponse }) {
+export function SignalCard({ advice, secondary = false }: { advice: AdviceResponse; secondary?: boolean }) {
   const { t } = useTranslation()
   const { meta } = useAppState()
   const s = STYLE[advice.signal]
@@ -26,7 +26,7 @@ export function SignalCard({ advice }: { advice: AdviceResponse }) {
   return (
     <article className="parchi rounded-b-2xl px-5 pb-5" aria-live="polite">
       <div className={`-mx-5 mb-3 h-2 ${s.band}`} aria-hidden />
-      <h2 className={`font-urdu text-4xl leading-[2] font-bold ${s.text}`}>
+      <h2 className={`font-urdu ${secondary ? 'text-2xl' : 'text-4xl'} leading-[2] font-bold ${s.text}`}>
         <span aria-hidden className="me-2">
           {s.icon}
         </span>
