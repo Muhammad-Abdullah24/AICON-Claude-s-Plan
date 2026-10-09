@@ -56,7 +56,11 @@ CREATE TABLE IF NOT EXISTS alerts (
     type TEXT NOT NULL,
     status TEXT NOT NULL,
     message_text TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    mandi TEXT,
+    signal TEXT,
+    price REAL,
+    for_date TEXT
 );
 CREATE TABLE IF NOT EXISTS messages (
     id TEXT PRIMARY KEY,
@@ -112,9 +116,18 @@ def connect(path: str | None = None) -> sqlite3.Connection:
             _conn.row_factory = sqlite3.Row
             _conn.execute("PRAGMA foreign_keys = ON")
             _conn.executescript(SCHEMA)
+            _migrate(_conn)
             if get_farmer_by_phone(DEMO_FARMER["phone"], _conn) is None:
                 create_farmer(DEMO_FARMER, _conn)
         return _conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Columns added after the first release, for databases created before them."""
+    have = {r["name"] for r in conn.execute("PRAGMA table_info(alerts)")}
+    for column, kind in (("mandi", "TEXT"), ("signal", "TEXT"), ("price", "REAL"), ("for_date", "TEXT")):
+        if column not in have:
+            conn.execute(f"ALTER TABLE alerts ADD COLUMN {column} {kind}")  # noqa: S608 (fixed names above)
 
 
 def reset(path: str = ":memory:") -> sqlite3.Connection:
@@ -222,25 +235,29 @@ def log_chat(farmer_id: str | None, role: str, text: str, used_fallback: bool = 
 
 
 def last_alert(farmer_id: str, crop: str) -> dict | None:
+    """The newest alert raised for this crop (sent, or tried and failed): what the next check compares with."""
     row = connect().execute(
-        "SELECT * FROM alerts WHERE farmer_id = ? AND crop = ? AND status != 'SUPPRESSED' "
-        "ORDER BY created_at DESC LIMIT 1", (farmer_id, crop)).fetchone()
+        "SELECT * FROM alerts WHERE farmer_id = ? AND crop = ? AND status IN ('SENT', 'FAILED') "
+        "ORDER BY for_date DESC, created_at DESC LIMIT 1", (farmer_id, crop)).fetchone()
     return dict(row) if row else None
 
 
-def add_alert(farmer_id: str, crop: str, kind: str, status: str, text: str) -> str:
+def last_sent_date(farmer_id: str) -> str | None:
+    """The date (the check's as-of date) of the farmer's newest delivered alert, for the one-a-week limit."""
+    row = connect().execute("SELECT MAX(for_date) AS d FROM alerts WHERE farmer_id = ? AND status = 'SENT'",
+                            (farmer_id,)).fetchone()
+    return row["d"] if row else None
+
+
+def add_alert(farmer_id: str, crop: str, mandi: str, kind: str, signal: str, price: float, for_date: str,
+              status: str, text: str) -> str:
     alert_id = str(uuid.uuid4())
     conn = connect()
     with conn:
-        conn.execute("INSERT INTO alerts VALUES (?, ?, ?, ?, ?, ?, ?)",
-                     (alert_id, farmer_id, crop, kind, status, text, now()))
+        conn.execute("INSERT INTO alerts (id, farmer_id, crop, type, status, message_text, created_at, mandi, signal,"
+                     " price, for_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (alert_id, farmer_id, crop, kind, status, text, now(), mandi, signal, price, for_date))
     return alert_id
-
-
-def set_alert_status(alert_id: str, status: str) -> None:
-    conn = connect()
-    with conn:
-        conn.execute("UPDATE alerts SET status = ? WHERE id = ?", (status, alert_id))
 
 
 def log_message(farmer_id: str | None, channel: str, direction: str, content: str, status: str,

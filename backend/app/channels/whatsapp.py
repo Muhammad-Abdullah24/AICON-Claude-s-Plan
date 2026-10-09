@@ -76,7 +76,7 @@ def signature_ok(raw_body: bytes, header: str | None, app_secret: str) -> bool:
 # ---------------------------------------------------------------- sending
 
 class Sender(Protocol):
-    def send(self, to: str, message: dict) -> None: ...
+    def send(self, to: str, message: dict) -> bool | None: ...   # False when it could not be delivered
 
 
 class GraphSender:
@@ -85,10 +85,10 @@ class GraphSender:
     def __init__(self, settings: WhatsAppSettings):
         self.s = settings
 
-    def send(self, to: str, message: dict) -> None:
+    def send(self, to: str, message: dict) -> bool:
         if not (self.s.access_token and self.s.phone_number_id):
             log.warning("WhatsApp reply not sent: FS_WA_ACCESS_TOKEN or FS_WA_PHONE_NUMBER_ID is not set")
-            return
+            return False
         url = f"https://graph.facebook.com/{self.s.api_version}/{self.s.phone_number_id}/messages"
         body = json.dumps({"messaging_product": "whatsapp", "to": to, **message}).encode()
         req = urllib.request.Request(url, data=body, method="POST", headers={
@@ -98,6 +98,8 @@ class GraphSender:
                 resp.read()
         except Exception as e:  # noqa: BLE001 (a failed reply must not crash the webhook)
             log.warning("WhatsApp reply failed: %s", type(e).__name__)
+            return False
+        return True
 
 
 def get_sender(settings: WhatsAppSettings = Depends(get_wa_settings)) -> Sender:  # noqa: B008 (FastAPI idiom)

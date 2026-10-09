@@ -9,16 +9,20 @@ that date is used (for replaying past weeks in the demo).
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import datetime as dt
+import hmac
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from backend.app import db, services, weather
+from backend.app import alerts, db, services, weather
 from backend.app.auth import current_farmer, make_token, optional_farmer
 from backend.app.channels import whatsapp
 from backend.app.chat import router as chat_router
@@ -26,6 +30,7 @@ from backend.app.config import Settings, get_settings
 from backend.app.ids import CROP_FROM_DATA, CROP_NAMES, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_NAMES, MANDI_TO_DATA
 from backend.app.schemas import (
     AdviceResponse,
+    AlertRunResponse,
     CompareResponse,
     CropId,
     CropPlanResponse,
@@ -59,7 +64,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         db.connect()
         services._data()  # load and check the data files at start-up, not on the first request
+        every = float(os.environ.get("FS_ALERTS_EVERY_HOURS", "0") or 0)
+        task = asyncio.create_task(alerts.loop(every)) if every > 0 else None
         yield
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
     app = FastAPI(title="FarmSight API", version="0.2.0", lifespan=lifespan)
     app.add_middleware(
@@ -227,6 +238,26 @@ def crop_plan(mandi: MandiId | None = None,
              for i in p["items"]]
     return CropPlanResponse(**LABEL, mandi=where, land_area_acres=acres, items=items,
                             not_available=[CROP_FROM_DATA[c] for c in p["not_available"]], is_estimate=True)
+
+
+# ---------------------------------------------------------------- alerts (C9)
+
+@router.post("/alerts/run", response_model=AlertRunResponse, tags=["ops"])
+def run_alerts(as_of: AsOf = None, dry_run: bool = False,
+               x_admin_token: Annotated[str | None, Header()] = None) -> AlertRunResponse:
+    """Runs one alert check now (the schedule runs it too when FS_ALERTS_EVERY_HOURS is set). For the team only:
+    needs the X-Admin-Token header to equal FS_ADMIN_TOKEN. `dry_run` shows the messages without sending."""
+    expected = os.environ.get("FS_ADMIN_TOKEN", "")
+    if not expected:
+        raise HTTPException(503, "Alert trigger is off: set FS_ADMIN_TOKEN on the server.")
+    if not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
+        raise HTTPException(401, "Wrong or missing X-Admin-Token.")
+    results = alerts.run(as_of=as_of, dry_run=dry_run)
+    out = [{**r, "items": [{"crop": i["crop"], "mandi": i["mandi"], "kind": i["kind"], "signal": i["advice"]["signal"],
+                            "current_price": i["advice"]["current_price"], "prices_as_of": i["advice"]["prices_as_of"]}
+                           for i in r["items"]]} for r in results]
+    return AlertRunResponse(as_of=as_of or dt.date.today(), dry_run=dry_run, farmers_checked=len(out),
+                            sent=sum(1 for r in out if r.get("status") == "SENT"), results=out)
 
 
 # ---------------------------------------------------------------- farmers and login

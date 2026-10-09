@@ -135,6 +135,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [x] **H-B11** (from services, 10 Oct) The blueprint SELL/WAIT rule (5%, interest subtracted), confidence and trend are currently computed inline in `services.get_advice`. When your `ml/decision` engine (B2) has them, say so in a hand-off for Owner C and the service will call your engine instead, so the rule lives in one place.
 - [ ] **H-B12** (from C1, 10 Oct) The API no longer serves `artifacts/` (the old placeholder forecasts, replay and backtest files); every endpoint now reads the real data through `services.py`. `python -m backend.app.check_artifacts` still validates the placeholders in CI. When your `predict.py` loads its own model files, delete the placeholder `artifacts/*.json`, `backend/app/artifacts.py`, `artifact_schemas.py`, `check_artifacts.py` and its CI step together (or tell Owner C and they will).
 - [ ] **H-B13** (from C1, 10 Oct) `crop_plan()` and `selling_window()` currently live in `backend/app/services.py`, built from A6's tables exactly as H-B7 describes (rice yield × milling yield, risk LOW < 30% spread < MEDIUM < 60% < HIGH, HIGH with fewer than 3 years). When B7 lands in `ml/decision`, keep the same outputs (`CropPlanItem` in `schemas.py`) and Owner C swaps the call. Same for `offer_check` (fair range = min/max of the last 14 days of prices) and `margin`.
+- [ ] **H-B14** (from C9, 10 Oct) The alert rule lives in `backend/app/alerts.py` until your `alert_check()` (B8) exists: alert when nothing was sent before, when the signal flips, or when the price moved ≥ 10% since the last alert; at most one message per farmer per week (dates are the check's `as_of`). When B8 lands, keep that behaviour or say what changed in a hand-off, and Owner C calls yours.
 - [x] **H-B9** (from Super Basmati) Super Basmati has only 10 test rows (Bahawalpur) and stale prices; judge it on validation and say so in the model card.
 
 **For Abd (Owner C)**
@@ -174,13 +175,16 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 | 10 Oct | **C5 weather.** Open-Meteo, `past_days=92`, 1-hour cache in memory, offline-file fallback with `cached: true`, CC BY 4.0 attribution | `backend/app/weather.py` |
 | 10 Oct | **C3 retirement.** Deleted `phrasing.py`, the old Ask/Forecast pages and the four-verdict card; the old artifact models moved to `artifact_schemas.py` (see H-B12) | |
 | 10 Oct | **C6–C8 screens.** Home (SELL/WAIT parchi, today → 4 weeks with range, interest, "as of" date, weather line, offer check), Why, Compare mandis, What to Grow (season strip, risk badge), History (52 weeks and seasonal pattern), Margin, Chat, Profile (login, register, alerts). Urdu first, RTL, checked at 375 px. A saved login the server rejects is dropped and the request retried as a guest | `frontend/src/` |
+| 10 Oct | **C9 alerts.** `backend/app/alerts.py`: checks every farmer with alerts on through the service layer; FIRST / SIGNAL_CHANGE / PRICE_MOVE (≥ 10%); one WhatsApp message a week per farmer with every changed crop; FAILED recorded, SMS fallback hook. Runs every `FS_ALERTS_EVERY_HOURS` (off by default) and on demand: `POST /api/alerts/run?as_of=&dry_run=` with header `X-Admin-Token` = `FS_ADMIN_TOKEN`. The `alerts` table gained `mandi, signal, price, for_date` (migrated automatically) | `backend/app/alerts.py`, `db.py`, `main.py`, `backend/tests/test_alerts.py` |
 | 10 Oct | (Usman, agreed in session) `get_explanation()` keeps the "simple estimate" baseline line after the model's SHAP reasons for wheat, since the price shown is still the baseline. Text moved to `BASELINE_NOTE` | `backend/app/services.py` |
 
-**Still open on Owner C's list:** C9 alerts, C10 deploy, P4.4 `docs/DEMO.md` with real output. Swap in Usman's engine when H-B11/H-B13 land.
+**Still open on Owner C's list:** C10 deploy, P4.4 `docs/DEMO.md` with real output. Swap in Usman's engine when H-B11/H-B13 land.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
-- [ ] **H-A1** (from B8) WhatsApp and SMS alert text: `alert_check()` returns codes only. Phrase `{type: SELL_SIGNAL, previous_signal, signal}` as the signal change, and `{type: PRICE_SPIKE, direction: UP|DOWN, change_4w_pct, prices_as_of}` as "the <crop> price at <mandi> moved <x>% in 4 weeks, more than usual", with the "as of" date. Quick replies as in A8 (Why / Compare mandis / Stop alerts).
+- [ ] **H-A1** (from C9, 10 Oct) WhatsApp `GraphSender.send` now returns `True`/`False` (delivered or not); alerts record FAILED on `False`. With A3: Meta only delivers free text within 24 hours of the farmer's last message, so for alerts create a template (Urdu, one body parameter `{{1}}`, utility category), and put its name in `FS_WA_ALERT_TEMPLATE`. For the demo, the demo phone can simply message the bot first.
+- [ ] **H-A2** (from C9, 10 Oct) When A11 (SMS) exists, pass its sender to `alerts.run(sms=...)`: a function `(phone_digits, text, one_line_summary) -> bool`. It is used when WhatsApp delivery fails.
+- [ ] **H-A3** (from B8) WhatsApp and SMS alert text: `alert_check()` returns codes only. Phrase `{type: SELL_SIGNAL, previous_signal, signal}` as the signal change, and `{type: PRICE_SPIKE, direction: UP|DOWN, change_4w_pct, prices_as_of}` as "the <crop> price at <mandi> moved <x>% in 4 weeks, more than usual", with the "as of" date. Quick replies as in A8 (Why / Compare mandis / Stop alerts).
 
 ---
 
@@ -262,7 +266,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 **C · Abd**
 - [x] **C7** (M) Screens: Compare Mandis, What to Grow with the season timeline. *(done 10 Oct by Hamza)*
 - [x] **C8** (S) Screens: offer check, margin, Register/Profile (district dropdown first; map pin if time), Chat (uses A9 and A10). *(done 10 Oct by Hamza; district chips instead of a dropdown, no map pin)*
-- [ ] **C9** (S) APScheduler alert job: B8's check → A8's WhatsApp sender, SMS fallback.
+- [x] **C9** (S) APScheduler alert job: B8's check → A8's WhatsApp sender, SMS fallback. *(done 10 Oct by Hamza; see 4.2. Asyncio loop instead of APScheduler, no new dependency)*
 - [ ] **C10** (M) Deploy: front end on Vercel, backend on Render or Hugging Face Spaces; environment variables set; link opens on a phone on mobile data.
 
 **Check-ins Sat 16:00 and 19:00.**

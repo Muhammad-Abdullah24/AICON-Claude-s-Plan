@@ -346,3 +346,31 @@ class ChatResponse(Strict):
     mandi: MandiId | None
     data_source: str
     is_synthetic: bool
+
+
+# ---------------------------------------------------------------- alerts (C9, ops only)
+
+class AlertItem(Strict):
+    crop: CropId
+    mandi: MandiId
+    kind: Literal["FIRST", "SIGNAL_CHANGE", "PRICE_MOVE"]
+    signal: Signal
+    current_price: float
+    prices_as_of: dt.date
+
+
+class AlertResult(Strict):
+    farmer_id: str                  # never the phone number
+    items: list[AlertItem]
+    skipped: Literal["weekly_limit", "no_change"] | None
+    message: str | None = None
+    status: Literal["SENT", "FAILED"] | None = None     # None on a dry run or when nothing was due
+    channel: Literal["whatsapp", "sms"] | None = None
+
+
+class AlertRunResponse(Strict):
+    as_of: dt.date
+    dry_run: bool
+    farmers_checked: int
+    sent: int
+    results: list[AlertResult]

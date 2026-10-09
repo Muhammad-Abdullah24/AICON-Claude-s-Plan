@@ -174,6 +174,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/alerts/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Alerts
+         * @description Runs one alert check now (the schedule runs it too when FS_ALERTS_EVERY_HOURS is set). For the team only:
+         *     needs the X-Admin-Token header to equal FS_ADMIN_TOKEN. `dry_run` shows the messages without sending.
+         */
+        post: operations["run_alerts_api_alerts_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -344,6 +365,67 @@ export interface components {
             price_unchanged_since: string | null;
             /** Model */
             model: string;
+        };
+        /** AlertItem */
+        AlertItem: {
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "FIRST" | "SIGNAL_CHANGE" | "PRICE_MOVE";
+            /**
+             * Signal
+             * @enum {string}
+             */
+            signal: "SELL" | "WAIT";
+            /** Current Price */
+            current_price: number;
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+        };
+        /** AlertResult */
+        AlertResult: {
+            /** Farmer Id */
+            farmer_id: string;
+            /** Items */
+            items: components["schemas"]["AlertItem"][];
+            /** Skipped */
+            skipped: ("weekly_limit" | "no_change") | null;
+            /** Message */
+            message?: string | null;
+            /** Status */
+            status?: ("SENT" | "FAILED") | null;
+            /** Channel */
+            channel?: ("whatsapp" | "sms") | null;
+        };
+        /** AlertRunResponse */
+        AlertRunResponse: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /** Farmers Checked */
+            farmers_checked: number;
+            /** Sent */
+            sent: number;
+            /** Results */
+            results: components["schemas"]["AlertResult"][];
         };
         /** ChatRequest */
         ChatRequest: {
@@ -1363,6 +1445,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CropPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_alerts_api_alerts_run_post: {
+        parameters: {
+            query?: {
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+                dry_run?: boolean;
+            };
+            header?: {
+                "x-admin-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRunResponse"];
                 };
             };
             /** @description Validation Error */
