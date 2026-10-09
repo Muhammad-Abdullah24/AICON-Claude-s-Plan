@@ -84,6 +84,11 @@
       "milled_equivalent_rs_per_40kg": {"value": 3166, "confidence": "derived", "formula": "2058 / 0.65 (ignores milling cost and by-product value)"},
       "caution": "Cost is per 40kg of PADDY. Confirm whether the AMIS 'Rice (IRRI)' price is paddy or milled rice before computing margin. AMIS Oct 2026 is about Rs 4,600 per 40kg, which sits between paddy listings (2,200-2,800) and milled listings (5,400-6,000)."
     },
+    "rice_super_basmati_paddy": {
+      "official_2022_23": {"net_cost_rs_per_acre_incl_land_rent": 75352, "yield_kg_paddy_per_acre": 1600, "farm_gate_rs_per_40kg_paddy": 1884, "market_level_rs_per_40kg_paddy": 1944, "confidence": "high", "source": ["https://api.gov.pk/SiteImage/Policy/Rice%20Policy%202022-23.pdf", "data/sources/api_rice_2022_23.pdf Table-9 (Punjab Basmati)"], "note": "Official table is for Basmati in general; used for Super Basmati."},
+      "estimate_2026": {"market_level_rs_per_40kg_paddy": 2685, "net_cost_rs_per_acre": 104061, "confidence": "derived", "formula": "2022-23 value * 1.381"},
+      "milled_equivalent_rs_per_40kg": {"value": 4130, "confidence": "derived", "formula": "2685 / 0.65 milling yield (assumption; ignores milling cost and by-product value)"}
+    },
     "cotton_seed_cotton": {
       "official_2022_23": {"net_cost_rs_per_acre_incl_land_rent": 97280, "yield_kg_per_acre": 820, "farm_level_rs_per_40kg": 4745.4, "market_ginnery_level_rs_per_40kg": 4790.38, "market_level_excl_rent": 3489.57, "confidence": "high", "source": ["https://api.gov.pk/SiteImage/Policy/Cotton%20Policy%20Analysis%20For%202022-23%20Crop.pdf", "data/sources/api_cotton_2022_23.pdf Table-11 / Annex-V (Punjab)"]},
       "estimate_2026": {"market_ginnery_level_rs_per_40kg": 6616, "net_cost_rs_per_acre": 134352, "confidence": "derived", "formula": "2022-23 value * 1.381"}
@@ -113,8 +118,8 @@
 
   "data_quality_warnings": [
     "AMIS wheat looks sticky/lagging. For 8 Oct 2026 AMIS shows about Rs 3,820 per 40kg (BahawalPur) and Rs 3,475 (RahimYarKhan), while ARY reports the Punjab open market at Rs 5,300. AMIS tracked the Rs 3,500 procurement price well in April 2026. Treat late-2026 wheat points with caution and consider testing the model with and without the last 2 months.",
-    "AMIS rice IRRI unit (paddy vs milled) unconfirmed. Resolve before any margin calculation.",
-    "Vehari wheat and rice IRRI start in 2023; RahimYarKhan IRRI is nearly empty.",
+    "AMIS rice IRRI and Super Basmati unit (paddy vs milled) unconfirmed; price levels look milled. Resolve before any margin calculation.",
+    "RahimYarKhan IRRI is nearly empty (dropped). Super Basmati has no prices for 2021-2022 at Vehari and RahimYarKhan, and its latest prices are Nov 2025 (Vehari), Dec 2025 (RahimYarKhan), Apr 2026 (BahawalPur).",
     "All news-based values are medium confidence. Primary SBP site could not be fetched (403).",
     "Cost of production for rice and cotton is a CPI-escalated lower bound, not an official 2025-26 figure."
   ]

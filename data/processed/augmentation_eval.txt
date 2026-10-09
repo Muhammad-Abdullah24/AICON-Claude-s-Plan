@@ -1,6 +1,6 @@
 Metric: MAE of predicted 4-week % change vs actual, on REAL rows only (lower is better). Persistence = predict 0 change.
-Real val rows 269, real test rows 155
-Persistence baseline: val MAE 6.052   test MAE 3.490
-A real only                  n_train=2128  lambda=1  val MAE 6.256  test MAE 3.656  test dir-acc(>3% moves) 61%
-B real + imputed             n_train=3444  lambda=1  val MAE 6.192  test MAE 3.614  test dir-acc(>3% moves) 65%
-C real + imputed + jitter    n_train=11956 lambda=1  val MAE 6.253  test MAE 3.627  test dir-acc(>3% moves) 65%
+Real val rows 328, real test rows 165
+Persistence baseline: val MAE 5.587   test MAE 3.391
+A real only                  n_train=2733  lambda=1  val MAE 5.793  test MAE 3.542  test dir-acc(>3% moves) 65%
+B real + imputed             n_train=4676  lambda=0.3  val MAE 5.771  test MAE 3.532  test dir-acc(>3% moves) 56%
+C real + imputed + jitter    n_train=15608 lambda=1  val MAE 5.810  test MAE 3.547  test dir-acc(>3% moves) 65%

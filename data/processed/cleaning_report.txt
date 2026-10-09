@@ -1,53 +1,82 @@
 Input rows: 22619
-Dropped out-of-scope series (Basmati varieties, RahimYarKhan rice): 7418
-Dropped missing price (NA): 3089
+Dropped out-of-scope series (Basmati 385, RahimYarKhan IRRI): 3010
+Dropped missing price (NA): 4282
 Dropped duplicate date/city/crop: 0
-Dropped outliers (price outside 0.7x-1.4x of local median): 24
-   outlier BahawalPur|Cotton 2017-09-26 2905
-   outlier BahawalPur|Cotton 2025-08-25 7200
-   outlier BahawalPur|Rice 2022-10-04 3700
-   outlier BahawalPur|Rice 2023-02-21 11500
-   outlier BahawalPur|Rice 2023-03-24 7500
-   outlier BahawalPur|Rice 2023-04-29 7750
-   outlier BahawalPur|Rice 2023-05-04 7500
-   outlier BahawalPur|Rice 2023-05-08 7750
-   outlier BahawalPur|Rice 2023-06-13 1350
-   outlier BahawalPur|Rice 2023-08-01 1450
-   outlier BahawalPur|Rice 2024-01-30 44000
-   outlier BahawalPur|Rice 2024-04-01 4900
-   outlier BahawalPur|Rice 2024-04-05 5100
-   outlier BahawalPur|Wheat 2024-08-16 67500
-   outlier RahimYarKhan|Cotton 2017-12-18 3275
-   outlier RahimYarKhan|Wheat 2019-05-01 1219
-   outlier RahimYarKhan|Wheat 2021-09-02 2027
-   outlier RahimYarKhan|Wheat 2023-04-12 19844
-   outlier RahimYarKhan|Wheat 2024-05-09 32050
-   outlier Vehari|Cotton 2015-01-19 11375
-   outlier Vehari|Cotton 2025-09-10 6550
-   outlier Vehari|Wheat 2020-01-23 6963
-   outlier Vehari|Wheat 2025-06-01 11875
-   outlier Vehari|Wheat 2026-06-06 15000
+Dropped outliers (price outside 0.7x-1.4x of local median): 47
+   outlier BahawalPur|Cotton|none 2017-09-26 2905
+   outlier BahawalPur|Cotton|none 2025-08-25 7200
+   outlier BahawalPur|Rice|IRRI 2022-10-04 3700
+   outlier BahawalPur|Rice|IRRI 2023-02-21 11500
+   outlier BahawalPur|Rice|IRRI 2023-03-24 7500
+   outlier BahawalPur|Rice|IRRI 2023-04-29 7750
+   outlier BahawalPur|Rice|IRRI 2023-05-04 7500
+   outlier BahawalPur|Rice|IRRI 2023-05-08 7750
+   outlier BahawalPur|Rice|IRRI 2023-06-13 1350
+   outlier BahawalPur|Rice|IRRI 2023-08-01 1450
+   outlier BahawalPur|Rice|IRRI 2024-01-30 44000
+   outlier BahawalPur|Rice|IRRI 2024-04-01 4900
+   outlier BahawalPur|Rice|IRRI 2024-04-05 5100
+   outlier BahawalPur|Rice|SuperBasmati 2019-05-15 18000
+   outlier BahawalPur|Rice|SuperBasmati 2022-10-11 24500
+   outlier BahawalPur|Rice|SuperBasmati 2025-11-04 14500
+   outlier BahawalPur|Rice|SuperBasmati 2025-11-05 14500
+   outlier BahawalPur|Rice|SuperBasmati 2025-11-06 16500
+   outlier BahawalPur|Rice|SuperBasmati 2026-03-02 37500
+   outlier BahawalPur|Wheat|none 2024-08-16 67500
+   outlier RahimYarKhan|Cotton|none 2017-12-18 3275
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-05-31 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-06-01 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-11 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-12 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-13 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-14 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-15 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-07-28 7250
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-08-02 4600
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-08-12 4600
+   outlier RahimYarKhan|Rice|SuperBasmati 2016-08-13 4600
+   outlier RahimYarKhan|Rice|SuperBasmati 2017-06-05 12250
+   outlier RahimYarKhan|Rice|SuperBasmati 2017-06-08 12250
+   outlier RahimYarKhan|Rice|SuperBasmati 2017-06-09 12250
+   outlier RahimYarKhan|Rice|SuperBasmati 2017-06-13 12250
+   outlier RahimYarKhan|Rice|SuperBasmati 2024-03-25 77260
+   outlier RahimYarKhan|Wheat|none 2019-05-01 1219
+   outlier RahimYarKhan|Wheat|none 2021-09-02 2027
+   outlier RahimYarKhan|Wheat|none 2023-04-12 19844
+   outlier RahimYarKhan|Wheat|none 2024-05-09 32050
+   outlier Vehari|Cotton|none 2015-01-19 11375
+   outlier Vehari|Cotton|none 2025-09-10 6550
+   outlier Vehari|Rice|SuperBasmati 2024-03-14 18750
+   outlier Vehari|Wheat|none 2020-01-23 6963
+   outlier Vehari|Wheat|none 2025-06-01 11875
+   outlier Vehari|Wheat|none 2026-06-06 15000
 
-Daily clean rows: 12088 -> D:\FarmSight\data\farmsight_prices_clean_daily.csv
+Daily clean rows: 15280 -> D:\FarmSight\data\farmsight_prices_clean_daily.csv
 
-Weekly rows: 3197 -> D:\FarmSight\data\farmsight_prices_clean_weekly.csv
+Weekly rows: 4120 -> D:\FarmSight\data\farmsight_prices_clean_weekly.csv
 
 Weekly coverage per series:
-  BahawalPur|Cotton          2015-01-05 to 2026-10-05  weeks 614  observed 177  filled 42  still missing 395  longest gap 183w
-  BahawalPur|Rice            2015-01-05 to 2026-10-05  weeks 614  observed 476  filled 38  still missing 100  longest gap 63w
-  BahawalPur|Wheat           2015-01-05 to 2026-10-05  weeks 614  observed 420  filled 59  still missing 135  longest gap 63w
-  RahimYarKhan|Cotton        2015-01-05 to 2026-08-31  weeks 609  observed 304  filled 43  still missing 262  longest gap 33w
-  RahimYarKhan|Wheat         2015-01-05 to 2026-09-28  weeks 613  observed 451  filled 45  still missing 117  longest gap 36w
-  Vehari|Cotton              2014-12-29 to 2026-10-05  weeks 615  observed 401  filled 35  still missing 179  longest gap 22w
-  Vehari|Rice                2014-12-29 to 2026-10-05  weeks 615  observed 265  filled 37  still missing 313  longest gap 136w
-  Vehari|Wheat               2014-12-29 to 2026-07-13  weeks 603  observed 369  filled 35  still missing 199  longest gap 140w
+  BahawalPur|Cotton|none           2015-01-05 to 2026-10-05  weeks 614  observed 177  filled 42  still missing 395  longest gap 183w
+  BahawalPur|Rice|IRRI             2015-01-05 to 2026-10-05  weeks 614  observed 476  filled 38  still missing 100  longest gap 63w
+  BahawalPur|Rice|SuperBasmati     2015-04-27 to 2026-04-06  weeks 572  observed 292  filled 57  still missing 223  longest gap 63w
+  BahawalPur|Wheat|none            2015-01-05 to 2026-10-05  weeks 614  observed 420  filled 59  still missing 135  longest gap 63w
+  RahimYarKhan|Cotton|none         2015-01-05 to 2026-08-31  weeks 609  observed 304  filled 43  still missing 262  longest gap 33w
+  RahimYarKhan|Rice|SuperBasmati   2015-01-05 to 2025-12-01  weeks 570  observed 169  filled 49  still missing 352  longest gap 215w
+  RahimYarKhan|Wheat|none          2015-01-05 to 2026-09-28  weeks 613  observed 451  filled 45  still missing 117  longest gap 36w
+  Vehari|Cotton|none               2014-12-29 to 2026-10-05  weeks 615  observed 401  filled 35  still missing 179  longest gap 22w
+  Vehari|Rice|IRRI                 2014-12-29 to 2026-10-05  weeks 615  observed 265  filled 37  still missing 313  longest gap 136w
+  Vehari|Rice|SuperBasmati         2014-12-29 to 2025-11-17  weeks 569  observed 322  filled 34  still missing 213  longest gap 136w
+  Vehari|Wheat|none                2014-12-29 to 2026-07-13  weeks 603  observed 369  filled 35  still missing 199  longest gap 140w
 
 Final daily price range (Rs per 100kg):
-  BahawalPur|Cotton          n=627  min 5563  median 18000  max 28750
-  BahawalPur|Rice            n=2066  min 2850  median 5750  max 17500
-  BahawalPur|Wheat           n=1693  min 2550  median 5850  max 12250
-  RahimYarKhan|Cotton        n=1217  min 5125  median 14975  max 30375
-  RahimYarKhan|Wheat         n=1839  min 2788  median 5345  max 12232
-  Vehari|Cotton              n=1669  min 4438  median 14500  max 31607
-  Vehari|Rice                n=1341  min 2950  median 9750  max 14000
-  Vehari|Wheat               n=1636  min 2688  median 3316  max 12250
+  BahawalPur|Cotton|none           n=627  min 5563  median 18000  max 28750
+  BahawalPur|Rice|IRRI             n=2066  min 2850  median 5750  max 17500
+  BahawalPur|Rice|SuperBasmati     n=1024  min 6000  median 10250  max 32500
+  BahawalPur|Wheat|none            n=1693  min 2550  median 5850  max 12250
+  RahimYarKhan|Cotton|none         n=1217  min 5125  median 14975  max 30375
+  RahimYarKhan|Rice|SuperBasmati   n=654  min 3800  median 8475  max 31750
+  RahimYarKhan|Wheat|none          n=1839  min 2788  median 5345  max 12232
+  Vehari|Cotton|none               n=1669  min 4438  median 14500  max 31607
+  Vehari|Rice|IRRI                 n=1341  min 2950  median 9750  max 14000
+  Vehari|Rice|SuperBasmati         n=1514  min 6750  median 12750  max 36250
+  Vehari|Wheat|none                n=1636  min 2688  median 3316  max 12250
