@@ -60,6 +60,10 @@ Ask the human before touching any other path.
 - Chat (Owner A): backend/app/chat/ (POST /api/chat); needs FS_LLM_API_KEY; the prompt lives word for word in docs/PROMPTS.md
 - Service layer (Owner C): backend/app/services.py answers web, WhatsApp and chat alike; every price function takes as_of (time machine). API ids are lowercase (wheat, super_basmati, rahim_yar_khan); backend/app/ids.py maps them to the data names
 - Demo login: phone +920000000001 (invented farmer "Ahmed", seeded by backend/app/db.py). The SQLite file is var/farmsight.sqlite (FS_DB_PATH); tests use ":memory:" via the root conftest.py
+- Train the forecast models (Owner B; first: pip install -r ml/forecast/requirements.txt): .venv/Scripts/python -m ml.forecast.train [--quantiles] [--predictions preds.csv] [--save]
+- Model search on the training years (Owner B): .venv/Scripts/python -m ml.forecast.tune
+- Record the baseline fallback after a failed gate run (Owner B): .venv/Scripts/python -m ml.forecast.train --record-fallback
+- Save the direction model to artifacts/models/ (Owner B): .venv/Scripts/python -m ml.forecast.train --save
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

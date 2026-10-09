@@ -229,12 +229,19 @@ def _reason(ur: str, en: str, direction: str = "") -> dict:
     return {"text_ur": ur, "text_en": en, "direction": direction}
 
 
+def _baseline_note() -> dict:
+    return _reason("یہ سادہ اندازہ ہے: ریٹ وہی رہنے کا مان کر، پچھلے برسوں کے اتار چڑھاؤ کی حد",
+                   "This is a simple estimate: no change in price, with the range of past swings")
+
+
 def get_explanation(crop_option: str, mandi: str, as_of: date | None = None) -> list[dict]:
     """Reasons in Urdu and English. From the model's SHAP values once Owner B ships them (B5); until then,
     plain facts from the data: the recent trend, the usual seasonal level, and any stale or frozen price."""
     f = forecast(crop_option, mandi, as_of)
     if f.get("shap"):
-        return [_reason(s["text_ur"], s.get("text_en", s["text_ur"]), s.get("direction", "")) for s in f["shap"][:3]]
+        reasons = [_reason(s["text_ur"], s.get("text_en", s["text_ur"]), s.get("direction", "")) for s in f["shap"][:3]]
+        # The SHAP reasons explain the direction call; the price shown is still the baseline, so say so.
+        return reasons + ([_baseline_note()] if f.get("model_version") == BASELINE_MODEL else [])
     series = f["series"]
     reasons = []
     weeks = [w for w in _upto(_data()["weekly"].get(series, []), as_of)]
@@ -264,8 +271,7 @@ def get_explanation(crop_option: str, mandi: str, as_of: date | None = None) -> 
         reasons.append(_reason(f"آخری ریٹ {f['prices_as_of']} کا ہے، اس لیے اعتماد کم ہے",
                                f"The latest price is from {f['prices_as_of']}, so confidence is low"))
     if f.get("model_version") == BASELINE_MODEL:
-        reasons.append(_reason("یہ سادہ اندازہ ہے: ریٹ وہی رہنے کا مان کر، پچھلے برسوں کے اتار چڑھاؤ کی حد",
-                               "This is a simple estimate: no change in price, with the range of past swings"))
+        reasons.append(_baseline_note())
     return reasons
 
 

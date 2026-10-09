@@ -1,0 +1,85 @@
+{
+  "version": "xgb-20261009",
+  "trained_at": "2026-10-09T19:14:52+00:00",
+  "target": "price_change_4w_pct",
+  "features": [
+    "city_id",
+    "crop_id",
+    "variety_id",
+    "crop_option_id",
+    "price_was_filled",
+    "momentum_1w_pct",
+    "momentum_4w_pct",
+    "momentum_8w_pct",
+    "volatility_4w",
+    "volatility_8w",
+    "price_vs_ma_8w_pct",
+    "month",
+    "week_of_year",
+    "month_sin",
+    "month_cos",
+    "is_sowing",
+    "is_harvest",
+    "tmax_c",
+    "tmin_c",
+    "precip_mm_wk",
+    "rh_pct",
+    "et0_mm_wk",
+    "hot_days_wk",
+    "precip_mm_4w",
+    "tmax_c_4w",
+    "precip_mm_12w"
+  ],
+  "config": {
+    "objective": "reg:absoluteerror",
+    "max_depth": 3,
+    "num_rounds": 100,
+    "drop_frozen": false
+  },
+  "booster": {
+    "eta": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 5,
+    "seed": 42,
+    "nthread": 1
+  },
+  "quantiles": {},
+  "training_rows": 2733,
+  "validation": {
+    "train_rows": 2733,
+    "val_rows": 328,
+    "val_mape_pct": 5.64,
+    "val_persistence_mape_pct": 5.6,
+    "direction": {
+      "Cotton": {
+        "pct": 48.7,
+        "moves": 39
+      },
+      "IRRI": {
+        "pct": 60.8,
+        "moves": 51
+      },
+      "SuperBasmati": {
+        "pct": 46.2,
+        "moves": 13
+      },
+      "Wheat": {
+        "pct": 72.0,
+        "moves": 50
+      },
+      "all": {
+        "pct": 60.1,
+        "moves": 153
+      }
+    }
+  },
+  "direction_accuracy_pct": {
+    "Cotton": 48.7,
+    "IRRI": 60.8,
+    "SuperBasmati": 46.2,
+    "Wheat": 72.0,
+    "all": 60.1
+  },
+  "xgboost_version": "3.2.0"
+}

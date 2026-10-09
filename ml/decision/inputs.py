@@ -1,0 +1,220 @@
+"""Engine inputs read from the offline files, so no rate, cost or price is typed into the engine.
+
+Standard library only (csv, json), so ml/decision/ keeps its no-third-party-imports rule.
+Mandis are accepted by display name ("Rahim Yar Khan") or AMIS name ("RahimYarKhan").
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+from functools import lru_cache
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+PROCESSED = ROOT / "data" / "processed"
+RUNTIME = PROCESSED / "runtime"
+
+
+def _rows(name: str) -> list[dict]:
+    with open(RUNTIME / name, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+@lru_cache(maxsize=1)
+def _mandis() -> list[dict]:
+    return _rows("mandis.csv")
+
+
+def amis_name(mandi: str) -> str:
+    for row in _mandis():
+        if mandi in (row["name"], row["amis_name"]):
+            return row["amis_name"]
+    raise ValueError(f"unknown mandi: {mandi!r}")
+
+
+def display_name(mandi: str) -> str:
+    for row in _mandis():
+        if mandi in (row["name"], row["amis_name"]):
+            return row["name"]
+    raise ValueError(f"unknown mandi: {mandi!r}")
+
+
+@lru_cache(maxsize=1)
+def interest_pct_per_year() -> float:
+    """Holding interest rate (policy rate + 5% spread), from economics_inputs.json."""
+    with open(PROCESSED / "economics_inputs.json", encoding="utf-8") as f:
+        return float(json.load(f)["macro"]["holding_interest_rate_pct_per_year"]["value"])
+
+
+def production_cost_per_40kg(crop_option: str) -> float:
+    """Rs per 40 kg (rice: milled-rice equivalent, matching the AMIS rice price level)."""
+    for row in _rows("crops.csv"):
+        if row["crop_option"] == crop_option:
+            return float(row["production_cost_per_40kg"])
+    raise ValueError(f"unknown crop option: {crop_option!r}")
+
+
+def transport_cost(from_district: str, to_mandi: str) -> float | None:
+    """Rs per 40 kg from the farmer's district to a mandi (an estimate), or None if the district is unknown."""
+    try:
+        district, target = display_name(from_district), amis_name(to_mandi)
+    except ValueError:
+        return None
+    for row in _rows("transport_costs.csv"):
+        if row["from_district"] == district and row["to_mandi"] == target:
+            return float(row["cost_per_40kg"])
+    return None
+
+
+def support_price(crop_option: str, crop_year: int | None = None) -> dict | None:
+    """Latest (or the given crop year's) support price row, or None: only wheat has one, and some years none."""
+    rows = [r for r in _rows("support_prices.csv") if r["crop_option"] == crop_option]
+    if crop_year is not None:
+        rows = [r for r in rows if int(r["year"]) == crop_year]
+    if not rows:
+        return None
+    row = max(rows, key=lambda r: int(r["year"]))
+    return {"price_per_40kg": float(row["price_per_40kg"]), "status": row["status"], "crop_year": row["crop_year"]}
+
+
+def is_stale(crop_option: str, mandi: str) -> bool:
+    """True when the series' latest price is old (series_coverage.csv); unknown series count as stale."""
+    target = amis_name(mandi)
+    for row in _rows("series_coverage.csv"):
+        if row["crop_option"] == crop_option and row["mandi"] == target:
+            return row["is_stale"] == "1"
+    return True
+
+
+def latest_price(crop_option: str, mandi: str) -> tuple[float, str] | None:
+    """(latest AMIS price Rs per 40 kg, its date) from series_coverage.csv, or None if there is no series."""
+    target = amis_name(mandi)
+    for row in _rows("series_coverage.csv"):
+        if row["crop_option"] == crop_option and row["mandi"] == target and row["latest_price_per_40kg"]:
+            return float(row["latest_price_per_40kg"]), row["prices_as_of"]
+    return None
+
+
+def crop_economics(crop_option: str) -> dict:
+    """Cost per acre and the yield in the unit the price is quoted in (rice: paddy x milling yield)."""
+    for row in _rows("crops.csv"):
+        if row["crop_option"] == crop_option:
+            milling = float(row["milling_yield"]) if row["milling_yield"] else None
+            return {
+                "cost_per_acre": float(row["production_cost_per_acre"]),
+                "yield_maund_per_acre": float(row["yield_maund_per_acre"]),
+                "yield_unit": row["yield_unit"],
+                "milling_yield": milling,
+                "yield_is_estimate": milling is not None,  # the 0.65 milling yield is an assumption
+            }
+    raise ValueError(f"unknown crop option: {crop_option!r}")
+
+
+def crop_calendar(crop_option: str) -> dict:
+    for row in _rows("crop_calendar.csv"):
+        if row["crop_option"] == crop_option:
+            return {k: int(row[k]) for k in
+                    ("sowing_start_month", "sowing_end_month", "harvest_start_month", "harvest_end_month")}
+    raise ValueError(f"unknown crop option: {crop_option!r}")
+
+
+def _ratio(row: dict) -> dict:
+    return {
+        "ratio_median": float(row["ratio_median"]),
+        "ratio_min": float(row["ratio_min"]),
+        "ratio_max": float(row["ratio_max"]),
+        "spread_pct": float(row["spread_pct"]),
+        "n_years": int(row["n_years"]),
+        "enough_years": row["enough_years"] == "1",
+    }
+
+
+def harvest_ratio(crop_option: str, mandi: str, ref_month: int) -> dict | None:
+    """Next-harvest price / price in `ref_month` (A6), keyed on the month of the latest price (H-B7)."""
+    target = amis_name(mandi)
+    for row in _rows("harvest_ratios.csv"):
+        if (row["crop_option"] == crop_option and row["mandi"] == target and int(row["ref_month"]) == ref_month
+                and row["ratio_median"]):
+            return {**_ratio(row), "months_ahead": int(row["months_ahead"]), "harvest_months": row["harvest_months"]}
+    return None
+
+
+def post_harvest_ratios(crop_option: str, mandi: str) -> list[dict]:
+    """Price k months after harvest starts / price in the harvest-start month (A6), by offset k."""
+    target = amis_name(mandi)
+    rows = [
+        {**_ratio(r), "offset_months": int(r["offset_months"]), "month": int(r["month"])}
+        for r in _rows("post_harvest_ratios.csv")
+        if r["crop_option"] == crop_option and r["mandi"] == target and r["ratio_median"]
+    ]
+    return sorted(rows, key=lambda r: r["offset_months"])
+
+
+def crop_plan_inputs(mandi: str) -> list[dict]:
+    """Everything crop_plan() needs for every crop option at one mandi, read from the runtime tables."""
+    out = []
+    for crop_option in sorted({r["crop_option"] for r in _rows("crops.csv")}):
+        latest = latest_price(crop_option, mandi)
+        ratio = harvest_ratio(crop_option, mandi, int(latest[1][5:7])) if latest else None
+        out.append({
+            "crop_option": crop_option,
+            "latest_price": latest[0] if latest else None,
+            "prices_as_of": latest[1] if latest else None,
+            "is_stale": is_stale(crop_option, mandi),
+            "harvest_ratio": ratio,
+            **crop_economics(crop_option),
+        })
+    return out
+
+
+MODELS = ROOT / "artifacts" / "models"
+
+
+@lru_cache(maxsize=1)
+def _weekly_observed() -> dict[tuple[str, str], dict[str, float]]:
+    """(crop_option, AMIS mandi) -> {week_start: observed Rs per 40 kg}, forward-filled weeks left out."""
+    options = {(r["amis_crop"], r["amis_variety"]): r["crop_option"] for r in _rows("crops.csv")}
+    out: dict[tuple[str, str], dict[str, float]] = {}
+    with open(PROCESSED / "farmsight_prices_clean_weekly.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            option = options.get((r["crop"], r["variety"]))
+            if option and r["filled"] == "0":
+                out.setdefault((option, r["city"]), {})[r["week_start"]] = float(r["price_rs_per_40kg"])
+    return out
+
+
+def _in_frozen_stretch(crop_option: str, mandi: str, week_start: str) -> bool:
+    for r in _rows("frozen_stretches.csv"):
+        if r["crop_option"] == crop_option and r["mandi"] == mandi and r["from_date"] <= week_start <= r["to_date"]:
+            return True
+    return False
+
+
+def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: str | None) -> dict | None:
+    """Inputs for alert_check() for one crop at one mandi, or None without prices.
+
+    change_4w_pct compares the latest observed weekly price with the observed price exactly 4 weeks earlier
+    (None if that week has no price). The band is the deployed forecast band (artifacts/models/deployed.json).
+    """
+    from datetime import date, timedelta
+
+    target = amis_name(mandi)
+    prices = _weekly_observed().get((crop_option, target))
+    if not prices:
+        return None
+    latest = max(prices)
+    earlier = (date.fromisoformat(latest) - timedelta(weeks=4)).isoformat()
+    band = json.loads((MODELS / "deployed.json").read_text(encoding="utf-8"))["band_change_pct"][crop_option]
+    return {
+        "crop_option": crop_option,
+        "mandi": target,
+        "signal": signal,
+        "previous_signal": previous_signal,
+        "prices_as_of": latest,
+        "change_4w_pct": round((prices[latest] / prices[earlier] - 1) * 100, 2) if earlier in prices else None,
+        "band_q10_pct": band["q10"],
+        "band_q90_pct": band["q90"],
+        "is_frozen": any(_in_frozen_stretch(crop_option, target, week) for week in (latest, earlier)),
+        "is_stale": is_stale(crop_option, mandi),
+    }

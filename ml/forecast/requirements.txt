@@ -1,0 +1,5 @@
+# Model training and prediction (Owner B). Install on top of the backend dev requirements:
+#   .venv/Scripts/python -m pip install -r ml/forecast/requirements.txt
+# The backend and CI do not need these until the real predict.py (B6) lands.
+numpy==2.4.6
+xgboost==3.2.0
