@@ -1,7 +1,8 @@
 {
   "split": "val",
   "rows": 328,
-  "features_csv_sha256": "97b5bed0905536184b49072766caa374434b9d7c3a14bc3d0121457bf440620d",
+  "frozen_rows": 108,
+  "features_csv_sha256": "a0cd64768e73eb5bd21874b69af0cf47b4ef133fd7987d55e4eaf883f3c920fb",
   "train_change_quantiles_pct": {
     "Cotton": {
       "q10": -11.797880000000001,
@@ -218,6 +219,192 @@
           "pinball_loss_pct": null,
           "enough_rows": false
         }
+      },
+      "excluding_frozen": {
+        "pooled": {
+          "n": 220,
+          "mape_pct": 6.65649008069731,
+          "mae_rs": 333.97049999999984,
+          "mase_vs_persistence": 1.0,
+          "directional_accuracy": 0.0,
+          "moves_over_3pct": 121,
+          "band_coverage": null,
+          "band_width_pct": null,
+          "pinball_loss_pct": null,
+          "enough_rows": true
+        },
+        "by_crop_option": {
+          "Cotton": {
+            "n": 72,
+            "mape_pct": 5.385215559709497,
+            "mae_rs": 382.79625000000004,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 39,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "IRRI": {
+            "n": 48,
+            "mape_pct": 9.175084323788264,
+            "mae_rs": 447.5702083333331,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 38,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "SuperBasmati": {
+            "n": 18,
+            "mape_pct": 6.521757623840316,
+            "mae_rs": 572.5127777777777,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 5,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "Wheat": {
+            "n": 82,
+            "mape_pct": 6.3280074717483075,
+            "mae_rs": 172.23878048780477,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 39,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          }
+        },
+        "by_series": {
+          "BahawalPur|Cotton|none": {
+            "n": 20,
+            "mape_pct": 2.362090119271417,
+            "mae_rs": 177.65,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 6,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|IRRI": {
+            "n": 48,
+            "mape_pct": 9.175084323788264,
+            "mae_rs": 447.5702083333331,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 38,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|SuperBasmati": {
+            "n": 6,
+            "mape_pct": 15.165667507587884,
+            "mae_rs": 1233.3333333333333,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 2,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "BahawalPur|Wheat|none": {
+            "n": 29,
+            "mape_pct": 8.684830337829663,
+            "mae_rs": 246.98862068965514,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 15,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Cotton|none": {
+            "n": 25,
+            "mape_pct": 5.023458331151479,
+            "mae_rs": 369.13559999999984,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 14,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Rice|SuperBasmati": {
+            "n": 11,
+            "mape_pct": 2.0478798040333333,
+            "mae_rs": 225.15090909090907,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 2,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "RahimYarKhan|Wheat|none": {
+            "n": 38,
+            "mape_pct": 5.5610730943693625,
+            "mae_rs": 149.5105263157894,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 14,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "Vehari|Cotton|none": {
+            "n": 27,
+            "mape_pct": 7.959528134624759,
+            "mae_rs": 547.4051851851852,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 19,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "Vehari|Rice|SuperBasmati": {
+            "n": 1,
+            "mape_pct": 3.8709543392316954,
+            "mae_rs": 428.5699999999997,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 1,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "Vehari|Wheat|none": {
+            "n": 15,
+            "mape_pct": 3.7143836866843674,
+            "mae_rs": 85.30066666666669,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 10,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          }
+        }
       }
     },
     "persistence_band": {
@@ -417,6 +604,192 @@
           "pinball_loss_pct": 0.8076217154371416,
           "enough_rows": false
         }
+      },
+      "excluding_frozen": {
+        "pooled": {
+          "n": 220,
+          "mape_pct": 6.65649008069731,
+          "mae_rs": 333.97049999999984,
+          "mase_vs_persistence": 1.0,
+          "directional_accuracy": 0.0,
+          "moves_over_3pct": 121,
+          "band_coverage": 0.7863636363636364,
+          "band_width_pct": 16.95924690909086,
+          "pinball_loss_pct": 2.129186308180988,
+          "enough_rows": true
+        },
+        "by_crop_option": {
+          "Cotton": {
+            "n": 72,
+            "mape_pct": 5.385215559709497,
+            "mae_rs": 382.79625000000004,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 39,
+            "band_coverage": 0.9444444444444444,
+            "band_width_pct": 24.58039999999998,
+            "pinball_loss_pct": 1.4319681286590553,
+            "enough_rows": true
+          },
+          "IRRI": {
+            "n": 48,
+            "mape_pct": 9.175084323788264,
+            "mae_rs": 447.5702083333331,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 38,
+            "band_coverage": 0.6041666666666666,
+            "band_width_pct": 16.035200000000007,
+            "pinball_loss_pct": 2.66120758602638,
+            "enough_rows": true
+          },
+          "SuperBasmati": {
+            "n": 18,
+            "mape_pct": 6.521757623840316,
+            "mae_rs": 572.5127777777777,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 5,
+            "band_coverage": 0.8333333333333334,
+            "band_width_pct": 10.802360000000022,
+            "pinball_loss_pct": 2.2784269426713974,
+            "enough_rows": false
+          },
+          "Wheat": {
+            "n": 82,
+            "mape_pct": 6.3280074717483075,
+            "mae_rs": 172.23878048780477,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 39,
+            "band_coverage": 0.7439024390243902,
+            "band_width_pct": 12.159920000000021,
+            "pinball_loss_pct": 2.3971906516953023,
+            "enough_rows": true
+          }
+        },
+        "by_series": {
+          "BahawalPur|Cotton|none": {
+            "n": 20,
+            "mape_pct": 2.362090119271417,
+            "mae_rs": 177.65,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 6,
+            "band_coverage": 1.0,
+            "band_width_pct": 24.580399999999994,
+            "pinball_loss_pct": 1.22902,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|IRRI": {
+            "n": 48,
+            "mape_pct": 9.175084323788264,
+            "mae_rs": 447.5702083333331,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 38,
+            "band_coverage": 0.6041666666666666,
+            "band_width_pct": 16.035200000000007,
+            "pinball_loss_pct": 2.66120758602638,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|SuperBasmati": {
+            "n": 6,
+            "mape_pct": 15.165667507587884,
+            "mae_rs": 1233.3333333333333,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 2,
+            "band_coverage": 0.6666666666666666,
+            "band_width_pct": 10.802360000000027,
+            "pinball_loss_pct": 5.6213125606262,
+            "enough_rows": false
+          },
+          "BahawalPur|Wheat|none": {
+            "n": 29,
+            "mape_pct": 8.684830337829663,
+            "mae_rs": 246.98862068965514,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 15,
+            "band_coverage": 0.6551724137931034,
+            "band_width_pct": 12.159919999999998,
+            "pinball_loss_pct": 3.5736121715108062,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Cotton|none": {
+            "n": 25,
+            "mape_pct": 5.023458331151479,
+            "mae_rs": 369.13559999999984,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 14,
+            "band_coverage": 0.96,
+            "band_width_pct": 24.5804,
+            "pinball_loss_pct": 1.268450538637219,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Rice|SuperBasmati": {
+            "n": 11,
+            "mape_pct": 2.0478798040333333,
+            "mae_rs": 225.15090909090907,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 2,
+            "band_coverage": 0.9090909090909091,
+            "band_width_pct": 10.802360000000022,
+            "pinball_loss_pct": 0.6130628731207238,
+            "enough_rows": false
+          },
+          "RahimYarKhan|Wheat|none": {
+            "n": 38,
+            "mape_pct": 5.5610730943693625,
+            "mae_rs": 149.5105263157894,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 14,
+            "band_coverage": 0.7631578947368421,
+            "band_width_pct": 12.159920000000003,
+            "pinball_loss_pct": 2.126856703516944,
+            "enough_rows": true
+          },
+          "Vehari|Cotton|none": {
+            "n": 27,
+            "mape_pct": 7.959528134624759,
+            "mae_rs": 547.4051851851852,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 19,
+            "band_coverage": 0.8888888888888888,
+            "band_width_pct": 24.580399999999987,
+            "pinball_loss_pct": 1.7337052517600535,
+            "enough_rows": true
+          },
+          "Vehari|Rice|SuperBasmati": {
+            "n": 1,
+            "mape_pct": 3.8709543392316954,
+            "mae_rs": 428.5699999999997,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 1,
+            "band_coverage": 1.0,
+            "band_width_pct": 10.802360000000013,
+            "pinball_loss_pct": 0.5401180000000007,
+            "enough_rows": false
+          },
+          "Vehari|Wheat|none": {
+            "n": 15,
+            "mape_pct": 3.7143836866843674,
+            "mae_rs": 85.30066666666669,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 10,
+            "band_coverage": 0.8666666666666667,
+            "band_width_pct": 12.159920000000003,
+            "pinball_loss_pct": 0.8076217154371416,
+            "enough_rows": false
+          }
+        }
       }
     },
     "seasonal_naive": {
@@ -615,6 +988,192 @@
           "band_width_pct": null,
           "pinball_loss_pct": null,
           "enough_rows": false
+        }
+      },
+      "excluding_frozen": {
+        "pooled": {
+          "n": 220,
+          "mape_pct": 9.024492701632306,
+          "mae_rs": 439.06888250543057,
+          "mase_vs_persistence": 1.3146936106794787,
+          "directional_accuracy": 0.36363636363636365,
+          "moves_over_3pct": 121,
+          "band_coverage": null,
+          "band_width_pct": null,
+          "pinball_loss_pct": null,
+          "enough_rows": true
+        },
+        "by_crop_option": {
+          "Cotton": {
+            "n": 72,
+            "mape_pct": 6.967157337906317,
+            "mae_rs": 495.69865530764673,
+            "mase_vs_persistence": 1.2949412521874148,
+            "directional_accuracy": 0.46153846153846156,
+            "moves_over_3pct": 39,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "IRRI": {
+            "n": 48,
+            "mape_pct": 12.26193567385245,
+            "mae_rs": 597.124183073851,
+            "mase_vs_persistence": 1.334146401963233,
+            "directional_accuracy": 0.42105263157894735,
+            "moves_over_3pct": 38,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "SuperBasmati": {
+            "n": 18,
+            "mape_pct": 7.440791075579991,
+            "mae_rs": 686.9581513902522,
+            "mase_vs_persistence": 1.1999001211059375,
+            "directional_accuracy": 0.6,
+            "moves_over_3pct": 5,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "Wheat": {
+            "n": 82,
+            "mape_pct": 9.283486760054814,
+            "mae_rs": 242.41028605457018,
+            "mase_vs_persistence": 1.4074082815033275,
+            "directional_accuracy": 0.1794871794871795,
+            "moves_over_3pct": 39,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          }
+        },
+        "by_series": {
+          "BahawalPur|Cotton|none": {
+            "n": 20,
+            "mape_pct": 3.159780157536845,
+            "mae_rs": 239.2370130954319,
+            "mase_vs_persistence": 1.3466761221245815,
+            "directional_accuracy": 0.6666666666666666,
+            "moves_over_3pct": 6,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|IRRI": {
+            "n": 48,
+            "mape_pct": 12.26193567385245,
+            "mae_rs": 597.124183073851,
+            "mase_vs_persistence": 1.334146401963233,
+            "directional_accuracy": 0.42105263157894735,
+            "moves_over_3pct": 38,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "BahawalPur|Rice|SuperBasmati": {
+            "n": 6,
+            "mape_pct": 14.352439973048874,
+            "mae_rs": 1206.060606060606,
+            "mase_vs_persistence": 0.9778869778869779,
+            "directional_accuracy": 0.5,
+            "moves_over_3pct": 2,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "BahawalPur|Wheat|none": {
+            "n": 29,
+            "mape_pct": 11.236772252732328,
+            "mae_rs": 310.6822942005501,
+            "mase_vs_persistence": 1.2578810041249917,
+            "directional_accuracy": 0.26666666666666666,
+            "moves_over_3pct": 15,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Cotton|none": {
+            "n": 25,
+            "mape_pct": 6.608733033091393,
+            "mae_rs": 481.8015095016077,
+            "mase_vs_persistence": 1.3052155075305876,
+            "directional_accuracy": 0.42857142857142855,
+            "moves_over_3pct": 14,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "RahimYarKhan|Rice|SuperBasmati": {
+            "n": 11,
+            "mape_pct": 3.99533138026499,
+            "mae_rs": 427.3011898782639,
+            "mase_vs_persistence": 1.897843502402794,
+            "directional_accuracy": 1.0,
+            "moves_over_3pct": 2,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "RahimYarKhan|Wheat|none": {
+            "n": 38,
+            "mape_pct": 6.591442083254636,
+            "mae_rs": 174.4617507619853,
+            "mase_vs_persistence": 1.1668860719110508,
+            "directional_accuracy": 0.14285714285714285,
+            "moves_over_3pct": 14,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "Vehari|Cotton|none": {
+            "n": 27,
+            "mape_pct": 10.119311087082705,
+            "mae_rs": 698.5379697296938,
+            "mase_vs_persistence": 1.2760894281507051,
+            "directional_accuracy": 0.42105263157894735,
+            "moves_over_3pct": 19,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": true
+          },
+          "Vehari|Rice|SuperBasmati": {
+            "n": 1,
+            "mape_pct": 3.8709543392316954,
+            "mae_rs": 428.5699999999997,
+            "mase_vs_persistence": 1.0,
+            "directional_accuracy": 0.0,
+            "moves_over_3pct": 1,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          },
+          "Vehari|Wheat|none": {
+            "n": 15,
+            "mape_pct": 12.326981322105409,
+            "mae_rs": 282.55402638022423,
+            "mase_vs_persistence": 3.3124480431597743,
+            "directional_accuracy": 0.1,
+            "moves_over_3pct": 10,
+            "band_coverage": null,
+            "band_width_pct": null,
+            "pinball_loss_pct": null,
+            "enough_rows": false
+          }
         }
       }
     }

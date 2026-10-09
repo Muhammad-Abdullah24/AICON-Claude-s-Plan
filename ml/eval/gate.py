@@ -176,13 +176,20 @@ def score(rows: list[dict], preds: dict[tuple, dict], naive: dict[tuple, dict]) 
     }
 
 
+def is_frozen(r: dict) -> bool:
+    """The row's current or target week sits in a frozen AMIS stretch (task A12)."""
+    return r.get("price_is_frozen", "0") == "1" or r.get("target_is_frozen", "0") == "1"
+
+
 def verdict(model: dict, baseline: dict) -> dict:
     """PASS only if the model's pooled MAPE beats persistence's on the same rows (NFR-01)."""
     m, b = model["pooled"], baseline["pooled"]
     crops_beaten = {k: v["mape_pct"] < baseline["by_crop_option"][k]["mape_pct"]
                     for k, v in model["by_crop_option"].items()}
+    mx, bx = model["excluding_frozen"]["pooled"], baseline["excluding_frozen"]["pooled"]
     return {
         "passes_nfr01": m["mape_pct"] < b["mape_pct"],
+        "passes_excluding_frozen": mx["mape_pct"] < bx["mape_pct"] if mx["n"] else None,
         "model_mape_pct": m["mape_pct"],
         "persistence_mape_pct": b["mape_pct"],
         "mape_improvement_pct_points": b["mape_pct"] - m["mape_pct"],
@@ -217,10 +224,13 @@ def build_report(split: str = "val", predictions: dict | None = None, model_name
             raise ValueError(f"{len(missing)} {split} rows have no prediction, e.g. {missing[:3]}")
         models[model_name or "model"] = (predictions, "Owner B model")
 
-    scored = {name: {"description": desc, **score(target, p, naive)} for name, (p, desc) in models.items()}
+    live = [r for r in target if not is_frozen(r)]
+    scored = {name: {"description": desc, **score(target, p, naive), "excluding_frozen": score(live, p, naive)}
+              for name, (p, desc) in models.items()}
     report = {
         "split": split,
         "rows": len(target),
+        "frozen_rows": len(target) - len(live),
         "features_csv_sha256": features_sha or file_sha256(FEATURES_PATH),
         "train_change_quantiles_pct": {k: {"q10": v[0], "q90": v[1]} for k, v in band.items()},
         "models": scored,
@@ -249,6 +259,13 @@ def to_markdown(report: dict) -> str:
         lines.append(f"| {name} | {_fmt(p['mape_pct'])} | {_fmt(p['mase_vs_persistence'])} | "
                      f"{_fmt(p['directional_accuracy'], pct=True)} | {_fmt(p['band_coverage'], pct=True)} | "
                      f"{_fmt(p['band_width_pct'], digits=1)} |")
+    lines += ["", f"## Pooled, excluding frozen weeks ({report['frozen_rows']} of {report['rows']} rows touch a "
+              "frozen AMIS price and are left out here)", "",
+              "| Model | MAPE % | MASE | Direction (moves > 3%) | Band coverage |", "|---|---|---|---|---|"]
+    for name, m in report["models"].items():
+        p = m["excluding_frozen"]["pooled"]
+        lines.append(f"| {name} | {_fmt(p.get('mape_pct'))} | {_fmt(p.get('mase_vs_persistence'))} | "
+                     f"{_fmt(p.get('directional_accuracy'), pct=True)} | {_fmt(p.get('band_coverage'), pct=True)} |")
     lines += ["", "## MAPE % by crop option", "",
               "| Crop | Rows | " + " | ".join(report["models"]) + " |",
               "|---|---|" + "---|" * len(report["models"])]
@@ -261,7 +278,8 @@ def to_markdown(report: dict) -> str:
         v = report["verdict"]
         lines += ["", "## Verdict (NFR-01)", "",
                   f"**{'PASS' if v['passes_nfr01'] else 'FAIL'}**: model MAPE {_fmt(v['model_mape_pct'])}% vs "
-                  f"persistence {_fmt(v['persistence_mape_pct'])}%.", "", v["rule"]]
+                  f"persistence {_fmt(v['persistence_mape_pct'])}%. Excluding frozen weeks: "
+                  f"{_fmt(v['passes_excluding_frozen'])}.", "", v["rule"]]
     lines += ["", "Persistence scores 0% on direction by definition: it never predicts a move."]
     lines += ["", "Limits: a backtest on historical AMIS prices, not a field trial. Series with fewer than "
               f"{MIN_ROWS_FOR_A_VERDICT} rows are shown but not judged."]

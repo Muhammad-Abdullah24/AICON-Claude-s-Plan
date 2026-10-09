@@ -151,9 +151,10 @@ Frozen weeks make "price stays the same" look more accurate than it is, which is
 baseline is hard to beat, and they put fake zero-change weeks into training. Two Bahawalpur wheat test rows
 (31 Aug and 7 Sep 2026, "+10.7%") are artifacts of the 2026 freeze.
 
-**Proposed fix (task A12, to confirm at a check-in, because it changes `features.csv` under Owner B):** flag
+**Fix (done in task A12):** flag
 frozen stretches in the clean data (`is_frozen`), carry the flag into `features.csv`, and have the gate report
-metrics with and without frozen rows. Do not silently drop them.
+metrics with and without frozen rows. Do not silently drop them. Result: persistence MAPE on validation
+is 5.60% on all rows and 6.66% with frozen rows excluded.
 
 ### 3. Backup demo weeks (honest replay)
 

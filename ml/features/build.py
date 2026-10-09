@@ -18,6 +18,7 @@ from ml.features.core import (
     price_features_at,
     weather_features_from_weeks,
 )
+from ml.ingest.frozen import load_daily, week_flags
 
 ROOT = Path(__file__).resolve().parents[2]
 PROCESSED = ROOT / "data" / "processed"
@@ -38,6 +39,9 @@ COLUMNS = [
     "target_week", "price_next_4w", "price_change_4w_pct", "direction",
     "hold_cost_pct_4w", "net_gain_pct_4w", "action", "baseline_pred_persistence",
     "is_synthetic", "data_source", "split",
+    # Evaluation-only flags (task A12). They need days after the week to spot a 28-day freeze, so they are
+    # NOT model inputs. Appended last so earlier column positions never change.
+    "price_is_frozen", "target_is_frozen",
 ]
 
 
@@ -74,7 +78,8 @@ def _split(row_week: str, target_week: str) -> str | None:
     return None  # the 4-week window crosses a split boundary: dropped so nothing leaks
 
 
-def series_rows(key: tuple[str, str, str], weeks: list[dict], weather_weeks: dict, stats: dict) -> list[dict]:
+def series_rows(key: tuple[str, str, str], weeks: list[dict], weather_weeks: dict, stats: dict,
+                frozen=lambda monday: 0) -> list[dict]:
     city, crop, variety = key
     weeks = sorted(weeks, key=lambda w: w["week_start"])
     by_week = {w["week_start"]: w for w in weeks}
@@ -121,17 +126,21 @@ def series_rows(key: tuple[str, str, str], weeks: list[dict], weather_weeks: dic
                        else "SELL" if change < cfg.SELL_DROP_PCT else "HOLD"),
             "baseline_pred_persistence": price,
             "is_synthetic": 0, "data_source": "real", "split": split,
+            "price_is_frozen": frozen(g["week_start"]), "target_is_frozen": frozen(grid[t]["week_start"]),
         })
     return rows
 
 
-def build_rows(weekly: dict | None = None, weather: dict | None = None) -> tuple[list[dict], dict]:
+def build_rows(weekly: dict | None = None, weather: dict | None = None,
+               daily: dict | None = None) -> tuple[list[dict], dict]:
     weekly = load_weekly() if weekly is None else weekly
     weather = load_weather() if weather is None else weather
+    daily = load_daily() if daily is None else daily
     stats = {"no_price": 0, "no_target": 0, "boundary": 0}
     rows: list[dict] = []
     for key in sorted(weekly, key=lambda k: "|".join(k)):
-        rows.extend(series_rows(key, weekly[key], weather.get(key[0], {}), stats))
+        flags = week_flags(daily.get("|".join(key), []))
+        rows.extend(series_rows(key, weekly[key], weather.get(key[0], {}), stats, flags))
     return rows, stats
 
 

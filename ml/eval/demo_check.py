@@ -6,36 +6,12 @@ Findings are written up in docs/DATA_NOTES.md, section "A7".
 
 import argparse
 import csv
-from collections.abc import Iterable
 from pathlib import Path
 
+from ml.ingest.frozen import FROZEN_MIN_DAYS, frozen_stretches, load_daily
+
 ROOT = Path(__file__).resolve().parents[2]
-DAILY_PATH = ROOT / "data" / "processed" / "farmsight_prices_clean_daily.csv"
 FEATURES_PATH = ROOT / "data" / "processed" / "features.csv"
-FROZEN_MIN_DAYS = 28   # the same daily price for at least this many reported days in a row
-
-
-def frozen_stretches(prices: Iterable[tuple[str, float]], min_days: int = FROZEN_MIN_DAYS) -> list[dict]:
-    """Runs of an identical reported price, from (date, price) pairs in date order."""
-    runs, current = [], []
-    for d, p in prices:
-        if current and p != current[-1][1]:
-            if len(current) >= min_days:
-                runs.append({"from": current[0][0], "to": current[-1][0], "days": len(current), "price": current[0][1]})
-            current = []
-        current.append((d, p))
-    if len(current) >= min_days:
-        runs.append({"from": current[0][0], "to": current[-1][0], "days": len(current), "price": current[0][1]})
-    return runs
-
-
-def load_daily() -> dict[str, list[tuple[str, float]]]:
-    series: dict[str, list[tuple[str, float]]] = {}
-    with DAILY_PATH.open(encoding="utf-8", newline="") as f:
-        for r in csv.DictReader(f):
-            series.setdefault(f"{r['city']}|{r['crop']}|{r['variety']}", []).append(
-                (r["date"], float(r["price_rs_per_40kg"])))
-    return {k: sorted(v) for k, v in sorted(series.items())}
 
 
 def biggest_moves(series: str, n: int = 3) -> dict[str, list[dict]]:

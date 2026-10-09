@@ -77,3 +77,12 @@ def test_test_split_needs_final(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["gate", "--split", "test"])
     with pytest.raises(SystemExit, match="used once"):
         gate.main()
+
+
+def test_frozen_rows_are_reported_separately(rows):
+    report = gate.build_report("val", rows=rows, features_sha="x")
+    assert 0 < report["frozen_rows"] < report["rows"]
+    live = report["models"]["persistence"]["excluding_frozen"]["pooled"]
+    assert live["n"] == report["rows"] - report["frozen_rows"]
+    # Frozen weeks make "no change" look better, so persistence does worse without them.
+    assert live["mape_pct"] > report["models"]["persistence"]["pooled"]["mape_pct"]

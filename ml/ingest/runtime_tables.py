@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 from ml.features import config as fcfg
+from ml.ingest.frozen import FROZEN_MIN_DAYS, frozen_stretches, load_daily
 
 ROOT = Path(__file__).resolve().parents[2]
 PROCESSED = ROOT / "data" / "processed"
@@ -241,6 +242,25 @@ def data_sources_table(econ: dict, snapshot: date) -> list[dict]:
     ]
 
 
+def frozen_table() -> list[dict]:
+    rows = []
+    for series, daily in load_daily().items():
+        city, crop, variety = series.split("|")
+        for s in frozen_stretches(daily):
+            rows.append({
+                "series": series,
+                "mandi": city,
+                "crop_option": fcfg.CROP_OPTION[(crop, variety)],
+                "from_date": s["from"],
+                "to_date": s["to"],
+                "reported_days": s["days"],
+                "price_per_40kg": s["price"],
+                "source": f"derived from AMIS daily prices: the same price on at least {FROZEN_MIN_DAYS} "
+                          "reported days in a row (ml/ingest/frozen.py); likely stale reporting",
+            })
+    return rows
+
+
 def build_all() -> dict[str, list[dict]]:
     econ = json.loads(ECON_PATH.read_text(encoding="utf-8"))
     coverage, snapshot = series_coverage_table()
@@ -251,6 +271,7 @@ def build_all() -> dict[str, list[dict]]:
         "support_prices.csv": support_prices_table(econ),
         "transport_costs.csv": transport_table(econ),
         "series_coverage.csv": coverage,
+        "frozen_stretches.csv": frozen_table(),
         "data_sources.csv": data_sources_table(econ, snapshot),
     }
 
