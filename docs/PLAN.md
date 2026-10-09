@@ -133,7 +133,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [ ] **A4** (S) README data acknowledgements and AMIS terms of use (blueprint decision 22). Send the lines to C.
 
 **B · Usman**
-- [ ] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
+- [x] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
 - [ ] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
 - [ ] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
 
