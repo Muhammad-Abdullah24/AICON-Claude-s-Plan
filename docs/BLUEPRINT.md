@@ -820,7 +820,7 @@ Coverage of the real series (2015 – Oct 2026): Wheat and Cotton at all three m
 | `price_per_40kg` | DECIMAL(10,2) | NOT NULL | Rs |
 | `status` | ENUM(SupportStatus) | NOT NULL | The 2023-24 crop (spring 2024 harvest) was announced at 3,900 but not procured |
 
-Wheat only (rice and cotton have no support price). Verified values, by crop year (harvest the following spring): 2020-21 Rs 1,800; 2021-22 Rs 2,200; 2023-24 Rs 3,900 announced, not procured (spring 2024); 2025-26 Rs 3,500, indicative (spring 2026). The 2024-25 crop (spring 2025) had no support price (IMF-linked deregulation). 2022-23 sources conflict and 2026-27 is not yet announced, so those are left out. Generated as `data/processed/runtime/support_prices.csv`.
+Wheat only (rice and cotton have no support price). Verified values, by crop year (harvest the following spring), from the AMIS official support-price table (http://www.amis.pk/Agristatistics/SupportPrice/wheat/wheat.html) plus news for 2025-26: 2020-21 Rs 1,800; 2021-22 Rs 2,200; 2022-23 Rs 3,900; 2023-24 Rs 3,900 announced, not procured (spring 2024); 2025-26 Rs 3,500, indicative (spring 2026). The 2024-25 crop (spring 2025) had no support price (IMF-linked deregulation; AMIS shows "-"). 2026-27 is not yet announced. Generated as `data/processed/runtime/support_prices.csv`.
 
 ### Entity: `transport_costs` [offline]
 

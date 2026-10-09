@@ -171,3 +171,48 @@ same way at the other mandis, so they are real moves, not reporting artifacts.
 - Validation weeks are held out from training but used for tuning, so say "held-out week", not "unseen test".
 - Avoid 2026-08-31 and 2026-09-07 (frozen-price artifacts).
 - The spring 2024 crash (4,825 → 3,432, −28.9% from 18 Mar 2024) is good **story** for the problem slide, labelled as history, not as a model result.
+
+---
+
+## A4: dataset acknowledgements and terms of use (9 Oct 2026, Owner A)
+
+### Terms we found
+
+- **AMIS (amis.pk)** publishes no terms of use and no open licence. The only statement is the site footer:
+  "Copyright © 2006-2026 Agriculture Marketing Information Service (AMIS), Directorate of Agriculture (Economics
+  & Marketing) Punjab. All rights reserved." There is no `robots.txt` (404), so no crawling rule is declared.
+  We collected the data from the public report pages at about 1.5 s between requests (142 monthly exports).
+  Because of "All rights reserved", we credit AMIS everywhere, keep the raw exports out of git, and use the data
+  only for this non-commercial demo. **Open question for the team:** the repo is public and holds cleaned
+  AMIS-derived series in `data/processed/`. Options: keep them with the credit below (common practice, not a
+  licence); ask the organisers; or ask AMIS for permission.
+- **Open-Meteo**: API data are under **CC BY 4.0**. The free API is for non-commercial use only (under 10,000
+  calls a day). The licence asks for a link wherever the data is shown, e.g. "Weather data by Open-Meteo.com"
+  linking to https://open-meteo.com/ (https://open-meteo.com/en/licence, https://open-meteo.com/en/terms).
+- **Agriculture Policy Institute** policy analyses are Government of Pakistan publications with no licence
+  stated. We quote figures with citations.
+- **`procurement_prices_punjab.csv`** matches the AMIS official wheat support-price table
+  (http://www.amis.pk/Agristatistics/SupportPrice/wheat/wheat.html) for every year 2011-12 to 2020-21. That
+  table also gave us 2021-22 (Rs 2,200), 2022-23 (Rs 3,900) and 2024-25 ("-", none), now in
+  `economics_inputs.json` and `runtime/support_prices.csv`.
+
+### Ready-to-paste README rows (for Abd, README "Acknowledgements and disclosures > Data")
+
+| Dataset | Source | Licence / terms | Downloaded |
+|---|---|---|---|
+| AMIS Punjab daily mandi prices: wheat, IRRI and Super Basmati rice, seed cotton (phutti) at Bahawalpur, Vehari and Rahim Yar Khan, Jan 2015 to Oct 2026 | http://www.amis.pk (Year-Month report, CSV export) | No licence or terms published; site states "Copyright © 2006-2026 AMIS, Directorate of Agriculture (Economics & Marketing) Punjab. All rights reserved." Used with credit for a non-commercial demo; raw exports not redistributed; cleaned series in `data/processed/` | 9 Oct 2026 |
+| AMIS wheat support-price table | http://www.amis.pk/Agristatistics/SupportPrice/wheat/wheat.html | As above | 9 Oct 2026 |
+| Open-Meteo weather: daily history 2015 to Oct 2026, and the live forecast API | https://open-meteo.com | CC BY 4.0 (https://open-meteo.com/en/licence); free API for non-commercial use; "Weather data by Open-Meteo.com" shown with a link wherever weather is displayed | 9 Oct 2026 (history); live at request time |
+| Agriculture Policy Institute policy analyses (wheat 2023-24, rice paddy 2022-23, cotton 2022-23): cost of production and yields | https://api.gov.pk/Policies | Government of Pakistan publications; no licence stated; figures quoted with citations | 9 Oct 2026 |
+| Economics inputs: support prices, SBP policy rate, CPI, diesel, USD/PKR, fertilizer prices, transport and storage assumptions | Every value's own source is in `data/processed/economics_inputs.json` (AMIS, SBP, MNFSR Fertilizer Review, Dawn, Express Tribune, Business Recorder, Profit, Radio Pakistan, The News, ARY News, USDA FAS, Al Jazeera and others) | Official publications and news reports, cited per value; assumptions labelled | 9 Oct 2026 |
+
+Tools used for the data, outside this repo: Node.js scripts (built-in `http`) to download the AMIS exports;
+the `pdf-parse` npm package to extract text from the cost-of-production PDFs. Everything in `ml/` is Python
+standard library only.
+
+### Disclosure to check (for Hamza and Abd)
+
+The README's "Pre-existing work" currently says the AMIS data was collected "with scripts written before the
+event". In fact the scraping scripts were written and run on **9 Oct 2026**, with Claude Code's help, and are
+kept outside the repo. Whether that counts as "before the event" depends on when the build period officially
+started. Fix the wording to match the facts before submitting.

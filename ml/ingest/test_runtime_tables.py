@@ -63,7 +63,8 @@ def test_support_prices_only_list_known_years(tables):
     assert rows["2023-24"]["status"] == "ANNOUNCED_NOT_PROCURED"
     assert rows["2023-24"]["harvest"] == "spring 2024"
     assert rows["2025-26"]["price_per_40kg"] == 3500
-    assert "2022-23" not in rows and "2024-25" not in rows and "2026-27" not in rows
+    assert rows["2022-23"]["price_per_40kg"] == 3900          # AMIS official table
+    assert "2024-25" not in rows and "2026-27" not in rows    # no support price / not announced
 
 
 def test_csv_files_read_back(tables):
