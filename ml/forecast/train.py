@@ -36,6 +36,9 @@ from ml.features import FEATURE_COLUMNS
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES_PATH = ROOT / "data" / "processed" / "features.csv"
 MODELS_DIR = ROOT / "artifacts" / "models"
+DEPLOYED_PATH = MODELS_DIR / "deployed.json"
+GATE_REPORT = ROOT / "ml" / "eval" / "report.json"
+BASELINES = {"persistence", "persistence_band", "seasonal_naive"}
 
 TARGET = "price_change_4w_pct"
 SEED = 42
@@ -47,9 +50,15 @@ LEVEL_COLUMNS = {
 }
 MODEL_FEATURES = [c for c in FEATURE_COLUMNS if c not in LEVEL_COLUMNS]
 
-# First-draft settings, deliberately small for about 2,700 training rows. Tune in B4.
-PARAMS = {
-    "max_depth": 4,
+# Model settings. Chosen by ml/forecast/tune.py on the training years only; see docs/MODEL_CARD.md.
+CONFIG = {
+    "objective": "reg:absoluteerror",
+    "max_depth": 3,
+    "num_rounds": 100,
+    "drop_frozen": False,  # leave out rows whose price or target week is a frozen AMIS price (H-B8)
+}
+# Fixed booster settings, small for about 2,700 training rows.
+BOOSTER = {
     "eta": 0.05,
     "subsample": 0.8,
     "colsample_bytree": 0.8,
@@ -57,7 +66,6 @@ PARAMS = {
     "seed": SEED,
     "nthread": 1,  # one thread keeps results reproducible across machines
 }
-NUM_ROUNDS = 300
 QUANTILES = {"q10": 0.10, "q90": 0.90}
 
 
@@ -84,15 +92,23 @@ def target(rows: list[dict]) -> np.ndarray:
     return np.array([float(r[TARGET]) for r in rows], dtype=float)
 
 
-def fit(rows: list[dict], quantile: float | None = None) -> xgb.Booster:
-    """Point model (squared error) or, with `quantile`, a quantile model of the 4-week % change."""
-    params = dict(PARAMS)
+def is_frozen(r: dict) -> bool:
+    return r.get("price_is_frozen") == "1" or r.get("target_is_frozen") == "1"
+
+
+def training_rows(rows: list[dict], config: dict = CONFIG) -> list[dict]:
+    return [r for r in rows if not is_frozen(r)] if config["drop_frozen"] else rows
+
+
+def fit(rows: list[dict], quantile: float | None = None, config: dict = CONFIG) -> xgb.Booster:
+    """Point model with config["objective"] or, with `quantile`, a quantile model of the 4-week % change."""
+    params = {**BOOSTER, "max_depth": config["max_depth"]}
     if quantile is None:
-        params["objective"] = "reg:squarederror"
+        params["objective"] = config["objective"]
     else:
         params.update(objective="reg:quantileerror", quantile_alpha=quantile)
     data = xgb.DMatrix(matrix(rows), label=target(rows), feature_names=MODEL_FEATURES)
-    return xgb.train(params, data, num_boost_round=NUM_ROUNDS)
+    return xgb.train(params, data, num_boost_round=config["num_rounds"])
 
 
 def predict_change(model: xgb.Booster, rows: list[dict]) -> np.ndarray:
@@ -132,8 +148,8 @@ def save(models: dict[str, xgb.Booster], scores: dict) -> None:
         "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "target": TARGET,
         "features": MODEL_FEATURES,
-        "params": PARAMS,
-        "num_rounds": NUM_ROUNDS,
+        "config": CONFIG,
+        "booster": BOOSTER,
         "quantiles": {k: v for k, v in QUANTILES.items() if k in models},
         "training_rows": scores["train_rows"],
         "validation": scores,
@@ -142,17 +158,58 @@ def save(models: dict[str, xgb.Booster], scores: dict) -> None:
     (MODELS_DIR / "price_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
+def write_fallback(report_path: Path = GATE_REPORT) -> dict:
+    """Record that the persistence-band fallback is deployed, from the gate's latest validation report.
+
+    Forecast = today's price; range = today's price moved by the q10 and q90 of the 4-week % changes in
+    the train split, per crop option. The band comes from train rows only, exactly as ml.eval.gate scores it.
+    """
+    from ml.eval.gate import change_quantiles
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    verdict = report["verdict"]
+    if verdict["passes_nfr01"]:
+        raise ValueError("the model passed NFR-01: deploy it instead of the fallback")
+    model = next(name for name in report["models"] if name not in BASELINES)
+    gate_result = {
+        "split": report["split"], "rows": report["rows"], "features_csv_sha256": report["features_csv_sha256"],
+        "model": model, "passes_nfr01": False, "passes_excluding_frozen": verdict["passes_excluding_frozen"],
+        "model_mape_pct": round(verdict["model_mape_pct"], 2),
+        "persistence_mape_pct": round(verdict["persistence_mape_pct"], 2),
+    }
+    band = change_quantiles(load_split("train"))
+    record = {
+        "deployed": "persistence_band",
+        "label": "baseline",
+        "reason": "The XGBoost model did not beat persistence on pooled validation MAPE (NFR-01).",
+        "band_change_pct": {k: {"q10": round(lo, 3), "q90": round(hi, 3)} for k, (lo, hi) in sorted(band.items())},
+        "gate": gate_result,
+        "written_at": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    DEPLOYED_PATH.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    return record
+
+
 def main(argv: list[str] | None = None) -> dict:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--quantiles", action="store_true", help="also train the q10 and q90 models")
     parser.add_argument("--predictions", type=Path, help="write validation predictions for ml.eval.gate")
     parser.add_argument("--save", action="store_true", help="save models to artifacts/models/")
+    parser.add_argument("--drop-frozen", action="store_true", help="train without frozen-price rows (H-B8)")
+    parser.add_argument("--record-fallback", action="store_true",
+                        help="after a failed gate run, write artifacts/models/deployed.json for the fallback")
     args = parser.parse_args(argv)
+    if args.record_fallback:
+        record = write_fallback()
+        print(f"deployed: {record['deployed']} -> {DEPLOYED_PATH}")
+        return record
+    config = {**CONFIG, "drop_frozen": args.drop_frozen or CONFIG["drop_frozen"]}
 
-    train_rows, val_rows = load_split("train"), load_split("val")
-    models = {"point": fit(train_rows)}
+    train_rows, val_rows = training_rows(load_split("train"), config), load_split("val")
+    models = {"point": fit(train_rows, config=config)}
     if args.quantiles:
-        models.update({name: fit(train_rows, q) for name, q in QUANTILES.items()})
+        models.update({name: fit(train_rows, q, config) for name, q in QUANTILES.items()})
 
     point = to_prices(val_rows, predict_change(models["point"], val_rows))
     bands = {name: to_prices(val_rows, predict_change(models[name], val_rows)) for name in QUANTILES if name in models}

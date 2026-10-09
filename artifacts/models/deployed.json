@@ -1,0 +1,34 @@
+{
+  "deployed": "persistence_band",
+  "label": "baseline",
+  "reason": "The XGBoost model did not beat persistence on pooled validation MAPE (NFR-01).",
+  "band_change_pct": {
+    "Cotton": {
+      "q10": -11.798,
+      "q90": 12.783
+    },
+    "IRRI": {
+      "q10": -6.68,
+      "q90": 9.355
+    },
+    "SuperBasmati": {
+      "q10": -4.019,
+      "q90": 6.784
+    },
+    "Wheat": {
+      "q10": -5.588,
+      "q90": 6.572
+    }
+  },
+  "gate": {
+    "split": "val",
+    "rows": 328,
+    "features_csv_sha256": "a0cd64768e73eb5bd21874b69af0cf47b4ef133fd7987d55e4eaf883f3c920fb",
+    "model": "xgb",
+    "passes_nfr01": false,
+    "passes_excluding_frozen": true,
+    "model_mape_pct": 5.64,
+    "persistence_mape_pct": 5.6
+  },
+  "written_at": "2026-10-09T18:54:47+00:00"
+}

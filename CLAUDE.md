@@ -57,6 +57,8 @@ Ask the human before touching any other path.
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
 - Train the forecast models (Owner B; first: pip install -r ml/forecast/requirements.txt): .venv/Scripts/python -m ml.forecast.train [--quantiles] [--predictions preds.csv] [--save]
+- Model search on the training years (Owner B): .venv/Scripts/python -m ml.forecast.tune
+- Record the baseline fallback after a failed gate run (Owner B): .venv/Scripts/python -m ml.forecast.train --record-fallback
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style
