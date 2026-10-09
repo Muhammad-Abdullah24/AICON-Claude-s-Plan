@@ -97,6 +97,7 @@
     "profitTotal": "آپ کی زمین پر متوقع منافع",
     "profitAcre": "{{amount}} فی ایکڑ",
     "harvestPrice": "کٹائی پر ریٹ کا اندازہ: {{price}} ({{low}} سے {{high}})",
+    "basedOn": "{{month}} کے منڈی ریٹ {{price}} کی بنیاد پر",
     "risk": "ریٹ کا خطرہ",
     "riskLevels": {
       "LOW": "کم",

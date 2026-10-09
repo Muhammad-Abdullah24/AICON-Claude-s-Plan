@@ -7,7 +7,7 @@ import { ChipGroup } from '../components/ChipGroup'
 import { DataLabel } from '../components/DataLabel'
 import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
-import { formatDate, formatRs, parseTypedNumber } from '../lib/format'
+import { formatDate, formatMonth, formatRs, parseTypedNumber } from '../lib/format'
 import { inSeason } from '../lib/months'
 import { useAsync } from '../lib/useAsync'
 
@@ -102,6 +102,10 @@ function CropCard({ item }: { item: CropPlanItem }) {
           low: formatRs(item.harvest_price_low),
           high: formatRs(item.harvest_price_high),
         })}
+      </p>
+      {/* Cotton has no mandi price from March to June, so say which month's price the estimate starts from. */}
+      <p className="text-xs text-slate">
+        {t('grow.basedOn', { month: formatMonth(item.latest_price_date, lang), price: formatRs(item.latest_price) })}
       </p>
       <MonthStrip item={item} />
       <p className="text-sm">

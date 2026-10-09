@@ -97,6 +97,7 @@
     "profitTotal": "Expected profit on your land",
     "profitAcre": "{{amount}} per acre",
     "harvestPrice": "Harvest price estimate: {{price}} ({{low}} to {{high}})",
+    "basedOn": "Based on the mandi price of {{month}}: {{price}}",
     "risk": "Price risk",
     "riskLevels": {
       "LOW": "Low",

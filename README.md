@@ -4,7 +4,7 @@
 
 Team Claude's Plan · Build With AI, AICON'26, SEECS NUST · Agricultural Operations
 
-> **Status: walking skeleton.** Every screen and endpoint works end to end, but the numbers come from **synthetic placeholder artifacts** (`data_source: "placeholder"`, `is_synthetic: true`), and the app shows a "synthetic data" tape on every screen. Real forecasts replace them as the models land. The plan, scope and API contract are in [`docs/PLAN.md`](docs/PLAN.md).
+> **Status (10 Oct 2026): real data end to end.** Every screen and endpoint runs on real AMIS mandi prices for wheat, cotton, IRRI and Super Basmati rice at Bahawalpur, Vehari and Rahim Yar Khan. Until the trained model lands, the 4-week forecast is a labelled baseline (today's price, with the range of past 4-week swings, which held the real price 81% of the time on 2025 data). The plan is in [`docs/PLAN.md`](docs/PLAN.md); the API contract is [`backend/app/schemas.py`](backend/app/schemas.py) and blueprint section 12.
 
 ## Run locally
 
@@ -63,22 +63,28 @@ npm --prefix frontend run build
 ## How the pieces fit
 
 ```
-data/processed/  ──▶  ml/ (models, alarm, decision engine)  ──▶  artifacts/*.json
-                                                                     │
-                                       backend/ (FastAPI) reads only artifacts/
-                                                    │
-                              frontend/ (React)  ·  /whatsapp (Twilio)
+data/processed/ (AMIS prices, runtime tables)  ──▶  ml/ (features, gate, seasonal, forecast model)
+                         │                                         │
+                         └──────────▶  backend/app/services.py  ◀──┘   one answer for every channel
+                                                │
+                    REST API (FastAPI)  ·  WhatsApp webhook  ·  chat (Gemini, numbers checked)
+                                                │
+                                      frontend/ (React, Urdu first)
 ```
 
-- **The contract is code.** `backend/app/schemas.py` defines every artifact and every API response. The backend validates artifacts against it on startup and refuses to start on a bad one. The front end's TypeScript types are generated from it.
-- **One decision engine.** `ml/decision/engine.py` is plain Python, used by `/api/advice`, the WhatsApp bot and the crisis replay.
-- **The time-machine rule** lives in one tested function: `ArtifactStore.forecast_at` never returns a forecast made after the requested date.
+- **The contract is code.** `backend/app/schemas.py` defines every API request and response. The front end's TypeScript types are generated from it, and CI fails if they drift.
+- **One service layer.** `backend/app/services.py` answers the web app, WhatsApp and chat, so every channel gives the same numbers. It uses Owner B's model as soon as `ml/forecast/predict.py` exists, and the labelled baseline until then.
+- **Time machine.** Every price endpoint takes `as_of=YYYY-MM-DD` and never looks at a price after that date (the backup demo weeks in `docs/DEMO.md` use it).
+- **Honest labels.** Every price says where it came from (`data_source`), its own "as of" date, whether it is stale (over 56 days old) and whether AMIS has repeated the same price for weeks (`price_unchanged_since`).
+- **Demo login.** The invented demo farmer "Ahmed" logs in with phone `+920000000001`. Farmers, logs and alerts live in SQLite (`var/farmsight.sqlite`, not in git).
 
 ## Common tasks
 
-**Owner B: write artifacts.** Regenerate the placeholders with `python -m ml.precompute --placeholder`. Before committing any artifact, run `python -m backend.app.check_artifacts`.
+**Data (Owner A).** Rebuild `features.csv`: `python -m ml.features.build`. Runtime tables: `python -m ml.ingest.runtime_tables`. Seasonal tables: `python -m ml.seasonal.tables`. Demo data checks: `python -m ml.eval.demo_check`.
 
-**Change an API shape.** Edit `backend/app/schemas.py` and `docs/PLAN.md` section 14 together, then regenerate the front-end types:
+**Score a model (NFR-01).** Write predictions for every validation row and run `python -m ml.eval.gate --predictions preds.csv --model <name>`. The test split (`--split test --final`) is used once, at the end.
+
+**Change an API shape.** Edit `backend/app/schemas.py` and `docs/BLUEPRINT.md` section 12 together, then regenerate the front-end types:
 
 ```bash
 .venv/Scripts/python -m backend.app.export_openapi
@@ -111,14 +117,18 @@ Required by the competition rules. **Everyone adds their own datasets and tools 
 
 | Dataset | Source | Licence / terms | Downloaded |
 |---|---|---|---|
-| AMIS Punjab daily mandi prices | http://www.amis.pk | **To confirm** (PLAN.md 6.1) | By a teammate, before 9 Oct 2026 |
-| Open-Meteo historical weather | https://open-meteo.com | CC BY 4.0, attribution required | By a teammate, before 9 Oct 2026 |
-| Punjab wheat procurement prices | To fill in | To fill in | To fill in |
-| Cost-of-production and economics inputs | Sources listed inside `data/processed/economics_inputs.json` | To fill in | To fill in |
+| AMIS Punjab daily mandi prices: wheat, IRRI and Super Basmati rice, seed cotton (phutti) at Bahawalpur, Vehari and Rahim Yar Khan, Jan 2015 to Oct 2026 | http://www.amis.pk (Year-Month report, CSV export) | No licence or terms published; site states "Copyright © 2006-2026 AMIS, Directorate of Agriculture (Economics & Marketing) Punjab. All rights reserved." Used with credit for a non-commercial demo; raw exports not redistributed; cleaned series in `data/processed/` | 9 Oct 2026 |
+| AMIS wheat support-price table | http://www.amis.pk/Agristatistics/SupportPrice/wheat/wheat.html | As above | 9 Oct 2026 |
+| Open-Meteo weather: daily history 2015 to Oct 2026, and the live forecast API | https://open-meteo.com | CC BY 4.0 (https://open-meteo.com/en/licence); free API for non-commercial use; "Weather data by [Open-Meteo.com](https://open-meteo.com/)" shown with a link wherever weather is displayed | 9 Oct 2026 (history); live at request time |
+| Agriculture Policy Institute policy analyses (wheat 2023-24, rice paddy 2022-23, cotton 2022-23): cost of production and yields | https://api.gov.pk/Policies | Government of Pakistan publications; no licence stated; figures quoted with citations | 9 Oct 2026 |
+| Economics inputs: support prices, SBP policy rate, CPI, diesel, USD/PKR, fertilizer prices, transport and storage assumptions | Every value's own source is in `data/processed/economics_inputs.json` (AMIS, SBP, MNFSR Fertilizer Review, Dawn, Express Tribune, Business Recorder, Profit, Radio Pakistan, The News, ARY News, USDA FAS, Al Jazeera and others) | Official publications and news reports, cited per value; assumptions labelled | 9 Oct 2026 |
+
+Tools used for the data, outside this repo: Node.js scripts (built-in `http`) to download the AMIS exports; the `pdf-parse` npm package to extract text from the cost-of-production PDFs.
 
 ### Libraries and tools
 
-- Backend: FastAPI, Pydantic, Uvicorn, python-dotenv, python-multipart; tests with pytest and httpx2; lint with Ruff.
+- Backend: FastAPI, Pydantic, Uvicorn, python-dotenv, python-multipart, SQLite (Python standard library); tests with pytest and httpx2; lint with Ruff.
+- Live services: Open-Meteo forecast API (weather), Meta WhatsApp Cloud API (messages), Google Gemini API (`gemini-3.5-flash-lite`, free tier) for rephrasing chat answers; prompts word for word in `docs/PROMPTS.md`, and every number in an answer is checked against the farmer's own advice before it is shown.
 - Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint.
 - Fonts (bundled): Noto Nastaliq Urdu, IBM Plex Sans, IBM Plex Mono, all under the SIL Open Font License.
 
@@ -129,4 +139,4 @@ Required by the competition rules. **Everyone adds their own datasets and tools 
 ### Pre-existing work
 
 - An earlier v1 prototype (Streamlit, synthetic prices) existed before the event. **None of its code is used in this repository**; it was rebuilt from scratch on 9 Oct 2026.
-- The AMIS data was collected by a teammate with scripts written before the event (details: `docs/DATA_NOTES.md`).
+- The AMIS data was downloaded on 9 Oct 2026 with Node.js scripts written that day with Claude Code's help; the scripts are kept outside this repo (details: `docs/DATA_NOTES.md`, section A4).
