@@ -1,0 +1,32 @@
+REAL features.csv: 2552 rows, 48 columns -> D:\FarmSight\data\features.csv
+Dropped (real): no current price 1700, no observed target 600, split-boundary gap 45
+
+Real rows per series x split:
+  BahawalPur|Cotton          train 118  val 20  test 2
+  BahawalPur|Rice            train 365  val 48  test 36
+  BahawalPur|Wheat           train 297  val 48  test 36
+  RahimYarKhan|Cotton        train 230  val 25  test 1
+  RahimYarKhan|Wheat         train 366  val 38  test 18
+  Vehari|Cotton              train 295  val 27  test 21
+  Vehari|Rice                train 133  val 48  test 36
+  Vehari|Wheat               train 324  val 15  test 5
+
+REAL split totals: train 2128  val 269  test 155
+Action labels (real): WAIT 477  HOLD 1519  SELL 556
+Persistence baseline MAPE (train): 5.17%   FLAT 50.4%
+Persistence baseline MAPE (val): 6.04%   FLAT 48.0%
+Persistence baseline MAPE (test): 3.53%   FLAT 67.1%
+
+AUGMENTED features_augmented.csv: 12380 rows -> D:\FarmSight\data\features_augmented.csv
+  weeks filled: cross_city 888, interpolated 54
+  extra rows: imputed 1316 (cross_city 979, interpolated 74), jitter 8512 (4 paths/series)
+  train rows per series, real vs total:
+    BahawalPur|Cotton          real 118  +imputed 205  +jitter 472
+    BahawalPur|Rice            real 365  +imputed 91  +jitter 1460
+    BahawalPur|Wheat           real 297  +imputed 221  +jitter 1188
+    RahimYarKhan|Cotton        real 230  +imputed 92  +jitter 920
+    RahimYarKhan|Wheat         real 366  +imputed 147  +jitter 1464
+    Vehari|Cotton              real 295  +imputed 43  +jitter 1180
+    Vehari|Rice                real 133  +imputed 326  +jitter 532
+    Vehari|Wheat               real 324  +imputed 191  +jitter 1296
+  GUARDRAIL: synthetic rows in val/test = 0 (must be 0)
