@@ -68,7 +68,7 @@ data/processed/ (AMIS prices, runtime tables)  ──▶  ml/ (features, gate, s
                          │                                         │
                          └──────────▶  backend/app/services.py  ◀──┘   one answer for every channel
                                                 │
-                    REST API (FastAPI)  ·  WhatsApp webhook  ·  chat (Gemini, numbers checked)
+          REST API (FastAPI)  ·  WhatsApp webhook  ·  SMS adapter  ·  chat (Gemini, numbers checked)
                                                 │
                                       frontend/ (React, Urdu first)
 ```
@@ -78,6 +78,87 @@ data/processed/ (AMIS prices, runtime tables)  ──▶  ml/ (features, gate, s
 - **Time machine.** Every price endpoint takes `as_of=YYYY-MM-DD` and never looks at a price after that date (the backup demo weeks in `docs/DEMO.md` use it).
 - **Honest labels.** Every price says where it came from (`data_source`), its own "as of" date, whether it is stale (over 56 days old) and whether AMIS has repeated the same price for weeks (`price_unchanged_since`).
 - **Demo login.** The invented demo farmer "Ahmed" logs in with phone `+920000000001`. Farmers, logs and alerts live in SQLite (`var/farmsight.sqlite`, not in git).
+
+## WhatsApp, SMS and voice notes
+
+All three use the same conversation engine (`backend/app/channels/conversation.py`) and the same service layer as the
+web app, so a farmer gets the same advice, numbers, range, "as of" date and stale-price warnings everywhere. Only
+the wording differs: Urdu on WhatsApp, short Roman Urdu on SMS.
+
+| Channel | Status |
+|---|---|
+| WhatsApp text, numbered menu and buttons | Built and tested. Live once the Meta app is set up (below) |
+| SMS | **Tested adapter only, not a live service.** No SMS vendor has been chosen, so no SMS is sent or received. `POST /webhooks/sms` answers 503 until a vendor adapter exists |
+| WhatsApp voice notes | **Not available.** Off by default; no speech-to-text provider is chosen. A voice note gets a reply asking the farmer to type or use the menu |
+
+**WhatsApp setup.** Create a Meta app with the WhatsApp product, then put its values in `.env`: `FS_WA_VERIFY_TOKEN`
+(any string, also typed into Meta's webhook settings), `FS_WA_APP_SECRET`, `FS_WA_ACCESS_TOKEN`,
+`FS_WA_PHONE_NUMBER_ID` (optional: `FS_WA_API_VERSION`, `FS_WA_ALERT_TEMPLATE`, `FS_WA_ALERT_TEMPLATE_LANG`). The
+callback URL is `<backend>/webhooks/whatsapp`. Every request's `X-Hub-Signature-256` is checked before anything is
+read. Meta only delivers free text within 24 hours of the farmer's last message; alerts outside that window need an
+approved template (`FS_WA_ALERT_TEMPLATE`).
+
+**Talking to it.** Free text works as before, in Urdu, Roman Urdu or English:
+
+```
+Farmer: گندم بہاولپور 100 من
+FarmSight: 🟢 گندم، بہاولپور: بیچ دیں / آج: Rs 3,820 فی من (AMIS، 2026-10-09 تک) / ... /
+           1 کیوں؟ · 2 منڈیاں · 3 الرٹ بند · 0 مینو      [buttons: کیوں؟ | منڈیاں | الرٹ بند]
+```
+
+Or the numbered menu, which needs no typing beyond digits:
+
+```
+Farmer: 0      FarmSight: 1 ریٹ اور مشورہ  2 منڈیوں کا موازنہ  3 مشورے کی وجہ  4 الرٹ چالو  5 الرٹ بند  0 مینو
+Farmer: 1      FarmSight: کون سی فصل؟  1 گندم  2 کپاس (پھٹی)  3 چاول  0 مینو
+Farmer: 1      FarmSight: کون سی منڈی؟  1 بہاولپور  2 وہاڑی  3 رحیم یار خان  0 مینو
+Farmer: 1      FarmSight: کتنے من؟ صرف تعداد لکھیں، مثلاً 100
+Farmer: 100    FarmSight: (the same advice as above)
+Farmer: 1      FarmSight: (why: the model's reasons)
+```
+
+Rice asks Super Basmati or IRRI. A number means something only in the step the farmer is on; with no active
+session (or after 30 minutes), a bare number gets the main menu and nothing else happens. "0" always opens the menu.
+"بند" / "stop" turns alerts off and "شروع" / "shuru" turns them on; a number that is not a registered farmer is told
+nothing changed.
+
+The same menu by SMS, in Roman Urdu (at most two SMS parts; warnings are never cut to save space):
+
+```
+Farmer: 0      FarmSight: FarmSight: 1 Rate/mashwara 2 Mandiyan 3 Kyun 4 Alert on 5 Alert band 0 Menu. Ya likhein: gandum bahawalpur 100 man
+...
+Farmer: 100    FarmSight: FarmSight Gandum Bahawalpur: bech dein. Aaj Rs3820/man (AMIS 2026-10-09). 4 hafte baad Rs3820
+               (Rs3607-Rs4071). Andaza hai, guarantee nahi. 100 man rukne ka farq -Rs4848 sood ke baad. Aitmaad darmiyana.
+               1 Kyun 2 Mandiyan 3 Alert band 0 Menu
+```
+
+**SMS boundary.** `backend/app/channels/sms.py` has the vendor-neutral parts: the `SmsSender` interface (with a
+`NullSmsSender` when nothing is configured and a `FakeSmsSender` for tests), the inbound route, de-duplication, a
+per-number reply limit (`FS_SMS_REPLIES_PER_MIN`, default 5) and the Roman Urdu replies. To go live, the team picks a
+vendor, writes its `SmsAdapter` from the vendor's official documentation (its signature or token check, payload,
+acknowledgement and sender), registers it in `sms.ADAPTERS` and sets `FS_SMS_PROVIDER` to its name. Until then
+`FS_SMS_PROVIDER` should stay empty.
+
+**Alerts and SMS.** If WhatsApp fails to deliver an alert and an SMS vendor is configured, the same alert goes by SMS
+in Roman Urdu. Only farmers with alerts on get alerts, at most one a week, and never a price-spike alert on a stale or
+frozen price; SMS does not add alerts WhatsApp would not have sent. With no vendor configured there is no fallback.
+
+**Voice notes.** `backend/app/channels/voice.py` defines the interfaces (fetch the audio from WhatsApp, transcribe
+Urdu, a confidence score). `FS_VOICE_NOTES=1` has no effect until both are written and registered. When they are,
+FarmSight replies "I heard: ..., reply 1 if right, 2 to correct" and gives advice only after 1; unclear notes go to
+the menu.
+
+### Privacy on WhatsApp and SMS
+
+- **Kept:** the farmer's place in the menu (step, crop, mandi, quantity and the last query), keyed by channel and
+  phone number (digits only), for **30 minutes** (`FS_CHANNEL_SESSION_MINUTES`); expired sessions are deleted.
+  Incoming message ids are kept for 24 hours so a retried delivery is not answered twice. Alert on/off is stored on
+  the farmer's profile and changed only when the farmer asks (menu 4/5, "بند", "شروع", or the button).
+- **Not kept:** the text of incoming WhatsApp or SMS messages, voice audio and transcripts. Outgoing alert texts are
+  logged in the `messages` table with their delivery status.
+- **Not logged:** phone numbers, message text or transcripts never go to the application logs.
+- **Sent to Gemini:** a free question asked on WhatsApp after an answer, with that answer's crop, mandi and numbers;
+  never the phone number. SMS has no AI chat, so nothing from SMS goes to Gemini.
 
 ## Common tasks
 

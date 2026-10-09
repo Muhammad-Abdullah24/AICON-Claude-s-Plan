@@ -22,6 +22,9 @@ decision 12). Never say a number on stage that the app does not show.
       still correct output; say "the template answer, same numbers".
 - [ ] WhatsApp (needs A3 done): the demo phone has messaged the bot in the last 24 hours, so alerts arrive as free
       text. Run `POST /api/alerts/run?dry_run=true` with `X-Admin-Token` to see the alert before sending it.
+- [ ] WhatsApp menu rehearsal (section 3a): send `0` from the demo phone and walk the menu once. Then send `0` again
+      just before going on stage, so the phone shows the menu and no half-finished session is waiting (sessions last
+      30 minutes).
 - [ ] Backup tab open at `/?as_of=2025-03-24` (section 4), and the backup recording on the desktop. If we play it,
       we say it is a recording.
 - [ ] Phone brightness up, notifications off, laptop on charger.
@@ -35,8 +38,8 @@ decision 12). Never say a number on stage that the app does not show.
 | 1:15–2:00 | **Why?** | SHAP reasons from the model, in Urdu with arrows: the time of year (about +Rs 18 per 40 kg), heat and weather (+Rs 12), rainfall (+Rs 12); and, honestly, "the price shown is a simple estimate". Open "details" for one second: the price chart with the 4-week range; weeks without an AMIS price are gaps, not invented lines. |
 | 2:00–2:40 | **Compare mandis**, then the **offer check** on Home | Bahawalpur is best: Rs 3,820. Rahim Yar Khan Rs 3,475 minus Rs 291 transport = Rs 3,184 (**−Rs 63,600** on 100 maund). Vehari's last price is 17 Jul 2026, shown in amber as old. Offer check: a buyer offers **Rs 3,514** → "Rs 306 a maund below the fair range" (**−Rs 30,600** on 100 maund; fair range = the mandi's last 14 days). |
 | 2:40–3:30 | **What to grow** (Bahawalpur, 12.5 acres, logged in as Ahmed) | Ranked by profit per acre: 1 Super Basmati **Rs 1,691,610** (**amber: prices only to 7 Apr 2026**), 2 cotton **Rs 956,049** (Rs 76,484 an acre; past years Rs 40,065 to Rs 126,840), 3 IRRI Rs 681,254, 4 wheat **Rs 56,211** (Rs 4,497 an acre; past years from a loss of Rs 30,934 to a profit of Rs 35,487). Every crop shows "price risk: high" (year-to-year swings are large). Month strip: sowing, harvest, best time to sell. Wheat, cotton, IRRI: "best to sell at harvest: holding usually does not beat the interest"; Super Basmati: December. Say: Super Basmati is first on paper but its price is six months old, which is why the app marks it. |
-| 3:30–4:10 | **WhatsApp** on the phone | Type "گندم بہاولپور 100 من" → the same advice as the web, with buttons کیوں؟ / منڈیاں / الرٹ بند. Then show the alert (section 3). |
-| 4:10–4:40 | **Chat** (Ask) | "گندم کا ریٹ اگلے ہفتے کتنا ہوگا؟" → Urdu answer that uses only the app's numbers (every number is checked; if Gemini adds one, the template answer is shown instead). Voice notes are not built (A10): type the question. |
+| 3:30–4:10 | **WhatsApp** on the phone | Type "گندم بہاولپور 100 من" → the same advice as the web, with buttons کیوں؟ / منڈیاں / الرٹ بند and the line "1 کیوں؟ · 2 منڈیاں · 3 الرٹ بند · 0 مینو". If typing Urdu is slow on stage, use the numbered menu instead (section 3a): `0`, `1`, `1`, `1`, `100`. Say: "a farmer who cannot type can do all of it with digits". Then show the alert (section 3). |
+| 4:10–4:40 | **Chat** (Ask) | "گندم کا ریٹ اگلے ہفتے کتنا ہوگا؟" → Urdu answer that uses only the app's numbers (every number is checked; if Gemini adds one, the template answer is shown instead). Voice notes are not available (A10): a voice note gets "type it, or send 0 for the menu". Do not send one on stage. |
 | 4:40–5:00 | – | **Close.** "The same information traders have, in the farmer's language." Limits, in one breath: AMIS mandi prices (some series stale or frozen, and we show it); the baseline is right within its range 81% of the time on 2025 data; our model must beat it or we ship the baseline. |
 
 **Must work:** Home, Why, Compare, What to grow. If WhatsApp or chat fails, say so and move on: the web shows the
@@ -79,6 +82,27 @@ the Meta test number, and it has messaged the bot in the last 24 hours) with whe
 for Ahmed in Profile, then run the same command without `dry_run=true`. Once sent, the one-a-week limit applies to
 that farmer: to repeat it, delete `var/farmsight.sqlite` and restart. Other replay dates that alert: 2025-09-01
 (wheat +49%), 2026-04-13 (−22%, test split).
+
+## 3a. WhatsApp numbered menu (the reliable path)
+
+Every step lists its numbers, so nothing has to be remembered. Rehearse it on the demo phone (registered and verified
+on the Meta test number):
+
+| Send | Reply |
+|---|---|
+| `0` | Menu: 1 ریٹ اور مشورہ · 2 منڈیوں کا موازنہ · 3 مشورے کی وجہ · 4 الرٹ چالو · 5 الرٹ بند · 0 مینو |
+| `1` | کون سی فصل؟ 1 گندم · 2 کپاس (پھٹی) · 3 چاول |
+| `1` | کون سی منڈی؟ 1 بہاولپور · 2 وہاڑی · 3 رحیم یار خان |
+| `1` | کتنے من؟ |
+| `100` | The advice card, the same numbers as Home (re-check them in section 7) |
+| `1` | Why: the same reasons as the Why screen |
+| `2` | Compare mandis |
+
+If a number gets "یہ نمبر کس سوال کا جواب ہے" (no session), the 30 minutes ran out: send `0` and start again.
+
+**SMS is not live.** No SMS vendor is chosen, so there is nothing to show on a basic phone. If asked: "SMS is built and
+tested as an adapter with the same menu in Roman Urdu, two SMS at most; it goes live once we pick an SMS gateway". Do
+not show it as working, and do not show voice notes.
 
 ## 4. Backup: replay a past week
 
