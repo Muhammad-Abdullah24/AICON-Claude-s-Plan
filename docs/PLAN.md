@@ -233,7 +233,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 **B · Usman**
 - [x] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
 - [x] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
-- [ ] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
+- [x] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
 
 **C · Abd**
 - [ ] **C7** (M) Screens: Compare Mandis, What to Grow with the season timeline.

@@ -1,8 +1,77 @@
-# Model card: FarmSight 4-week price forecast
+# Model card: FarmSight's AI
+
+> **For judges: one page.** Owner B (Usman). Every number below comes from `ml/eval/report.md` (the evaluation
+> gate) or the technical details further down. The 2026 test set has not been scored yet: it is scored once, at
+> the end, and added here whatever it shows.
+
+## What the AI does
+
+For Wheat, Cotton, IRRI and Super Basmati rice at the Bahawalpur, Vehari and Rahim Yar Khan mandis, FarmSight
+forecasts the mandi price **4 weeks ahead with a range**, says **SELL** (بیچ دیں) or **WAIT** (رکیں), and explains
+**why** in Urdu. The large language model only handles language (chat, voice transcription); it never produces a
+number a farmer sees.
+
+## Data
+
+- **Prices:** real AMIS Punjab daily mandi prices, 2015 to October 2026, cleaned to weekly series (11 series).
+  Rs per 40 kg (one maund). Stretches where AMIS repeated the same price for weeks are flagged and never used as
+  model inputs.
+- **Weather:** Open-Meteo daily weather for each mandi district (stored history for training; live in the app).
+- **Split by time, never shuffled:** train = target weeks before 2025 (2,733 rows), validation = 2025 (328),
+  test = 2026 (165, held back). No synthetic rows anywhere in training or scoring.
+
+## Model
+
+- **XGBoost** predicting the **4-week % price change** (prices tripled since 2015, so % change, not price level).
+- **Inputs (26):** recent momentum and price swings, price vs its 8-week average, season (month, sowing and harvest
+  flags), weather (heat, rain), and crop and mandi. No absolute price levels.
+- **Settings chosen without touching validation:** 36 settings compared by rolling cross-validation on 2021–2024.
+
+## The honest result (validation, 2025)
+
+| | Price error (MAPE) | Direction right on moves > 3% | Range holds the real price |
+|---|---|---|---|
+| "Price stays the same" baseline | **5.60%** | 0% (never predicts a move) | **81%** (target 80%) |
+| Our XGBoost model | 5.64% | **60%** overall, **72% for wheat** | 72% |
+
+**The model did not beat the naive baseline on price**, so by our own rule (NFR-01) the price forecast shown is the
+baseline, labelled "baseline". Mandi prices are sticky, and a third of validation weeks touch a frozen AMIS price.
+But the model **does** call the direction of real moves: 72% for wheat (50 moves, p = 0.001). Cotton (49%) and
+Super Basmati (46%) show no skill.
+
+## What we ship, and why
+
+- **Price and range:** the baseline for every crop. It is the more accurate forecast and its range is well calibrated.
+- **Direction:** the model's "likely up / likely down" for **wheat only**, where it has proven skill. Other crops say
+  "no reliable direction". (Built and switchable; the team confirms it at a check-in. Wheat was chosen after seeing
+  validation results, so the 2026 test run confirms or rejects it.)
+- **SELL / WAIT:** WAIT only if the forecast is at least 5% above today, and the rupee gain subtracts the interest
+  cost of waiting (16.5% a year). With the baseline forecast the answer is SELL, which is the honest answer:
+  a 5% rise in 4 weeks happens in only 14–19% of real weeks.
+
+## How "Why?" works
+
+The model's prediction is split exactly into each input's contribution with **SHAP** (TreeSHAP, computed by
+XGBoost itself). Related inputs are summed into 8 reasons a farmer can follow (recent trend, time of year, rain,
+heat...), each with its rupee effect per 40 kg, written in Urdu and English from fixed templates. No LLM writes
+these. On the two backup demo weeks the wheat call was right: 24 March 2025 "likely down" (it fell 19.7%) and
+4 August 2025 "likely up" (it rose 48.6%).
+
+## Limits
+
+- A backtest on historical AMIS prices, not a field trial. AMIS can lag the open market (Bahawalpur wheat:
+  AMIS about Rs 3,820 vs about Rs 5,300 reported).
+- Super Basmati's latest prices are months old; every screen shows the "prices as of" date, in amber when old.
+- Costs, transport (Rs 1.3 per 40 kg per km) and the 0.65 milling yield are estimates and are labelled so.
+- The 2026 test set is still unscored.
+
+---
+
+# Technical details
 
 > Owner B (Usman). Written for task B4 on 10 October 2026. B10 turns this into the one-page version for judges.
 
-## Decision
+### Decision
 
 **Deployed: the persistence-band baseline, labelled "baseline".** The XGBoost model did not beat persistence
 on pooled validation MAPE, so under NFR-01 it is not deployed. The forecast is today's AMIS price; the range
@@ -13,7 +82,7 @@ The model is not useless: it calls the direction of moves bigger than 3% right *
 validation (72% for wheat), where persistence by definition never predicts a move. Whether to show that as
 a separate "direction" signal is a team decision (see the proposal at the end).
 
-## Data
+### Data
 
 - AMIS Punjab daily mandi prices 2015–2026, cleaned to weekly series by Owner A (`data/processed/features.csv`),
   Rs per 40 kg. 11 series: Wheat, Cotton and Super Basmati at Bahawalpur, Vehari and Rahim Yar Khan; IRRI at
@@ -22,7 +91,7 @@ a separate "direction" signal is a team decision (see the proposal at the end).
   (328 rows), test 2026 (165 rows, not used yet; scored once at the very end).
 - Weather from Open-Meteo, aggregated by `ml/features/` exactly as at runtime.
 
-## Model
+### Model
 
 - XGBoost, native API, fixed seed, one thread (reproducible). Code: `ml/forecast/train.py`.
 - **Target:** the 4-week % price change, not the price. Prices roughly tripled over 2015–2026, so a model on
@@ -32,7 +101,7 @@ a separate "direction" signal is a team decision (see the proposal at the end).
   crop and mandi ids. The frozen-price flags are never inputs (hand-off H-B8).
 - **Range:** separate q10 and q90 quantile models.
 
-## How the settings were chosen (no validation data used)
+### How the settings were chosen (no validation data used)
 
 Rolling-origin cross-validation inside the train split (`ml/forecast/tune.py`): for each year 2021–2024, fit on
 earlier target weeks and score that year. 36 settings (objective × depth × rounds × with/without frozen rows),
@@ -48,7 +117,7 @@ earlier target weeks and score that year. 36 settings (objective × depth × rou
 No setting beat persistence in cross-validation. Damping the predicted change toward zero (factor 0 to 1) gained
 at most 0.01 points (6.04%) and not consistently across years, so it was not used.
 
-## Validation result (`ml/eval/report.md`, scored by Owner A's gate)
+### Validation result (`ml/eval/report.md`, scored by Owner A's gate)
 
 | | MAPE % | MASE | Direction (moves > 3%) | Range coverage (target 80%) | Range width % |
 |---|---|---|---|---|---|
@@ -72,7 +141,7 @@ By crop option (MAPE %, all rows):
 Super Basmati is judged on validation only: it has just 10 test rows (Bahawalpur) and its latest prices are
 months old (hand-off H-B9).
 
-## Limits
+### Limits
 
 - A backtest on historical AMIS prices, not a field trial.
 - AMIS prices are sticky: about a third of validation rows touch a stretch where the reported price did not
@@ -81,7 +150,7 @@ months old (hand-off H-B9).
   validation; it is not adjusted per mandi.
 - The test split (2026) has not been scored. It is scored once, at the end, with whatever is deployed.
 
-## Reproduce
+### Reproduce
 
 ```bash
 .venv/Scripts/python -m pip install -r ml/forecast/requirements.txt
@@ -92,7 +161,7 @@ months old (hand-off H-B9).
 .venv/Scripts/python -m ml.forecast.train --save   # the wheat direction model
 ```
 
-## Direction: where the model does have skill
+### Direction: where the model does have skill
 
 Direction is scored on validation rows where the real price moved more than 3% in 4 weeks. "Right" means the
 sign of the model's predicted change matched the real move. The p-value is one-sided, against a coin flip.
@@ -105,7 +174,7 @@ sign of the model's predicted change matched the real move. The p-value is one-s
 | Super Basmati | 13 | 46% | 0.71 |
 | All crops | 153 | 60% | 0.008 |
 
-## Proposal for the team (B4 → B5/B6), needs agreement at a check-in
+### Proposal for the team (B4 → B5/B6), needs agreement at a check-in
 
 1. **Price and range: the baseline, for every crop.** It is the more accurate forecast, and its range is well
    calibrated (81% coverage).
@@ -125,7 +194,7 @@ Caveats to say openly:
 
 Until the team agrees, B5 and B6 are built so that turning the direction call off is a one-line config change.
 
-## Built (B5, B6), pending the team's agreement
+### Built (B5, B6), pending the team's agreement
 
 - `ml/forecast/predict.py` serves the baseline price and range for every crop option, and for wheat the model's
   direction call with its SHAP reasons (`ml/explain/`). `DIRECTION_CROP_OPTIONS = ("Wheat",)` in that file is
