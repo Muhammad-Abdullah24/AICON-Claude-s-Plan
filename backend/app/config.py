@@ -18,14 +18,11 @@ HISTORY_WEEKS = 104
 
 @dataclass(frozen=True)
 class Settings:
-    artifacts_dir: Path
     cors_origins: list[str]
 
 
 def get_settings() -> Settings:
-    artifacts = os.environ.get("FS_ARTIFACTS_DIR")
     origins = os.environ.get("FS_CORS_ORIGINS", "http://localhost:5173")
     return Settings(
-        artifacts_dir=Path(artifacts) if artifacts else REPO_ROOT / "artifacts",
         cors_origins=[o.strip() for o in origins.split(",") if o.strip()],
     )

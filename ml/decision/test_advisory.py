@@ -363,3 +363,40 @@ def test_alert_candidates_from_the_real_data():
     assert wheat["mandi"] == "BahawalPur" and wheat["band_q10_pct"] < 0 < wheat["band_q90_pct"]
     assert inputs.alert_candidate("IRRI", "Rahim Yar Khan", "SELL", None) is None
     assert inputs.alert_candidate("SuperBasmati", "Vehari", "SELL", None)["is_stale"] is True
+
+
+# ---------------------------------------------------------------- H-B15: stale risk and as_of
+
+def test_stale_price_raises_risk_one_level():
+    from ml.decision import risk_badge
+
+    assert risk_badge(10, True, is_stale=True) == "MEDIUM"
+    assert risk_badge(40, True, is_stale=True) == "HIGH"
+    assert risk_badge(90, True, is_stale=True) == "HIGH"
+
+
+def test_crop_plan_uses_staleness_in_the_badge():
+    fresh = crop_plan([_crop("Wheat", 100, 1.1, 1.0, 1.2, spread=10.0)], 1)["crops"][0]
+    stale = crop_plan([{**_crop("Wheat", 100, 1.1, 1.0, 1.2, spread=10.0), "is_stale": True}], 1)["crops"][0]
+    assert (fresh["risk"], stale["risk"]) == ("LOW", "MEDIUM")
+
+
+def test_inputs_honour_as_of():
+    day = date(2025, 3, 24)
+    price, on = inputs.latest_price("Wheat", "Bahawalpur", day)
+    assert on <= "2025-03-24" and price > 0
+    assert inputs.latest_price("Wheat", "Bahawalpur", date(2010, 1, 1)) is None
+    assert all(c["prices_as_of"] is None or c["prices_as_of"] <= "2025-03-24"
+               for c in inputs.crop_plan_inputs("Bahawalpur", day))
+    cand = inputs.alert_candidate("Wheat", "Bahawalpur", "SELL", None, day)
+    assert cand["prices_as_of"] <= "2025-03-24"
+
+
+def test_without_as_of_the_snapshot_is_unchanged():
+    assert inputs.latest_price("Wheat", "Bahawalpur") == inputs.latest_price("Wheat", "Bahawalpur", date(2026, 10, 10))
+
+
+def test_staleness_on_a_past_day():
+    # Super Basmati at Vehari: last price Nov 2025, so stale by Oct 2026 but fresh in Nov 2025
+    assert inputs.is_stale("SuperBasmati", "Vehari", date(2026, 10, 10)) is True
+    assert inputs.is_stale("SuperBasmati", "Vehari", date(2025, 11, 20)) is False

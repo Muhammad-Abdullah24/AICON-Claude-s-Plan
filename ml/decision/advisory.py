@@ -183,15 +183,24 @@ def compare_mandis(
 
 # ---------------------------------------------------------------- What to Grow (UC-05, UC-06; task B7)
 
-def risk_badge(spread_pct: float, enough_years: bool) -> str:
-    """LOW / MEDIUM / HIGH from the year-to-year spread of the harvest ratio. Too little history is HIGH."""
+RISK_LEVELS = ("LOW", "MEDIUM", "HIGH")
+
+
+def risk_badge(spread_pct: float, enough_years: bool, is_stale: bool = False) -> str:
+    """LOW / MEDIUM / HIGH from the year-to-year spread of the harvest ratio.
+
+    Too little history is HIGH. A stale starting price (months old) raises the badge one level, since the
+    estimate starts from a price that may no longer hold (H-B15).
+    """
     if not enough_years:
         return "HIGH"
     if spread_pct <= config.LOW_RISK_MAX_SPREAD_PCT:
-        return "LOW"
-    if spread_pct <= config.MEDIUM_RISK_MAX_SPREAD_PCT:
-        return "MEDIUM"
-    return "HIGH"
+        level = 0
+    elif spread_pct <= config.MEDIUM_RISK_MAX_SPREAD_PCT:
+        level = 1
+    else:
+        level = 2
+    return RISK_LEVELS[min(level + (1 if is_stale else 0), 2)]
 
 
 def crop_plan(crops: Iterable[Mapping], land_area_acres: float) -> dict:
@@ -231,7 +240,7 @@ def crop_plan(crops: Iterable[Mapping], land_area_acres: float) -> dict:
             "profit_per_acre_range": {"low": round(profit(ratio["ratio_min"])),
                                       "high": round(profit(ratio["ratio_max"]))},
             "profit_total": round(profit(ratio["ratio_median"]) * land_area_acres),
-            "risk": risk_badge(ratio["spread_pct"], ratio["enough_years"]),
+            "risk": risk_badge(ratio["spread_pct"], ratio["enough_years"], bool(c.get("is_stale"))),
             "years_of_history": ratio.get("n_years"),
             "prices_as_of": c.get("prices_as_of"),
             "is_stale": bool(c.get("is_stale")),

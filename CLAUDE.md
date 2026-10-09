@@ -47,7 +47,6 @@ Ask the human before touching any other path.
 ## Commands (run from the repo root; on macOS/Linux use .venv/bin/python)
 - Backend: .venv/Scripts/python -m uvicorn backend.app.main:app --reload --port 8000
 - Frontend: npm --prefix frontend run dev   (http://localhost:5173, proxies /api to the backend)
-- Check artifacts: .venv/Scripts/python -m backend.app.check_artifacts
 - Tests: .venv/Scripts/python -m pytest   and   npm --prefix frontend test
 - Lint and types: .venv/Scripts/python -m ruff check .   and   npm --prefix frontend run lint && npm --prefix frontend run typecheck
 - Regenerate front-end API types after a schema change: .venv/Scripts/python -m backend.app.export_openapi && npm --prefix frontend run gen:api
