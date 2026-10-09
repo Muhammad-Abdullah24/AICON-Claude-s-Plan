@@ -7,7 +7,13 @@ Read these before doing anything, in this order:
 
 docs/archive/PLAN_v2_superseded.md is history only. Do not follow it.
 
-Ask which owner the human is at the start of the session, then show their open tasks from docs/PLAN.md section 5.
+Ask which owner the human is at the start of the session, then show:
+1. their open hand-off items from docs/PLAN.md section 4.1 (work other owners' changes created for them), first;
+2. their open tasks from docs/PLAN.md section 5.
+
+When you finish a change that another owner depends on (a new or renamed column, a changed fact, a new table, a
+changed function signature), add a hand-off line for that owner in docs/PLAN.md section 4.1 in the same PR, and
+say so in the PR description.
 
 ## Ownership (do not edit outside your owner's folders)
 - Owner A (Hamza): data/, ml/features/, ml/ingest/, ml/seasonal/, ml/eval/, backend/app/channels/, backend/app/chat/, docs/FACTS.md, docs/PROMPTS.md, docs/DATA_NOTES.md

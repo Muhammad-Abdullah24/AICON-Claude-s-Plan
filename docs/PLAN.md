@@ -109,7 +109,43 @@ Each interface has one owner who writes it and a stub that works from the first 
 - Crop options: `Wheat`, `Cotton`, `IRRI`, `SuperBasmati` (`crop_option` column). 11 series; **no IRRI at Rahim Yar Khan**. Super Basmati's latest prices are Nov 2025 to Apr 2026, so show its date in amber.
 - AMIS stores Rs per 100 kg; **every API price is Rs per 40 kg** (× 0.4). Convert in one place: `ml/features/`.
 - Split in `features.csv`: train = target week before 2025, val = 2025, test = 2026. Train on **real rows only** (`is_synthetic = 0`).
-- Persistence baseline MAPE: 4.7% train, 5.6% val, 3.4% test. That is the bar (NFR-01).
+- Persistence baseline MAPE: 4.7% train, 5.6% val, 3.4% test. That is the bar (NFR-01). Without frozen weeks (A12) it is 6.66% on val.
+- Vehari wheat's latest AMIS price is 17 Jul 2026 (stale). Bahawalpur wheat, the headline case, is current but was frozen at Rs 3,450 from Jun to Sep 2026.
+
+### 4.1 Hand-offs: work that finished tasks created for other owners
+
+**Keep this list current.** Whenever a change in your folders means another owner has to do something (a new
+column, a changed fact, a new table to load), add a line here **in the same PR**, assigned to them. Each owner
+ticks their own lines when done. Claude sessions show the owner their open lines at the start of every session
+(see `CLAUDE.md`). Newest at the bottom of each list.
+
+**For Usman (Owner B)**
+
+- [ ] **H-B1** (from A1) In `ml/forecast/predict.py`, build model inputs with `ml.features.runtime_features(city, crop, variety, history, daily_weather, week_start)`. It returns exactly the training columns. `FEATURE_COLUMNS` lists every allowed input; choose from it.
+- [ ] **H-B2** (from A1) The `action` column in `features.csv` is a legacy label (it includes a Rs 15 storage cost). Don't use it as the product rule; the blueprint's SELL/WAIT rule (5%, interest only) lives in your engine (B2).
+- [ ] **H-B3** (from A2) Read costs, yields and support prices from `data/processed/runtime/` (`crops.csv`, `support_prices.csv`), not hardcoded values. Rice cost is per 40 kg of **milled-rice equivalent** while yield is in **paddy** maund: milled maund per acre = `yield_maund_per_acre × milling_yield` (0.65, an assumption).
+- [ ] **H-B4** (from A2) Wheat support prices were corrected: Rs 3,900 for the 2023-24 crop (spring 2024) was **announced but not procured**; the 2024-25 crop had **no** support price; 2025-26 is Rs 3,500 (indicative). Only wheat has a support price. Use the `status` column.
+- [ ] **H-B5** (from A2) If `series_coverage.csv` says `is_stale = 1` (all Super Basmati, Vehari wheat), set confidence to LOW in `advise()`.
+- [ ] **H-B6** (from A5) Score every model with the gate: write predictions for **every** validation row (`series, week_start, pred_price_next_4w, q10, q90`), run `python -m ml.eval.gate --predictions <file> --model <name>`, commit the regenerated `ml/eval/report.json` and `report.md`. If it fails, ship the `persistence_band` fallback (79–81% coverage).
+- [ ] **H-B7** (from A6) In `crop_plan()`, key `harvest_ratios.csv` on the **month of the latest price**, not today's month (cotton has no mandi price from March to June). Use `enough_years` and `spread_pct` for the risk badge; pick the selling window from `post_harvest_ratios.csv` after interest per month.
+- [ ] **H-B8** (from A12) Never use `price_is_frozen` or `target_is_frozen` as model inputs: they look at days after the week. Try training with and without frozen rows (`is_frozen` rows are a third of val/test) and report the gate both ways in `docs/MODEL_CARD.md`.
+- [ ] **H-B9** (from Super Basmati) Super Basmati has only 10 test rows (Bahawalpur) and stale prices; judge it on validation and say so in the model card.
+
+**For Abd (Owner C)**
+
+- [ ] **H-C1** (from A2) Seed SQLite from `data/processed/runtime/`: `crops.csv`, `mandis.csv`, `crop_calendar.csv`, `support_prices.csv`, `transport_costs.csv`, `series_coverage.csv`, `data_sources.csv`, `frozen_stretches.csv`, plus A6's three seasonal tables. Every table has source/confidence columns; show "estimate" in the UI where confidence is `assumption` or `derived`.
+- [ ] **H-C2** (from A2) Mandis have two names: `amis_name` (BahawalPur, RahimYarKhan; used in every data file) and `name` (Bahawalpur, Rahim Yar Khan; for display). Crop options are `Wheat`, `Cotton`, `IRRI`, `SuperBasmati`; no IRRI at Rahim Yar Khan.
+- [ ] **H-C3** (from A2) "Prices as of" is **per series**: take it from `series_coverage.csv` (`prices_as_of`, `is_stale`), never one global date. Stale → date in amber (blueprint UC-01 A3).
+- [ ] **H-C4** (from A2) Margin view: support price line for wheat only, from `support_prices.csv`; label `ANNOUNCED_NOT_PROCURED` as "announced, not procured". There is no 2024-25 row on purpose (no support price that year).
+- [ ] **H-C5** (from A1) Weather service: fetch Open-Meteo daily with `past_days=92` and pass records to `ml.features.weather_features(daily, week_start)` with keys `date, tmax, tmin, precip_mm, rh_mean, et0` (Open-Meteo daily `temperature_2m_max`, `temperature_2m_min`, `precipitation_sum`, `relative_humidity_2m_mean`, `et0_fao_evapotranspiration`; check the names against the API).
+- [ ] **H-C6** (from A6) Price history chart: the seasonal pattern comes from `seasonal_index.csv` (% of the 12-month moving average). What to Grow: for cotton from March to June, show "no mandi price this month, using <latest month>" instead of today's price.
+- [ ] **H-C7** (from A12) If a series' latest price falls inside a `frozen_stretches.csv` stretch, show "price unchanged since <from_date>" and lower the confidence.
+- [ ] **H-C8** (from A7) `docs/DEMO.md`: show "AMIS mandi price, as of <date>" on the headline card; backup weeks are 2025-03-24 (−19.7%, sell early) and 2025-08-04 (+48.6%, wait), and 2026-03-16 only after the final test run; avoid 2026-08-31 and 2026-09-07 (frozen artifacts); prepare the Rs 5,300 answer (open-market rate; AMIS mandis 3,475–4,700). Details: `docs/DATA_NOTES.md` section A7.
+- [ ] **H-C9** (from A2/A5/A6/A12) Add the new commands to the README "Common tasks" and the data files to the acknowledgements (A4 will send the dataset lines).
+
+**For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
+
+- *(none yet)*
 
 ---
 
@@ -275,21 +311,21 @@ The repo is the shared context: `CLAUDE.md`, `docs/BLUEPRINT.md`, this plan and 
 
 - Start every session from the repo root so it reads `CLAUDE.md`.
 - Start with the kickoff prompt below for your owner letter.
-- When a session learns something the others need (a changed signature, a data quirk, a decision), it goes into the repo: this plan, the blueprint, `docs/DATA_NOTES.md` or the PR description. Never only in chat.
+- When a session learns something the others need (a changed signature, a data quirk, a decision), it goes into the repo: this plan, the blueprint, `docs/DATA_NOTES.md` or the PR description. Never only in chat. If it creates work for another owner, it is a hand-off line in section 4.1.
 - If your session wants to edit outside your folders, stop and message that owner.
 - Read what Claude writes before you merge. Judges may ask any of us about any part.
 
 **Kickoff prompts** (paste as the first message of a session):
 
-> **Owner A (Hamza):** I am Owner A (Data, Proof and Channels) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (A*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named hamza/<task-id>. Only edit my folders.
+> **Owner A (Hamza):** I am Owner A (Data, Proof and Channels) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open hand-offs (H-A*) in section 4.1 and my open tasks (A*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named hamza/<task-id>. Only edit my folders.
 
-> **Owner B (Usman):** I am Owner B (Models and Advisory Engine) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (B*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named usman/<task-id>. Only edit my folders.
+> **Owner B (Usman):** I am Owner B (Models and Advisory Engine) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open hand-offs (H-B*) in section 4.1 and my open tasks (B*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named usman/<task-id>. Only edit my folders.
 
-> **Owner C (Abd):** I am Owner C (Product: API, Web App, Deployment) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (C*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named abd/<task-id>. Only edit my folders.
+> **Owner C (Abd):** I am Owner C (Product: API, Web App, Deployment) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open hand-offs (H-C*) in section 4.1 and my open tasks (C*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named abd/<task-id>. Only edit my folders.
 
 ### 9.3 Check-ins
 
-Five minutes, standing up: **Fri 23:30; Sat 10:00, 13:00, 16:00, 19:00, 22:00; Sun 08:00.** Each person answers: What did I merge? What am I blocked on? Does `main` still run for me? Decisions made at a check-in go into this file the same hour.
+Five minutes, standing up: **Fri 23:30; Sat 10:00, 13:00, 16:00, 19:00, 22:00; Sun 08:00.** Each person answers: What did I merge? What am I blocked on? Does `main` still run for me? Which hand-offs (section 4.1) did I create or close? Decisions made at a check-in go into this file the same hour.
 
 ### 9.4 Demo roles
 
