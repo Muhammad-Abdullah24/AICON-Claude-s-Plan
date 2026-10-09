@@ -1,0 +1,46 @@
+# --- Secrets: never commit. Share keys outside git. ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- Node ---
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- Data: raw downloads stay out of git (docs/PLAN.md section 6.4) ---
+data/raw/*
+!data/raw/.gitkeep
+
+# --- Model weights and caches: never in git ---
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+models/cache/
+.cache/
+
+# --- Editors and OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Deploy tooling ---
+.vercel/

@@ -1,0 +1,49 @@
+# Fact sheet
+
+> Every number on a slide or in the UI that does not come from our data or artifacts must be listed here with a source (PLAN.md sections 18 and 20). Open each source and confirm the number before it is used. Seeded from PLAN.md section 19 on 9 Oct 2026; **add new facts here, not in PLAN.md.**
+
+## Still to source
+
+- 2022 floods: dates, affected districts, and cotton and rice impact in south Punjab (replay case `cotton_2022_floods`).
+- Exact date the government halted wheat procurement in spring 2024 (replay case `wheat_2024_crash`).
+- AMIS terms of use.
+
+
+Open each source and confirm the number before it goes on a slide.
+
+| Fact | Source |
+|---|---|
+| A National Assembly committee in February 2026 linked the potato glut to inadequate production forecasting and poor market intelligence | https://www.brecorder.com/news/40408622 |
+| Potato prices fell from Rs 2,500 to Rs 200 per 62 kg bag. Punjab production rose from 9 to 12 million tonnes. | https://dailytimes.com.pk/1437716/vegetable-glut-hits-farmers-as-pakistan-lacks-processing-storage/ |
+| The potato market crashed in late November 2025 as a glut met the Afghan border closure. Afghanistan had taken over 40% of Pakistan's potato exports. | https://dailytimes.com.pk/1410578/pakistan-potato-market-crashes-amid-afghan-border-closure/ |
+| Tomato prices rose over 400% to about Rs 600 per kg after border crossings closed in October 2025 | https://www.dawn.com/news/1950907/pak-afghan-border-closures-push-up-prices-of-essentials |
+| Wheat fell as low as Rs 2,200 per 40 kg from a peak near Rs 5,500 after procurement was halted | https://ukragroconsult.com/en/news/imf-backs-pakistans-wheat-buy-lets-govt-set-stock-target/ |
+| The Wheat Policy 2025-26 set Rs 3,500 per 40 kg, described by an official as indicative and not a fixed support price | https://profit.pakistantoday.com.pk/?p=215651 |
+| In a tied loan the farmer pre-sells the harvest at a discount. One worked cotton example equals about 46% annual interest. | https://criterion-quarterly.com/the-anatomy-of-agricultural-credit-in-pakistan/ |
+| Commission agents charge a higher commission to farmers who borrowed from them | https://www.theigc.org/sites/default/files/2014/09/Haq-Et-Al-2013-Working-Paper.pdf |
+| A randomised trial of SMS price information in India found no significant average effect on prices farmers received | https://ideas.repec.org/a/oup/wbecrv/v26y2012i3p383-414.html |
+| Warehouse receipt financing in Pakistan lets farmers use stored crops as collateral. The exchange's takeover of the collateral manager was approved in November 2025. | https://www.secp.gov.pk/wp-content/uploads/2025/11/Press-Release-SECP-Greenlights-PMEXs-Strategic-Acquisition-of-NCMCL-Strengthening-Pakistans-Agricultural-Market-Infrastructure.pdf |
+| The warehouse receipt scheme was launched primarily for paddy, rice and maize | https://profit.pakistantoday.com.pk/?p=111804 |
+| Foundation models took the top five places among 17 methods for agricultural price forecasting. Naive ranked 6th. | https://arxiv.org/abs/2601.06371 |
+| Chronos-2: pretrained, zero-shot, quantile forecasts, supports extra input variables | https://arxiv.org/abs/2510.15821 |
+| India's MIEWS forecasts tomato, onion and potato prices three months ahead and raises glut alerts | https://www.business-standard.com/article/pti-stories/govt-portal-to-alert-about-price-crash-in-staple-vegetables-120022601029_1.html |
+| The ALPS method and its tiers | https://documents.wfp.org/stellent/groups/public/documents/manual_guide_proced/wfp264186.pdf |
+| Arya.ag: storage, loans against stored grain, and market links at scale | https://finance.yahoo.com/news/even-global-crop-prices-fall-070000157.html |
+| Some Ergos farmers achieve prices 25 to 30% above the harvest price | https://rabobank.nl/en/about-us/rabofoundation/project/011098564/financial-inclusion-is-in-store-for-indian-smallholders |
+| AMIS publishes prices from 135 Punjab markets | https://pitb.gov.pk/node/2960 |
+| WFP food prices for Pakistan | https://data.humdata.org/dataset/wfp-food-prices-for-pakistan |
+| Twilio WhatsApp sandbox rules | https://www.twilio.com/docs/whatsapp/sandbox |
+
+## Numbers from v1 that we stop using
+
+| v1 claim | Problem | What to do |
+|---|---|---|
+| "Farmers lose 15 to 30% of income" | No source | Replace with the sourced crisis figures above |
+| Wheat support price of Rs 3,900 in 2024 and 2025, Rs 4,000 in 2026 | Does not match the record: the 2025-26 figure is Rs 3,500, and no support price was announced the year before | Use the sourced figures |
+| Middleman cut of 15 to 35% by crop | No source | Remove. Let the farmer enter their own costs. |
+| Production cost per crop | No source | Remove, or find a government source |
+| "Wheat is the most stable crop" as the lead demo | Wheat had a major crash in this period | Lead with the crisis replay |
+| R² of 0.92 | Measured on synthetic data | Replace with MASE on real data |
+
+---
+
