@@ -56,6 +56,8 @@ Ask the human before touching any other path.
 - Rebuild seasonal tables (Owner A): .venv/Scripts/python -m ml.seasonal.tables
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
+- WhatsApp channel (Owner A): backend/app/channels/whatsapp.py; needs FS_WA_* in .env (see the module docstring); tests run with the rest of pytest
+- Chat (Owner A): backend/app/chat/ (POST /api/chat); needs FS_LLM_API_KEY; the prompt lives word for word in docs/PROMPTS.md
 - Train the forecast models (Owner B; first: pip install -r ml/forecast/requirements.txt): .venv/Scripts/python -m ml.forecast.train [--quantiles] [--predictions preds.csv] [--save]
 - Model search on the training years (Owner B): .venv/Scripts/python -m ml.forecast.tune
 - Record the baseline fallback after a failed gate run (Owner B): .venv/Scripts/python -m ml.forecast.train --record-fallback
