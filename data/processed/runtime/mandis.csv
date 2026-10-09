@@ -1,0 +1,4 @@
+id,name,amis_name,weather_district,latitude,longitude,source,confidence
+0,Bahawalpur,BahawalPur,Bahawalpur,29.3956,71.6722,coordinates used for the Open-Meteo weather download (weather_daily_2015_2026.csv),high
+1,Vehari,Vehari,Vehari,30.0445,72.3484,coordinates used for the Open-Meteo weather download (weather_daily_2015_2026.csv),high
+2,Rahim Yar Khan,RahimYarKhan,Rahim_Yar_Khan,28.4212,70.2989,coordinates used for the Open-Meteo weather download (weather_daily_2015_2026.csv),high

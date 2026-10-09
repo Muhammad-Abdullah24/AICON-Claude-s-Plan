@@ -1,0 +1,5 @@
+id,name,type,last_refreshed,url,covers
+1,AMIS.pk,OFFLINE,2026-10-09,http://www.amis.pk,daily wholesale mandi prices 2015 to Oct 2026
+2,Open-Meteo,LIVE,,https://open-meteo.com,historical weather (offline file to 2026-10-01) and live weather
+3,Agriculture Policy Institute cost tables,OFFLINE,2022-23 rice and cotton; 2023-24 wheat,https://api.gov.pk/Policies,"cost of production and yields, Punjab"
+4,economics_inputs.json,OFFLINE,2026-10-09,data/processed/economics_inputs.json,"support prices, interest, transport, macro values, each with its own source"

@@ -46,6 +46,7 @@ Ask the human before touching any other path.
 - Lint and types: .venv/Scripts/python -m ruff check .   and   npm --prefix frontend run lint && npm --prefix frontend run typecheck
 - Regenerate front-end API types after a schema change: .venv/Scripts/python -m backend.app.export_openapi && npm --prefix frontend run gen:api
 - Rebuild features.csv (Owner A): .venv/Scripts/python -m ml.features.build
+- Rebuild runtime tables (Owner A): .venv/Scripts/python -m ml.ingest.runtime_tables
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

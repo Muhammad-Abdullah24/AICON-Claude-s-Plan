@@ -1,0 +1,12 @@
+series,mandi,crop_option,first_price_date,prices_as_of,latest_price_per_40kg,daily_observations,observed_weeks,weeks_old_at_snapshot,is_stale,source,unit_stored,is_synthetic
+BahawalPur|Cotton|none,BahawalPur,Cotton,2015-01-07,2026-10-09,9200.00,627,177,0,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+BahawalPur|Rice|IRRI,BahawalPur,IRRI,2015-01-07,2026-10-09,4600.00,2066,476,0,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+BahawalPur|Rice|SuperBasmati,BahawalPur,SuperBasmati,2015-04-30,2026-04-07,9400.00,1024,292,26,1,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+BahawalPur|Wheat|none,BahawalPur,Wheat,2015-01-07,2026-10-09,3820.00,1693,420,0,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+RahimYarKhan|Cotton|none,RahimYarKhan,Cotton,2015-01-09,2026-09-01,9150.00,1217,304,5,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+RahimYarKhan|Rice|SuperBasmati,RahimYarKhan,SuperBasmati,2015-01-09,2025-12-06,11860.00,654,169,43,1,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+RahimYarKhan|Wheat|none,RahimYarKhan,Wheat,2015-01-09,2026-10-02,3475.20,1839,451,1,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+Vehari|Cotton|none,Vehari,Cotton,2015-01-02,2026-10-09,7500.00,1669,401,0,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+Vehari|Rice|IRRI,Vehari,IRRI,2015-01-02,2026-10-09,4700.00,1341,265,0,0,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+Vehari|Rice|SuperBasmati,Vehari,SuperBasmati,2015-01-02,2025-11-18,12300.00,1514,322,46,1,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0
+Vehari|Wheat|none,Vehari,Wheat,2015-01-01,2026-07-17,3475.20,1636,369,12,1,"AMIS Punjab daily mandi prices (amis.pk), cleaned: data/processed/cleaning_report.txt",100kg,0

@@ -1,0 +1,10 @@
+from_district,to_mandi_id,to_mandi,distance_km,cost_per_40kg,distance_source,distance_confidence,rate_rs_per_40kg_per_km,rate_confidence
+Bahawalpur,0,BahawalPur,0,0.0,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Bahawalpur,1,Vehari,127,165.1,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Bahawalpur,2,RahimYarKhan,224,291.2,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Vehari,0,BahawalPur,127,165.1,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Vehari,1,Vehari,0,0.0,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Vehari,2,RahimYarKhan,349,453.7,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Rahim Yar Khan,0,BahawalPur,224,291.2,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Rahim Yar Khan,1,Vehari,349,453.7,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption
+Rahim Yar Khan,2,RahimYarKhan,0,0.0,"data/processed/economics_inputs.json: haversine between city coordinates in config.py, times 1.3 road factor",derived,1.3,assumption

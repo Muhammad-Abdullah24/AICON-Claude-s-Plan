@@ -101,7 +101,7 @@ Each interface has one owner who writes it and a stub that works from the first 
 | **I2** | **Forecast.** `ml/forecast/predict.py`: `forecast(crop_option, mandi, as_of, weather) -> dict` with `current_price, predicted_price, q10, q90, trend, volatility, prices_as_of, model_version, shap=[{feature, rs_effect, direction}], data_source, is_synthetic`. Prices Rs per 40 kg | B | C (endpoints), A (WhatsApp, chat) | Fri 23:30 (returns placeholder, `is_synthetic: true`) |
 | **I3** | **Advisory engine.** `ml/decision/`: `advise(...)`, `compare_mandis(...)`, `crop_plan(...)`, `selling_window(...)`, `offer_check(...)`, `margin(...)`, `alert_check(...)`. Pure Python, no third-party imports, unit-tested | B | C, A | Sat 01:00 |
 | **I4** | **API contract.** Blueprint section 12, implemented in `backend/app/schemas.py`; front-end types generated from it | C | Front end, A's channels | Fri 23:30 (endpoints return placeholder data) |
-| **I5** | **Runtime tables.** `data/processed/runtime/`: `crops.csv`, `mandis.csv`, `crop_calendar.csv`, `support_prices.csv`, `transport_costs.csv`, `data_sources.csv`, `seasonal.csv` (columns in blueprint section 9) | A | C (seed SQLite), B (engine) | Sat 01:00 |
+| **I5** | **Runtime tables.** `data/processed/runtime/`: `crops.csv`, `mandis.csv`, `crop_calendar.csv`, `support_prices.csv`, `transport_costs.csv`, `series_coverage.csv` (per-series `prices_as_of` and `is_stale`), `data_sources.csv`, `seasonal.csv` (A6). Columns follow blueprint section 9; every value carries a source and confidence | A | C (seed SQLite), B (engine) | Sat 01:00 |
 | **I6** | **Service layer.** `backend/app/services.py`: the functions the REST routes call (`get_advice`, `get_forecast`, `compare`, …). WhatsApp, SMS and chat call these same functions, so every channel gives the same answer | C | A | Sat 10:00 |
 
 **Data facts every owner needs** (details in `docs/DATA_NOTES.md` and blueprint section 9):
@@ -128,7 +128,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 
 **A · Hamza**
 - [x] **A1** (M) Port the feature builder to Python in `ml/features/` (I1). *Done when* regenerating `features.csv` from `farmsight_prices_clean_weekly.csv` and the weather file matches the committed file (same rows; numbers within rounding).
-- [ ] **A2** (M) Write the runtime tables (I5) from `economics_inputs.json` and the clean data: costs, yields, milling yield, calendar, support prices with status, transport costs, per-series `prices_as_of`. *Done when* every value has a `source` and `confidence` column.
+- [x] **A2** (M) Write the runtime tables (I5) from `economics_inputs.json` and the clean data: costs, yields, milling yield, calendar, support prices with status, transport costs, per-series `prices_as_of`. *Done when* every value has a `source` and `confidence` column.
 - [ ] **A3** (S) Create the Meta WhatsApp Cloud API app and test number; register all three demo phones; get the Gemini key (as `FS_LLM_API_KEY` in `.env`); check free-tier limits (blueprint decision 14).
 - [ ] **A4** (S) README data acknowledgements and AMIS terms of use (blueprint decision 22). Send the lines to C.
 

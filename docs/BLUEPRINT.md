@@ -230,7 +230,7 @@ Main Flow    :
      commission (only if the farmer entered one) and farmer profit.
   2. For wheat only, system shows the government support price as a reference
      line. Rice and cotton have no support price. If the support price was
-     announced but not procured (2024-25), it is labelled "announced, not
+     announced but not procured (2023-24 crop, spring 2024 harvest), it is labelled "announced, not
      procured".
 Postcondition: The farmer sees how much of the price they keep.
 ```
@@ -808,7 +808,7 @@ No middleman cut column: there is no source for a default percentage, and AMIS p
 | `source_id` | INT | FK → data_sources.id | |
 | | | UNIQUE(crop_id, mandi_id, date) | |
 
-Coverage of the real series (2015 – Oct 2026): Wheat and Cotton at all three mandis; IRRI at Vehari and Bahawalpur; Super Basmati at all three, but its latest prices are Nov 2025 (Vehari), Apr 2026 (Bahawalpur) and Dec 2025 (Rahim Yar Khan). Cotton has the most gaps.
+Coverage of the real series (2015 – Oct 2026): Wheat and Cotton at all three mandis (Vehari wheat's latest price is Jul 2026); IRRI at Vehari and Bahawalpur; Super Basmati at all three, but its latest prices are Nov 2025 (Vehari), Apr 2026 (Bahawalpur) and Dec 2025 (Rahim Yar Khan). Cotton has the most gaps.
 
 ### Entity: `support_prices` [offline]
 
@@ -818,9 +818,9 @@ Coverage of the real series (2015 – Oct 2026): Wheat and Cotton at all three m
 | `crop_id` | INT | FK → crops.id | |
 | `year` | SMALLINT | NOT NULL | Crop year start (2025 = 2025-26) |
 | `price_per_40kg` | DECIMAL(10,2) | NOT NULL | Rs |
-| `status` | ENUM(SupportStatus) | NOT NULL | 2024-25 was announced at 3,900 but not procured |
+| `status` | ENUM(SupportStatus) | NOT NULL | The 2023-24 crop (spring 2024 harvest) was announced at 3,900 but not procured |
 
-Wheat only (rice and cotton have no support price). Verified values: 2020-21 Rs 1,800; 2021-22 Rs 2,200; 2023-24 Rs 3,900; 2024-25 Rs 3,900 announced, not procured; 2025-26 Rs 3,500. 2022-23 sources conflict and 2026-27 is not yet announced, so both are left out.
+Wheat only (rice and cotton have no support price). Verified values, by crop year (harvest the following spring): 2020-21 Rs 1,800; 2021-22 Rs 2,200; 2023-24 Rs 3,900 announced, not procured (spring 2024); 2025-26 Rs 3,500, indicative (spring 2026). The 2024-25 crop (spring 2025) had no support price (IMF-linked deregulation). 2022-23 sources conflict and 2026-27 is not yet announced, so those are left out. Generated as `data/processed/runtime/support_prices.csv`.
 
 ### Entity: `transport_costs` [offline]
 
@@ -1301,7 +1301,7 @@ Every price in every response is Rs per 40 kg with `unit: "40kg"`; the backend c
 | 13 | Messaging providers? | ✅ Decided | Team | Meta WhatsApp Cloud API (Twilio sandbox backup); Android SMS gateway for SMS |
 | 14 | Which free tiers and limits apply on event day? | ⏳ Action | Team | Check Gemini, WhatsApp Cloud API and Render limits; register all demo phones in advance (Phase 1) |
 | 15 | Which price do we forecast for cotton and rice? | ✅ Decided | Team | Cotton = AMIS "Seed Cotton (Phutti)". Rice = AMIS "Rice (IRRI)" and "Rice Basmati Super (New)", which look like milled-rice prices; costs are converted from paddy with a 0.65 milling yield (assumption, to confirm) |
-| 16 | "What to grow" needs the price at harvest, 4–6 months away, but the 4-week model can't see that far | ✅ Decided (revised in v0.2.0) | Team | Use a seasonal-ratio estimate, not a trained model: today's price × the median historical ratio of harvest-month to current-month price, with the min–max across years as the range and risk badge. About 11 years of history gives too few harvest observations per crop for a reliable 4–6 month XGBoost model, and wheat policy changed in 2024-25 |
+| 16 | "What to grow" needs the price at harvest, 4–6 months away, but the 4-week model can't see that far | ✅ Decided (revised in v0.2.0) | Team | Use a seasonal-ratio estimate, not a trained model: today's price × the median historical ratio of harvest-month to current-month price, with the min–max across years as the range and risk badge. About 11 years of history gives too few harvest observations per crop for a reliable 4–6 month XGBoost model, and wheat policy changed in 2024 and 2025 |
 | 17 | Urdu labels for the signals | ✅ Decided | Team | Only two signals: SELL = بیچ دیں, WAIT = رکیں |
 | 18 | Storage cost or a HOLD option? | ✅ Decided (revised in v0.2.0) | Team | No HOLD signal and no storage cost. The rupee impact does subtract the interest cost of waiting (16.5% per year = policy rate 11.5% + 5%, the method used in the official cost tables; about 1.4% per month). It is one line in config and answers "can farmers afford to wait?" |
 | 19 | One price model for all four crop options, or one per crop/variety? | ✅ Decided | Team | One model, with crop and variety as features. Report error pooled and per crop for NFR-01, not per crop × mandi |

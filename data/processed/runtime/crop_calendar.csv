@@ -1,0 +1,5 @@
+crop_option,sowing_start_month,sowing_end_month,harvest_start_month,harvest_end_month,source,confidence
+Wheat,10,12,4,6,general Punjab crop calendar used by the feature pipeline (ml/features/config.py); not yet checked against an official calendar,assumption
+Cotton,4,6,9,12,general Punjab crop calendar used by the feature pipeline (ml/features/config.py); not yet checked against an official calendar,assumption
+IRRI,6,7,10,11,general Punjab crop calendar used by the feature pipeline (ml/features/config.py); not yet checked against an official calendar,assumption
+SuperBasmati,6,7,10,11,general Punjab crop calendar used by the feature pipeline (ml/features/config.py); not yet checked against an official calendar,assumption
