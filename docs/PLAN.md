@@ -1,1110 +1,291 @@
-# FarmSight v2: Team Build Plan
+# FarmSight: Team Build Plan (v3, follows the blueprint)
 
 > **Team:** Team Claude's Plan · **Event:** Build With AI, AICON'26, SEECS NUST · **Domain:** Agricultural Operations
 > **Our slot:** Sunday 11 October 2026, 11:27 to 11:32 AM, SEECS Lecture Hall
-> **This document:** the single source of truth for what we are building, who owns what, and how we work. Written Friday 9 October 2026, evening.
+> **Written:** Friday 9 October 2026, 21:00.
+
+**Two documents, two jobs:**
+
+| Document | Answers | Changed by |
+|---|---|---|
+| [`docs/BLUEPRINT.md`](BLUEPRINT.md) | **What** we build: use cases, requirements, data model, API contract (section 12), screens, demo | Team agreement at a check-in |
+| `docs/PLAN.md` (this file) | **Who** does **what**, **when**, and how we work together | Team agreement at a check-in. Tick your own task boxes freely |
 
 > **Change log**
-> - **9 Oct 2026, late evening (team decision):** merged with the teammates' data notes (`docs/DATA_NOTES.md`). Scope is now wheat, rice (IRRI) and cotton (phutti) in Bahawalpur, Vehari and Rahim Yar Khan, because that is where we hold real AMIS data. Front end is React. Team is three owners. Crisis replay cases updated to crises inside our data range. Draft shapes for the remaining endpoints added as section 14.6. Sections changed: 3.3, 6, 8.4, 9.3, 12.3, 14, 15.1, 18, 23.
+> - **9 Oct 2026, 21:00 (team decision):** the blueprint is the plan of record. The previous plan (Chronos-2, four verdicts, crisis replay, event layer) is archived at [`docs/archive/PLAN_v2_superseded.md`](archive/PLAN_v2_superseded.md) and no longer binding. Code built to it is reused where it fits (section 6).
 
 ---
 
-## 0. Read this first (two-minute version)
+## 0. Read this first (two minutes)
 
-**What we are building.** FarmSight tells a Pakistani farmer whether to sell now, sell at a different mandi, or store and sell later. It answers in Urdu, on a React web app and on WhatsApp, and it shows proof that its advice would have helped in real past crises.
+**What we are building.** An Urdu-first crop economics advisor for Wheat, Cotton, Super Basmati and IRRI rice at the Vehari, Bahawalpur and Rahim Yar Khan mandis. It forecasts the price 4 weeks ahead with a range, says SELL (بیچ دیں) or WAIT (رکیں) with the rupee gain after interest, explains why with SHAP, compares mandis after transport, and ranks what to grow. It runs on a React web app and WhatsApp. Full spec: `docs/BLUEPRINT.md`.
 
-**What changed from v1.**
+**The must-work demo path** (blueprint section 11). If any of these is missing, we do not have a demo:
 
-| Area | v1 (what we had) | v2 (what we are building) |
-|---|---|---|
-| Data | Synthetic prices from our own formula | Real Pakistani price series, clearly labelled |
-| Forecast model | XGBoost point forecast | Chronos-2 foundation model with uncertainty bands, plus gradient boosting as challenger, both judged against a naive baseline |
-| Sell advice | A classifier with 46.6% accuracy | A transparent decision rule built on the forecast band and the farmer's real costs |
-| Shocks | Not handled | Event layer: an LLM turns news into structured events that raise alerts |
-| Proof | R² of 0.92 on synthetic data | Rupee backtest and a replay of three real crises |
-| Front end | Streamlit, five tabs | React, mobile-first, Urdu-first |
-| Channels | Web only | Web and WhatsApp |
-| AI chat | Bolted-on chatbot tab | Removed. The LLM now works inside the pipeline |
+1. A 4-week forecast with a range for Wheat at Bahawalpur, on real AMIS data, compared honestly against the naive baseline.
+2. An Urdu SELL / WAIT signal with the net rupee impact on 100 maund.
+3. "Why?" with SHAP reasons in plain Urdu.
+4. Mandi comparison by net price after transport.
+5. Crop ranking (What to Grow) with the best selling window.
+6. A working deployed link, plus the app running on our laptop.
 
-**The five things that must exist by Sunday.** If any one is missing we do not have a winning demo:
-
-1. Real data and an honest comparison against the naive forecast.
-2. Urdu verdict on the React app.
-3. The same verdict on WhatsApp.
-4. A crisis replay screen.
-5. A working deployed link, plus the app loaded on our laptop.
-
-**How we work.** Three owners, three sets of folders, one API contract. Nobody's Claude session edits outside its owner's folders. `main` always runs. Details are in sections 15 and 16.
+**How we work.** Three owners, each owning a set of folders. The interfaces between owners are fixed in section 4, and nobody's Claude session edits outside its owner's folders. `main` always runs.
 
 ---
 
 ## 1. Fixed facts: deadlines and rules
 
-### 1.1 Deadlines
-
 | When | What |
 |---|---|
-| Saturday 10 October | Day 2. On-site attendance is mandatory. The submission link is handed out in person. Teamwork is observed. |
-| Sunday 11 October, 11:00 AM | All three of us in SEECS Lecture Hall, laptop open, demo loaded and tested. |
-| Sunday 11 October, 11:27 AM | Our five minutes. Slots run back to back. |
-| To confirm at the venue | The official end of the build period and the submission deadline. |
+| Saturday 10 October | On-site attendance is mandatory. The submission link is handed out in person. Teamwork is observed. |
+| Sunday 11 October, 11:00 AM | All three of us in SEECS Lecture Hall, laptop open, demo loaded and tested |
+| Sunday 11 October, 11:27 AM | Our five minutes |
+| To confirm at the venue | The official end of the build period and the submission deadline. Adjust section 5 when known |
 
-If we are not present within two minutes of our slot, we move to the back of the queue and may forfeit.
+Rules that shape the build (from the rulebook):
 
-### 1.2 Rules that shape the build
-
-These come from the rulebook and the allocation email.
-
-- **The required flow is Problem → Data → AI → Solution → Impact.** A chatbot bolted on does not count as meaningful AI.
-- **Submission needs three things:** a GitHub repository link, a deployed project link, and a demo presentation.
-- **Scoring has five criteria:** AI integration depth, problem-solving quality, demo and presentation, creativity and SDG impact, industrial impact.
-- **85% of our score comes from one agriculture domain judge.** The remaining 15% comes from judges of other domains.
-- **Falsifying results or demonstrations is grounds for disqualification.** Every synthetic or simulated number must be labelled.
-- **Plagiarism is grounds for disqualification.** We take ideas from other projects, never code.
-- **Only registered team members may contribute.**
-- **We must be able to explain every AI component:** model, data, prompts, API and workflow.
-- **Pre-existing code, datasets and templates must be disclosed** in the README.
-- **A smaller working solution beats a large idea that cannot be demonstrated.**
+- The required flow is **Problem → Data → AI → Solution → Impact**. A bolted-on chatbot does not count as meaningful AI. Our AI is the forecast model, the SHAP explanations and the advisory engine; the LLM only handles language.
+- **Submission needs:** a GitHub repository link, a deployed project link, and a demo presentation.
+- **Falsifying results is grounds for disqualification.** Every synthetic or assumed number is labelled.
+- **Plagiarism is grounds for disqualification.** Ideas from other projects, never code.
+- **Pre-existing code and datasets are disclosed** in the README (the AMIS scraping was done before the event).
+- **Each of us must be able to explain every AI component**: model, data, prompts, API and workflow.
+- **A smaller working solution beats a large idea that cannot be demonstrated.** Use the cut list (section 7).
 
 ---
 
-## 2. Why v2: what was wrong with v1
+## 2. Team and ownership
 
-Be able to say these out loud. A judge who sees that we found our own weaknesses will trust the rest.
+| Owner | Person | Role | Owns (folders) |
+|---|---|---|---|
+| **A** | **Hamza** (git `muhammadhamza6002`; GitHub user to confirm) | **Data, Proof and Channels** | `data/`, `ml/features/`, `ml/ingest/`, `ml/seasonal/`, `ml/eval/`, `backend/app/channels/` (WhatsApp, SMS), `backend/app/chat/` (Gemini chat and voice), `docs/FACTS.md`, `docs/PROMPTS.md`, `docs/DATA_NOTES.md`, the slides |
+| **B** | **________** (fill in name and GitHub user) | **Models and Advisory Engine** | `ml/forecast/`, `ml/explain/`, `ml/decision/`, `artifacts/` (model files and model metadata), `docs/MODEL_CARD.md` |
+| **C** | **Abd** (git "Abd"; GitHub user to confirm, likely the repo owner `Muhammad-Abdullah24`) | **Product: API, Web App, Deployment** | `backend/` (except `channels/` and `chat/`), `frontend/`, `README.md`, `CLAUDE.md`, `docs/DEMO.md`, `.github/`, deployment |
 
-1. **The accuracy number was circular.** v1 trained and tested on prices generated by our own formula. An R² of 0.92 only showed the model had learned our formula.
-2. **R² on price levels flatters any model.** Next month's price is usually close to this month's, so even "no change" scores well. The fair test is whether we beat that naive forecast.
-3. **The sell advisor was weak.** 46.6% accuracy across three classes is not far from guessing, and the whole pitch rested on it.
-4. **Farmers often cannot hold.** Many borrow from a commission agent and have pre-sold their harvest. A HOLD signal is useless to them unless we deal with storage and credit.
-5. **Price information alone has a poor record.** A randomised trial in India found no significant effect of SMS price information on the prices farmers received. Advice has to be actionable.
-6. **The model was blind to shocks.** Border closures, policy changes and gluts drive Pakistan's biggest price moves, and price history plus weather cannot see them coming.
-7. **Some hardcoded numbers were wrong or unsourced.** See the fact sheet in section 19.
+**Shared files.** `docs/BLUEPRINT.md`, `docs/PLAN.md` and `backend/app/schemas.py` change only by agreement at a check-in. When the API shape changes, C changes `schemas.py` and blueprint section 12 in the same commit and regenerates the front-end types.
 
----
+**Why this split.** The data is already done, so A has capacity: A takes the channels (WhatsApp, SMS, Gemini chat and voice), which the blueprint lists as an "Integration" role. C keeps the largest surface (API and all screens), so C's tasks are kept to that. B owns everything that turns features into a decision.
 
-## 3. What FarmSight v2 is
-
-### 3.1 One sentence
-
-FarmSight forecasts mandi prices with honest uncertainty, watches the news for shocks, and turns both into advice a farmer can act on, in Urdu, on the web and on WhatsApp.
-
-### 3.2 Who uses it
-
-| User | What they get | Why it matters for judging |
-|---|---|---|
-| Farmer or farmer group | A verdict in Urdu: sell now, sell elsewhere, or store and sell later, with the rupee difference | Problem-solving quality, SDG impact |
-| Lender or warehouse operator | A forecast band for valuing stored crops used as loan collateral | Industrial impact: someone who would pay |
-| District price officials | Early warning of spikes and crashes | Industrial impact, second use of the same engine |
-
-The farmer is what we build and demo. The other two are one slide each.
-
-### 3.3 Scope
-
-- **Crops: wheat, rice (IRRI variety only), cotton (seed cotton / phutti).** Chosen because we hold real AMIS wholesale data for them (see `docs/DATA_NOTES.md`).
-- **Mandis: Bahawalpur, Vehari, Rahim Yar Khan.**
-- **Series: 8 crop-mandi pairs.** Rahim Yar Khan rice is dropped (6% coverage). The list of valid pairs lives only in `artifacts/meta.json`.
-- **Horizon: one to four weeks**, on a weekly series resampled from daily AMIS prices.
-- **Out of scope:** sugarcane (mill-priced, no mandi data), maize, vegetables, other cities. Tomato and potato from the earlier draft are dropped because we have no series for them; mention them as future coverage only.
+**Balancing rule.** At the Saturday 13:00 check-in, if C is behind, A takes the Chat screen and the Register screen; if B is behind, A takes the seasonal crop-plan logic (B7).
 
 ---
 
-## 4. What the rest of the world does (and what we take from it)
+## 3. Architecture in one picture (who owns which box)
 
-| Solution | Where | What it does | What we take | The gap we fill |
+```
+OFFLINE (laptops)                                   RUNTIME (FastAPI, deployed)
+───────────────────────────────────                 ─────────────────────────────────────────────────
+AMIS 2015–2026 ─▶ data/processed/  [A]              React app [C] ◀── REST /api/* [C] ──▶ SQLite [C]
+Open-Meteo     ─▶ features.csv     [A]                                    │       (farmers, forecasts,
+economics_inputs.json              [A]                                    │        alerts, messages)
+                    │                                                     ├─▶ ml/forecast/predict.py [B]
+                    ├─▶ ml/forecast/train.py [B] ─▶ artifacts/models/ [B] │      (loads artifacts/models)
+                    ├─▶ ml/eval/  NFR-01 gate [A]                         ├─▶ ml/decision/ engine   [B]
+                    └─▶ ml/seasonal/ ─▶ data/processed/runtime/ [A]       ├─▶ weather service [C] ─▶ Open-Meteo
+                                                                          │      uses ml/features [A]
+                                                                          └─▶ channels/ + chat/ [A]
+                                                                                 WhatsApp · SMS · Gemini
+```
+
+Only weather (and Gemini, WhatsApp, SMS) is live. Prices, tables and models are prepared offline and read at runtime (blueprint NS-10).
+
+---
+
+## 4. Interfaces between owners (agree in Phase 0, then freeze)
+
+Each interface has one owner who writes it and a stub that works from the first hour, so nobody is blocked.
+
+| ID | Interface | Owner | Used by | Stub by |
 |---|---|---|---|---|
-| MIEWS | India, government | Forecasts wholesale tomato, onion and potato prices three months ahead and raises glut alerts | Its alert triggers: price below the three-year harvest average, or more than 50% below last year | Its forecasts go to policymakers. Farmers do not receive them. |
-| ALPS | World Food Programme, global | Flags abnormal prices by comparing the observed price with its seasonal trend. Four tiers: Normal, Stress, Alert, Crisis | The tier method for our price alarm (section 7.5) | It warns aid agencies about consumer prices. It gives farmers no advice. |
-| Arya.ag | India, private | Storage near farms, loans against stored grain, and links to buyers | Proof that "store and sell later" only works when storage and credit come with it. Also proof that lenders need price tracking. | No Pakistani equivalent gives farmers the timing advice. |
-| Ergos GrainBank | India, private | Farmers store grain, borrow against it and sell later. Some reach prices 25 to 30% above the harvest price. | Evidence that timing pays when holding is feasible | Same as above |
-| Reuters Market Light | India, private | SMS price information to farmers | The warning: a randomised trial found no significant effect on prices received | We give a decision with costs included, not raw prices |
-| AMIS | Punjab, government | Publishes daily wholesale prices from 135 markets | The data source for real mandi prices, subject to its terms | It reports today's prices. It does not forecast or advise. |
-| Warehouse receipt financing | Pakistan, banks | Farmers borrow against crops stored in accredited warehouses | The pathway that makes "store and sell later" possible | It offers finance without telling the farmer when to sell |
+| **I1** | **Features.** `ml/features/`: `price_features(series_history, as_of) -> dict` and `weather_features(daily_weather, week_start) -> dict`, plus `FEATURE_COLUMNS`. Column names identical to `data/processed/features.csv`. One code path for training and runtime | A | B (training), C (weather service, live predict) | Sat 01:00 |
+| **I2** | **Forecast.** `ml/forecast/predict.py`: `forecast(crop_option, mandi, as_of, weather) -> dict` with `current_price, predicted_price, q10, q90, trend, volatility, prices_as_of, model_version, shap=[{feature, rs_effect, direction}], data_source, is_synthetic`. Prices Rs per 40 kg | B | C (endpoints), A (WhatsApp, chat) | Fri 23:30 (returns placeholder, `is_synthetic: true`) |
+| **I3** | **Advisory engine.** `ml/decision/`: `advise(...)`, `compare_mandis(...)`, `crop_plan(...)`, `selling_window(...)`, `offer_check(...)`, `margin(...)`, `alert_check(...)`. Pure Python, no third-party imports, unit-tested | B | C, A | Sat 01:00 |
+| **I4** | **API contract.** Blueprint section 12, implemented in `backend/app/schemas.py`; front-end types generated from it | C | Front end, A's channels | Fri 23:30 (endpoints return placeholder data) |
+| **I5** | **Runtime tables.** `data/processed/runtime/`: `crops.csv`, `mandis.csv`, `crop_calendar.csv`, `support_prices.csv`, `transport_costs.csv`, `data_sources.csv`, `seasonal.csv` (columns in blueprint section 9) | A | C (seed SQLite), B (engine) | Sat 01:00 |
+| **I6** | **Service layer.** `backend/app/services.py`: the functions the REST routes call (`get_advice`, `get_forecast`, `compare`, …). WhatsApp, SMS and chat call these same functions, so every channel gives the same answer | C | A | Sat 10:00 |
 
-**Our position in one line:** existing tools give prices, or forecasts for officials, or finance. None gives a Pakistani farmer a costed decision in Urdu on the phone they already use.
+**Data facts every owner needs** (details in `docs/DATA_NOTES.md` and blueprint section 9):
 
----
-
-## 5. System architecture
-
-```
-                    ┌──────────────────────────────────────────────┐
-                    │                OFFLINE (laptop)              │
-                    │                                              │
- Real price data ──▶│  ingest ──▶ clean series ──▶ forecast models │
- Weather data    ──▶│                               (Chronos-2,    │
- News headlines  ──▶│  LLM event extractor          boosting,      │
-                    │       │                       naive)         │
-                    │       ▼                          │           │
-                    │   events table          backtest + rupee     │
-                    │                         backtest             │
-                    │                               │              │
-                    │                               ▼              │
-                    │                 artifacts/ (small JSON files)│
-                    └───────────────────────────────┬──────────────┘
-                                                    │ committed to git
-                                                    ▼
-                    ┌──────────────────────────────────────────────┐
-                    │          ONLINE (deployed backend)           │
-                    │  FastAPI: reads artifacts, runs the decision │
-                    │  engine, phrases Urdu replies                │
-                    └───────┬──────────────────────────┬───────────┘
-                            │                          │
-                            ▼                          ▼
-                    React web app              WhatsApp bot
-                    (Urdu-first, mobile)       (Twilio webhook)
-```
-
-**The key design choice: forecasts are precomputed.** The heavy models run on a laptop and write small JSON files. The deployed backend only reads those files and does arithmetic. This has three benefits:
-
-- The deployed service stays small and fast, with no large model to load.
-- The demo cannot fail because a model is slow or out of memory.
-- The crisis replay uses exactly the same code path as the live view, just with an earlier date.
-
-**The time-machine rule.** Every forecast is tagged with an `as_of` date and may only use data from on or before that date. This is what makes the replay honest. Breaking this rule would be data leakage, and a judge may check.
+- Crop options: `Wheat`, `Cotton`, `IRRI`, `SuperBasmati` (`crop_option` column). 11 series; **no IRRI at Rahim Yar Khan**. Super Basmati's latest prices are Nov 2025 to Apr 2026, so show its date in amber.
+- AMIS stores Rs per 100 kg; **every API price is Rs per 40 kg** (× 0.4). Convert in one place: `ml/features/`.
+- Split in `features.csv`: train = target week before 2025, val = 2025, test = 2026. Train on **real rows only** (`is_synthetic = 0`).
+- Persistence baseline MAPE: 4.7% train, 5.6% val, 3.4% test. That is the bar (NFR-01).
 
 ---
 
-## 6. Data plan
+## 5. Phases and tasks
 
-### 6.1 Sources
+Times are local. Each task has an ID, an owner, a priority and a "done when". Tick the box in your PR when it merges. Priority: **M** = must (demo path), **S** = should, **C** = could (first to cut).
 
-| Source | What it has | Frequency | Status and caveats |
-|---|---|---|---|
-| WFP food prices for Pakistan (Humanitarian Data Exchange) | Food prices by market, back to 2004 | Monthly | Clean CSV with an open licence that requires attribution. Check which commodities and months it covers. Prices are mostly retail. |
-| Pakistan Bureau of Statistics weekly price reports | 51 essential items including tomatoes, potatoes, onions and wheat flour, from 50 markets in 17 cities | Weekly | Public reports, published as PDFs, so they need parsing. Retail prices. |
-| AMIS Punjab | Daily wholesale prices from 135 Punjab markets | Daily | **Our main series.** Collected by a teammate for Jan 2022 to Oct 2026 (`docs/DATA_NOTES.md`). Prices are **Rs per 100 kg**. **Confirm its terms of use** and record the answer in the README acknowledgements. |
-| Open-Meteo | Weather history | Daily | Already used in v1. Attribute it. |
-| News headlines | Shock events | Ad hoc | Store the headline, date and link only. Do not copy article text. |
+### Phase 0 — Agree (Fri 21:00 to 22:00) · all three
 
-### 6.2 Retail versus wholesale: say it before the judge does
+- [ ] **P0.1** Everyone reads `docs/BLUEPRINT.md` and this file. Fill in Owner B's name in section 2 and in `CLAUDE.md`.
+- [ ] **P0.2** Walk through interfaces I1 to I6 together. Agree the function signatures and freeze them.
+- [ ] **P0.3** Each person: Python 3.11, Node 20.19+, repo cloned, `README.md` setup done, `git config user.name/email` set to your own account, Claude Code started from the repo root.
+- [ ] **P0.4** Merge this plan's PR.
 
-WFP and Bureau of Statistics prices are **retail** prices paid by consumers. Farmers receive **wholesale** or farm-gate prices, which are lower and behave somewhat differently.
+### Phase 1 — Setup (Fri 22:00 to Sat 01:00)
 
-- We have AMIS wholesale data, so it is the main series. Every response says `price_type: wholesale`.
-- Any retail series we add later is labelled as a proxy on every screen and slide.
+**A · Hamza**
+- [ ] **A1** (M) Port the feature builder to Python in `ml/features/` (I1). *Done when* regenerating `features.csv` from `farmsight_prices_clean_weekly.csv` and the weather file matches the committed file (same rows; numbers within rounding).
+- [ ] **A2** (M) Write the runtime tables (I5) from `economics_inputs.json` and the clean data: costs, yields, milling yield, calendar, support prices with status, transport costs, per-series `prices_as_of`. *Done when* every value has a `source` and `confidence` column.
+- [ ] **A3** (S) Create the Meta WhatsApp Cloud API app and test number; register all three demo phones; get the Gemini key (as `FS_LLM_API_KEY` in `.env`); check free-tier limits (blueprint decision 14).
+- [ ] **A4** (S) README data acknowledgements and AMIS terms of use (blueprint decision 22). Send the lines to C.
 
-### 6.3 First task for the Data owner (tonight)
+**B · Owner B**
+- [ ] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
+- [ ] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
+- [ ] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
 
-1. Bring the AMIS data, weather, procurement prices and `economics_inputs.json` into the repo (cleaned files under `data/processed/`).
-2. Confirm the AMIS terms of use.
-3. Check the known data issues in `docs/DATA_NOTES.md`: the late-2026 AMIS wheat lag (about Rs 3,820 per 40 kg against Rs 5,300 reported) and whether AMIS rice IRRI is paddy or milled.
-4. Confirm the series cover the replay windows in section 8.4 (spring 2024 onward for wheat, August to December 2022 for the floods).
+**C · Abd**
+- [ ] **C1** (M) Replace the API contract in `schemas.py` with blueprint section 12 (forecast, explain, advice, compare-mandis, crop-plan, offer-check, margin, history, weather, meta, auth, farmers, chat). Stub every endpoint with placeholder data (`is_synthetic: true`). Regenerate front-end types. *Done when* CI is green and `/docs` lists every endpoint.
+- [ ] **C2** (M) SQLite schema from blueprint section 9, seeded from A's runtime tables (I5) on startup. A pre-seeded demo farmer ("Ahmed", Bahawalpur, wheat and cotton, 100 maund). Login by phone returns a JWT.
+- [ ] **C3** (S) Retire code built for the superseded plan: the four-verdict engine paths, replay, alerts/events and backtest endpoints and screens. Delete or move to `legacy/`; keep the Urdu, RTL, chart and verdict-card pieces that fit.
 
-### 6.3.1 Units
+**Check-in Fri 23:30:** are the I2 and I4 stubs merged? Is anyone blocked?
 
-- AMIS prices are **Rs per 100 kg**. Support prices and farmers use **Rs per 40 kg (one maund)**.
-- Cleaned series keep the source unit. `ml/precompute.py` converts to per 40 kg when writing artifacts.
-- **Every price in `artifacts/` and in every API response is Rs per 40 kg**, with `unit: "40kg"`. The backend and front end never convert units.
-- In this project one maund means 40 kg.
+### Phase 2 — Core (Sat 08:00 to 14:00) · must-work path on real models
 
-### 6.4 Data rules
+**A · Hamza**
+- [ ] **A5** (M) Evaluation gate in `ml/eval/` (NFR-01): MAPE pooled and per crop option vs persistence on real validation rows; directional accuracy on moves over 3%; q10 to q90 coverage (target about 80%). Test set only once, at the end. Output `ml/eval/report.json` and a short table for the slides.
+- [ ] **A6** (M) Seasonal tables in `ml/seasonal/` → `data/processed/runtime/seasonal.csv`: monthly index (% of each year's average) and harvest-month ratios (median, min, max, number of years) per crop option and mandi. Feeds What to Grow, the selling window and the history chart.
+- [ ] **A7** (S) Check the headline demo case in the data: Wheat at Bahawalpur now (AMIS about Rs 3,820 vs about Rs 5,300 reported), and prepare a backup historical date (spring 2024 harvest).
 
-- Every dataset gets a row in the README acknowledgements: name, link, licence, date downloaded.
-- Raw downloads stay out of git. Cleaned series under about 5 MB go in.
-- Every API response carries a `data_source` field and an `is_synthetic` flag. The UI shows it as a badge.
-- If any series is synthetic, the word "synthetic" appears next to every number derived from it.
-- No personal, financial or medical data about real people. Sample farmer profiles are invented.
+**B · Owner B**
+- [ ] **B4** (M) Train the point model and the q10 and q90 quantile models. Run A's gate. If the model does not beat persistence on validation, ship the fallback: persistence as the point forecast and the range from the empirical 4-week change distribution, labelled "baseline" (blueprint NFR-01). Write the result in `docs/MODEL_CARD.md` either way.
+- [ ] **B5** (M) SHAP TreeExplainer and a feature-to-sentence map in Urdu and English (top 3 to 5 factors with rupee effects). No LLM writes these reasons.
+- [ ] **B6** (M) Real `predict.py`: load `artifacts/models/`, build features with I1, return the I2 shape with `is_synthetic: false`.
+- [ ] **B7** (M) `crop_plan()` and `selling_window()` in the engine from A6's tables: profit per acre = harvest estimate × yield − cost per acre, risk badge from the year-to-year spread, best selling month window net of interest.
 
-### 6.5 Cleaned series format
+**C · Abd**
+- [ ] **C4** (M) Wire `/forecast`, `/advice`, `/explain`, `/compare-mandis`, `/meta` to B's predict and engine through the service layer (I6).
+- [ ] **C5** (M) Weather service: Open-Meteo with `past_days=92`, aggregated with A's `weather_features`, cached up to 1 hour in SQLite, `weather_cached` flag on fallback.
+- [ ] **C6** (M) Screens: Home (big SELL/WAIT card, today → 4 weeks with range, "AMIS mandi price, as of" date), Sell advice, Why. Urdu first, RTL, 360 px.
 
-One tidy table, one row per observation:
+**Check-ins Sat 10:00 and 13:00:** does the must-work path run on real models? Apply the balancing rule at 13:00.
 
-| Column | Example | Notes |
-|---|---|---|
-| `date` | 2025-10-16 | Week ending date, or month start |
-| `crop` | wheat | lowercase id from `meta.json` |
-| `mandi` | vehari | lowercase id from `meta.json` |
-| `price_pkr` | 5200 | Per unit below |
-| `unit` | 100kg | Source unit. AMIS is 100kg. One unit per crop. |
-| `price_type` | wholesale | retail or wholesale |
-| `source` | amis | dataset id |
-| `is_synthetic` | false | |
+### Phase 3 — Features (Sat 14:00 to 20:00)
+
+**A · Hamza**
+- [ ] **A8** (S) WhatsApp webhook in `backend/app/channels/whatsapp.py`: signature check; "گندم بہاولپور 100 من" style text → advice through I6; quick replies Why / Compare mandis / Stop alerts.
+- [ ] **A9** (S) Gemini chat `/api/chat` in `backend/app/chat/`: context is the farmer's own forecast and advice; prompt in `docs/PROMPTS.md`; uses only the numbers given; template fallback; rate limit.
+- [ ] **A10** (C) Voice notes: Gemini transcription, "Did you mean …?" confirmation, audio deleted after (web and WhatsApp).
+- [ ] **A11** (C) SMS gateway webhook `backend/app/channels/sms.py` with the 160-character format and number menu.
+
+**B · Owner B**
+- [ ] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
+- [ ] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
+- [ ] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
+
+**C · Abd**
+- [ ] **C7** (M) Screens: Compare Mandis, What to Grow with the season timeline.
+- [ ] **C8** (S) Screens: offer check, margin, Register/Profile (district dropdown first; map pin if time), Chat (uses A9 and A10).
+- [ ] **C9** (S) APScheduler alert job: B8's check → A8's WhatsApp sender, SMS fallback.
+- [ ] **C10** (M) Deploy: front end on Vercel, backend on Render or Hugging Face Spaces; environment variables set; link opens on a phone on mobile data.
+
+**Check-ins Sat 16:00 and 19:00.**
+
+### Phase 4 — Polish (Sat 20:00 to 23:30) · feature freeze at 23:30
+
+- [ ] **P4.1** (C) Price history screen (C), if not cut.
+- [ ] **P4.2** (all) Urdu copy review by a native speaker; fallbacks tested (LLM down, weather down, WhatsApp down).
+- [ ] **P4.3** (A) Honesty checklist (section 8) and slides with real numbers from `ml/eval/report.json`.
+- [ ] **P4.4** (C) `docs/DEMO.md` with real app output replacing every placeholder (blueprint decision 12). Tag `demo-v1` when the full flow works.
+- [ ] **P4.5** (all) Record the backup screen capture of the whole demo.
+
+### Phase 5 — Demo (Sun 07:30 to 10:30)
+
+- [ ] Rehearse the five minutes at least five times with a timer. Every one of us speaks.
+- [ ] Wake the server, test the deployed link on a hotspot, re-check the WhatsApp test number and demo phones.
+- [ ] Load the demo locally on the laptop as a backup. Leave for the hall at 10:30.
 
 ---
 
-## 7. Forecasting models (updated)
+## 6. What happens to the code already in the repo
 
-### 7.1 What the research says
-
-- A January 2026 study compared 17 forecasting methods on US agricultural commodity prices from 1997 to 2025. Pretrained time-series foundation models, used with no training, took the top five places.
-- In the same study the naive forecast ranked 6th. It beat every deep learning model trained from scratch, which ranked 10th to 17th. Random Forest ranked 7th and XGBoost 8th.
-- Chronos-2 (Amazon, October 2025) is a 120-million-parameter pretrained forecasting model. It works with no training, outputs quantile forecasts, accepts extra input variables, and runs on a CPU. On the public benchmarks its authors report, it ranks above the previous leaders.
-- One September 2026 paper lists a newer model, TimesFM 3.0, slightly ahead of Chronos-2 on one benchmark. The gap is small. We have not verified its availability, so treat it as optional.
-
-**What this means for us.** XGBoost alone, as in v1, is not the best choice and may not beat "no change". A foundation model is the stronger primary, and it needs no training, which suits a 30-hour build. That study used US monthly data, so we still have to prove the result on Pakistani prices.
-
-### 7.2 The model line-up
-
-| Role | Model | Why it is here |
-|---|---|---|
-| Baseline 1 | Naive: the next price equals the latest price | The bar every model must clear |
-| Baseline 2 | Seasonal naive: the same period last year | Catches crops with strong seasons |
-| **Primary** | **Chronos-2, zero-shot, quantile output** | Best-performing family in the agricultural study, no training needed, gives uncertainty bands |
-| Challenger | Gradient boosting with a quantile objective, reusing the v1 features, trained on real data | Already mostly built, and explainable with SHAP |
-| Final | Whichever wins the backtest per crop, or the average of primary and challenger | Decided by evidence, recorded in the README |
-
-### 7.3 What we remove
-
-- **The volatility classifier.** The width of the forecast band now tells us how uncertain the price is.
-- **The sell advisor classifier.** The decision engine in section 10 replaces it.
-- **The chat tab.** The LLM moves into the event layer and the language layer.
-
-### 7.4 Quantiles: why they matter
-
-A single predicted price hides the risk. We forecast three numbers for each horizon:
-
-- **q10:** a pessimistic price. One time in ten the real price is expected to fall below this.
-- **q50:** the middle estimate.
-- **q90:** an optimistic price.
-
-The band from q10 to q90 is what the farmer sees as "between Rs A and Rs B". The decision engine uses q50 for expected gain and q10 for downside risk.
-
-**Calibration check.** In the backtest, the real price should land inside the q10 to q90 band about 80% of the time. If it lands inside much less often, widen the band using the errors seen in the backtest, and state that we did so.
-
-### 7.5 Price alarm (borrowed from ALPS and MIEWS)
-
-A simple, well-documented indicator that works alongside the forecast.
-
-1. Estimate the normal seasonal price for this crop, mandi and time of year from history.
-2. Measure how far today's price is from it, in units of its usual variation.
-3. Map the result to a tier, using the thresholds the World Food Programme uses:
-
-| Indicator value | Tier |
+| Existing piece | Fate |
 |---|---|
-| Below 0.25 | Normal |
-| 0.25 to 1 | Stress |
-| 1 to 2 | Alert |
-| Above 2 | Crisis |
+| FastAPI app, `schemas.py` pattern, startup validation, CI, OpenAPI → TypeScript generation | **Keep.** C changes the contents to the blueprint contract |
+| React shell, Urdu i18n, RTL tests, logical-class lint rule, fonts, verdict card, Forecast chart | **Keep and adapt** to SELL / WAIT and the blueprint screens |
+| `ml/decision/engine.py` (four verdicts, storage, spoilage) | **Rewrite** to the blueprint rule (B2). Keep the pure-Python, tested style |
+| Replay, alerts/events, backtest endpoints and screens; `ml/alarm/`, `ml/events/`, `data/events/` | **Not in the blueprint.** Retire (C3); A may reuse events later only if agreed |
+| `ml/precompute.py`, placeholder `artifacts/*.json` | Replaced by `artifacts/models/` and `data/processed/runtime/`. Remove once B6 and A2 land |
+| `data/processed/` cleaned data and `features.csv` | **Keep.** This is the training data |
 
-ALPS only flags prices that are abnormally high. We apply the same scale in both directions, because for a farmer the crash is the danger. Add the two MIEWS crash triggers as extra flags:
-
-- Price below the average harvest-time price of the previous three years.
-- Price more than 50% below the same time last year.
-
-### 7.6 Events as model inputs
-
-Chronos-2 accepts extra input variables. Try feeding it event flags from section 9.
-
-- Run the backtest with and without them, and report both.
-- Research shows extra inputs sometimes make forecasts worse, so keep them only if they help.
-- With few events in the history, do not claim an accuracy gain we cannot show. The event layer earns its place through alerts even if it adds nothing to accuracy.
-
-### 7.7 Practical notes
-
-- Find the model by searching "Chronos-2" on Hugging Face and follow its model card. Use the Context7 plugin to pull current usage docs rather than trusting memory.
-- Run it on a laptop. We only have a handful of series.
-- Fix random seeds where they apply, and save the exact package versions.
-- Write every forecast to `artifacts/` with its `as_of` date, the model name and the data source.
-
-### 7.8 Explanations
-
-- **For farmers:** two or three plain reasons in Urdu, built from facts the system already holds: where we are in the season, the recent trend, any active event, and how wide the band is.
-- **For judges:** a technical view showing which model produced the forecast, its backtest score, and SHAP values for the boosting model.
-- The LLM only rephrases these facts. It never supplies a number or a reason of its own.
+**Stale references.** Comments in the existing code and in `README.md`, `docs/DEMO.md`, `docs/FACTS.md`, `docs/PROMPTS.md` and `docs/DATA_NOTES.md` cite "PLAN.md section N". Those numbers refer to the archived plan. Each owner updates their own files as they touch them (C: README and code; A: FACTS, PROMPTS, DATA_NOTES).
 
 ---
 
-## 8. Evaluation: how we prove it
-
-This section produces the "Impact" in Problem → Data → AI → Solution → Impact. It matters as much as the model.
-
-### 8.1 Rolling backtest
-
-1. Pick at least 12 cut-off dates across the last two years of real data.
-2. At each cut-off, give every model only the data up to that date.
-3. Forecast the next one to four weeks, or the next month.
-4. Compare with what actually happened.
-
-### 8.2 Metrics
-
-| Metric | Plain meaning | Target |
-|---|---|---|
-| MASE | Our average error divided by the naive forecast's average error | Below 1 means we beat naive |
-| Quantile loss | How good the whole band is, not only the middle | Lower than naive's |
-| Band coverage | How often the real price fell inside q10 to q90 | Close to 80% |
-| Rupee backtest | Money gained or lost by following our advice | See 8.3 |
-
-**Do not report R² as the headline.** Report MASE per crop, including any crop where we lose to naive.
-
-### 8.3 Rupee backtest
-
-This is our headline impact number.
-
-- **Setup:** a farmer has 100 maund at harvest time, for each past season and mandi in our data.
-- **Strategy A, sell at harvest:** sell everything on the harvest date. This is what most farmers do.
-- **Strategy B, follow FarmSight:** ask for advice each week and act on it, paying storage, spoilage and finance costs while holding.
-- **Strategy C, perfect hindsight:** the best possible outcome, as an upper limit.
-
-Report, for B against A:
-
-- average rupee difference per 100 maund
-- the share of cases where B did better
-- the worst case
-
-**Honesty notes for the slide:** this is a backtest on historical prices, not a field trial. The number of seasons is small. Costs are assumptions, listed on the slide.
-
-### 8.4 Crisis replay
-
-Real events inside our data range (Jan 2022 to Oct 2026), replayed with the time-machine rule. Both are **to verify against the AMIS series** before they go on a slide.
-
-| Case id | Crisis | What happened | The question we answer |
-|---|---|---|---|
-| `wheat_2024_crash` | Wheat, 2024 to 2025 | Prices fell as low as Rs 2,200 per 40 kg from a peak near Rs 5,500 after government procurement stopped | Would we have told a farmer holding wheat to sell earlier? |
-| `cotton_2022_floods` | Cotton (and rice), August to December 2022 | Major floods hit south Punjab and Sindh | Would the price alarm and the event layer have flagged the shock? **Facts to source in `docs/FACTS.md`.** |
-
-A third case can be added if the data shows another clear shock. Case ids live only in `artifacts/replay.json`.
-
-**Show the misses too.** A price-only model will not foresee a border closure, and that is the reason the event layer exists. Showing the miss and then the alert is a stronger story than pretending we predicted everything.
-
----
-
-## 9. Event layer
-
-### 9.1 What it is
-
-An LLM reads a news headline and returns a structured event. Events raise alerts, widen the forecast band, and are tested as model inputs. This is the LLM working inside the pipeline.
-
-### 9.2 Event format
-
-| Field | Example |
-|---|---|
-| `date` | 2025-10-12 |
-| `event_type` | border_closure |
-| `crops` | ["wheat"] |
-| `direction` | up |
-| `region` | national |
-| `headline` | Pak-Afghan border closures push up prices of essentials |
-| `source_url` | link to the article |
-| `confidence` | high |
-
-Allowed event types: `border_closure`, `export_ban`, `import_permission`, `procurement_policy`, `flood`, `drought`, `bumper_crop`, `transport_disruption`, `other`.
-
-### 9.3 Seed timeline
-
-Start `data/events/events.csv` with these, then add about 15 more from public news. Every row needs a source link.
-
-| Date | Event | Crops | Direction | Status |
-|---|---|---|---|---|
-| October 2025 | Wheat Policy 2025-26 approved at Rs 3,500 per 40 kg | wheat | supports price | Verified |
-| Spring 2024 | Government wheat procurement halted | wheat | down | **Exact date to verify** |
-| August to September 2022 | Major floods | cotton, rice | up | **To verify and source** |
-
-Events for tomato and potato from the earlier draft are out of scope (section 3.3). Look for rice export and cotton policy events to fill the timeline.
-
-### 9.4 How events are used
-
-1. **Alerts.** An active event for a crop shows as a card on the web app and a line in the WhatsApp reply.
-2. **Wider band.** While a shock event is active, widen the forecast band by a fixed factor. This is a stated rule of thumb, and we label it as one.
-3. **Model input.** Tested in the backtest as described in 7.6.
-
-### 9.5 The extractor
-
-- Input: one headline, plus the first line of the article if we have it.
-- Output: JSON in the format above, checked against a schema.
-- Settings: lowest randomness, JSON-only output.
-- The prompt lives in `docs/PROMPTS.md` so we can show it to a judge.
-- If the model returns invalid JSON or low confidence, the event is not added automatically. It goes to a review list.
-
-**Demo moment:** paste a real headline, watch a structured event appear, and watch the wheat advice gain an alert.
-
----
-
-## 10. Decision engine: from forecast to advice
-
-### 10.1 Inputs
-
-| Input | Source |
-|---|---|
-| Crop, mandi, quantity in maund | Farmer |
-| Can you store it? (no / at home / cold store / warehouse) | Farmer |
-| Storage cost per maund per week | Farmer, with an editable default labelled "assumption" |
-| Spoilage per week | Default by crop and storage type, labelled "assumption" |
-| Do you owe money against this crop? Cost per month | Farmer |
-| Today's price, q10, q50 and q90 for each horizon | Forecast artifacts |
-| Prices at other mandis and transport cost | Data, plus an editable assumption |
-| Active events and alarm tier | Event layer and price alarm |
-
-### 10.2 The calculation
-
-For each horizon of 1 to 4 weeks:
-
-```
-expected value of waiting  = q50 price × (1 − spoilage × weeks)
-                             − storage cost × weeks
-                             − finance cost × weeks
-expected gain              = expected value of waiting − today's price
-downside                   = same calculation using q10 instead of q50
-```
-
-For each other mandi:
-
-```
-net price elsewhere = price at that mandi − transport cost
-```
-
-### 10.3 The verdict
-
-| Verdict | Urdu | When |
-|---|---|---|
-| Sell now | ابھی بیچیں | Waiting has no meaningful expected gain, or the downside is too large, or the farmer cannot store |
-| Sell at another mandi | دوسری منڈی میں بیچیں | Another mandi pays clearly more after transport |
-| Store and sell later | ذخیرہ کریں، بعد میں بیچیں | Storing is feasible, expected gain is clearly positive, and the downside is limited |
-| Sell part now, store part | کچھ ابھی بیچیں، کچھ ذخیرہ کریں | Expected gain is positive but the band is wide or an alert is active |
-
-Thresholds for "clearly" and "limited" are constants in one config file, with a comment explaining each. Have a native speaker on the team check every Urdu string.
-
-### 10.4 Every verdict comes with
-
-- The rupee difference for the farmer's own quantity.
-- Two or three reasons.
-- The risk in one line, for example "prices may fall as low as Rs X".
-- A line saying it is an estimate, not a guarantee.
-
-### 10.5 Making "store" real
-
-- **Perishables with no cold storage:** the engine never says store for four weeks. The useful advice is where and how soon to sell.
-- **Farmer owes a commission agent:** the app says plainly that the sale may already be tied, and shows what the loan is costing.
-- **Storable crops:** mention warehouse receipt financing as a way to store without selling in distress. It launched with paddy, rice and maize. Check the current commodity list before claiming more.
-
----
-
-## 11. React web app
-
-### 11.1 Stack
-
-- React with Vite and TypeScript
-- Tailwind for styling
-- Recharts for charts
-- react-i18next for Urdu and English
-- A mock mode that reads JSON fixtures shaped exactly like the API contract
-
-Use the frontend-design plugin for the visual direction. Design for a phone first: a judge may open the link on one.
-
-### 11.2 Screens
-
-| # | Screen | What is on it | Priority |
-|---|---|---|---|
-| 1 | Ask | Crop, mandi, quantity, "can you store?", then a large verdict card with the rupee difference | Must |
-| 2 | Forecast | Price history, the forecast band as a shaded fan, the naive line, and the data badge | Must |
-| 3 | Why | Reasons in Urdu, plus a "technical view" toggle for judges | Must |
-| 4 | Replay | Three crisis cards. Pick one, move the date, see what FarmSight said then and what happened next | Must |
-| 5 | Proof | Backtest table, rupee backtest result, limitations | Must |
-| 6 | Alerts | Event timeline and price alarm tiers | Should |
-| 7 | Lender view | Collateral value band for a stored crop | Stretch |
-
-### 11.3 Front-end rules
-
-- Urdu is the default language. English is a toggle.
-- The whole layout flips right-to-left in Urdu.
-- Every chart and number shows whether its data is real, a retail proxy, or synthetic.
-- No number is typed into the front end by hand. Everything comes from the API.
-- The app must work against mocks from the first hour, so the front end is never blocked.
-
----
-
-## 12. WhatsApp bot
-
-### 12.1 Provider
-
-Use the Twilio Sandbox for WhatsApp. It needs no business approval, which makes it the fastest route.
-
-Facts to know:
-
-- The sandbox uses one shared Twilio number.
-- A phone must send `join <our code>` to that number before it can chat with our bot.
-- A QR code can do the join in one scan.
-- A phone that joined more than three days ago must join again.
-- The bot may reply freely once the user has messaged first. So the farmer always starts the conversation.
-
-### 12.2 How it connects
-
-1. Twilio receives the farmer's message and calls our backend at `/whatsapp`.
-2. The backend works out the crop, mandi and quantity from the text.
-3. It calls the same decision engine the web app uses.
-4. It replies with a short Urdu message.
-
-There is one engine and two channels. The WhatsApp bot contains no logic of its own.
-
-### 12.3 Understanding the message
-
-- Accept Urdu script, Roman Urdu and English: "گندم وہاڑی 100 من", "gandum vehari 100 mann", "wheat vehari 100".
-- Try simple keyword matching first. It is fast and predictable.
-- Fall back to the LLM for anything keyword matching cannot parse, with JSON output of crop, mandi and quantity.
-- If something is missing, ask one short question.
-
-### 12.4 Commands
-
-| The farmer sends | The bot does |
-|---|---|
-| crop + mandi + quantity | Full advice |
-| crop + mandi | Price and forecast band |
-| الرٹ or alert | Active alerts for their crop |
-| مدد or help | A three-line guide |
-
-### 12.5 Reply template
-
-Numbers in brackets come from the engine. Nothing is invented.
-
-```
-[فصل] — [منڈی] منڈی
-آج کا ریٹ: Rs [آج] فی 40 کلو
-[N] ہفتے بعد اندازہ: Rs [کم] سے Rs [زیادہ]
-
-مشورہ: [فیصلہ]
-آپ کے [مقدار] من پر فرق: Rs [فرق]
-
-وجہ:
-• [وجہ 1]
-• [وجہ 2]
-
-⚠️ [الرٹ، اگر ہو]
-یہ اندازہ ہے، ضمانت نہیں۔
-```
-
-### 12.6 Demo-day checklist
-
-- All three of our phones rejoin the sandbox on Sunday morning.
-- Put the join QR code on a slide so a judge can try it.
-- Test the bot over the phone hotspot, not only venue Wi-Fi.
-- Record a screen capture of a full WhatsApp exchange as backup. If we play it, we say it is a recording.
-
-### 12.7 Stretch: voice notes
-
-Twilio passes a link to the audio. Transcribe it with a speech-to-text service and feed the text into the same flow. Build this only after everything in the "must" list works.
-
----
-
-## 13. Urdu
-
-Urdu is a requirement, not a finishing touch.
-
-- **Font:** Noto Nastaliq Urdu. Nastaliq needs generous line height, roughly double the font size, or lines collide.
-- **Direction:** set right-to-left on the page root when Urdu is active. Check that charts, icons and number alignment still look right.
-- **Numbers:** keep Western digits and "Rs". They are what farmers see on receipts and phones.
-- **Wording:** short, spoken-style Urdu. Avoid formal or bookish words.
-- **Source of text:** fixed strings live in one translation file. Dynamic reasons are built from templates. The LLM may smooth the phrasing but never changes a number.
-- **Review:** one team member reads every Urdu string aloud before the freeze.
-
----
-
-## 14. API contract
-
-All three owners build against this. Change it only by agreement at a check-in, and update this section in the same commit.
-
-### 14.1 Endpoints
-
-| Method and path | Purpose |
-|---|---|
-| `GET /health` | Returns ok. Used to wake the server before the demo. |
-| `GET /api/meta` | Crops, mandis, latest data date, data labels |
-| `GET /api/forecast?crop=&mandi=&as_of=` | History and forecast band |
-| `POST /api/advice` | The verdict |
-| `GET /api/alerts?crop=&as_of=` | Events and alarm tier |
-| `GET /api/replay/{case_id}` | One crisis, step by step |
-| `GET /api/backtest` | Metrics and rupee backtest |
-| `POST /whatsapp` | Twilio webhook |
-
-`as_of` is optional everywhere. If omitted, the latest date is used.
-
-### 14.2 Forecast response
-
-```json
-{
-  "crop": "wheat",
-  "mandi": "vehari",
-  "as_of": "2025-10-09",
-  "unit": "40kg",
-  "price_now": 0,
-  "history": [{"date": "2025-10-02", "price": 0}],
-  "forecast": [
-    {"weeks_ahead": 1, "q10": 0, "q50": 0, "q90": 0},
-    {"weeks_ahead": 4, "q10": 0, "q50": 0, "q90": 0}
-  ],
-  "naive": [{"weeks_ahead": 1, "price": 0}],
-  "model": "chronos-2",
-  "mase_vs_naive": 0.0,
-  "data_source": "amis",
-  "price_type": "wholesale",
-  "is_synthetic": false
-}
-```
-
-### 14.3 Advice request and response
-
-```json
-{
-  "crop": "wheat",
-  "mandi": "vehari",
-  "quantity_maund": 100,
-  "storage": "none",
-  "storage_cost_per_maund_week": 0,
-  "spoilage_pct_week": 0,
-  "finance_cost_pct_month": 0,
-  "as_of": null,
-  "lang": "ur"
-}
-```
-
-```json
-{
-  "verdict": "sell_now",
-  "verdict_text": "ابھی بیچیں",
-  "rupee_difference": 0,
-  "best_week": 0,
-  "reasons": ["...", "..."],
-  "risk_line": "...",
-  "alternative_mandi": {"mandi": "bahawalpur", "net_price": 0},
-  "alerts": [{"event_type": "procurement_policy", "headline": "...", "source_url": "..."}],
-  "alarm_tier": "normal",
-  "assumptions": [{"name": "spoilage_pct_week", "value": 0, "source": "default"}],
-  "data_source": "amis",
-  "is_synthetic": false
-}
-```
-
-Allowed `verdict` values: `sell_now`, `sell_elsewhere`, `store`, `split`.
-
-### 14.4 Replay response
-
-```json
-{
-  "case_id": "wheat_2024_crash",
-  "title": "...",
-  "steps": [
-    {
-      "as_of": "2025-10-05",
-      "price_now": 0,
-      "forecast_q10": 0, "forecast_q50": 0, "forecast_q90": 0,
-      "verdict": "sell_now",
-      "alarm_tier": "normal",
-      "events_active": [],
-      "actual_price_4w_later": 0
-    }
-  ],
-  "summary": "..."
-}
-```
-
-### 14.5 Artifacts written by the Models owner
-
-| File | Contents |
-|---|---|
-| `artifacts/forecasts.json` | Every forecast, keyed by crop, mandi and `as_of` |
-| `artifacts/backtest.json` | Metrics per crop and model, and the rupee backtest |
-| `artifacts/replay.json` | The three crisis cases |
-| `artifacts/alarms.json` | Price alarm tiers by date |
-| `artifacts/meta.json` | Crops, mandis, date range, data labels, model versions |
-
-The backend reads these files. It never imports the heavy model code.
-
-### 14.6 Draft additions (9 Oct, confirm at first check-in)
-
-The shapes above did not cover every endpoint. These drafts fill the gaps. **The code is the exact reference:** `backend/app/schemas.py` defines every artifact and response, the backend validates artifacts against it on startup, and the front end's TypeScript types are generated from it. Change a shape there and here in the same commit.
-
-**Rules that apply to every endpoint**
-
-- Every price is **Rs per 40 kg** (`unit: "40kg"`), see 6.3.1.
-- `as_of` means "the latest data on or before this date". The forecast response's `as_of` is the date of the forecast actually used. `history` only contains points dated on or before it. A request with no data on or before the date returns 404.
-- A metric that has not been measured is `null`, never a made-up number. This applies to `mase_vs_naive` and to every backtest metric.
-- Errors use FastAPI's default body: `{"detail": "..."}`, status 404 for an unknown crop, mandi, series or case, 422 for bad input.
-
-**Changes to 14.3 (advice)**
-
-- `storage` is one of `none`, `home`, `cold_store`, `warehouse`.
-- `storage_cost_per_maund_week`, `spoilage_pct_week` and `finance_cost_pct_month` may be `null`, meaning "use the default from `meta.json`". `0` means zero. Each one appears in `assumptions` with `source` set to `farmer` or `default`.
-- `alternative_mandi` may be `null`. `alarm_tier` is one of `normal`, `stress`, `alert`, `crisis`, or `null` when no alarm exists for that date (never a guessed `normal`).
-- The response also carries `as_of`: the date of the forecast the advice was based on.
-- `rupee_difference` is for the farmer's whole quantity, compared with selling at this mandi today. For `split` it counts only the stored share.
-
-**Changes to 14.4 (replay)**
-
-- `GET /api/replay/{case_id}?lang=ur|en`. `title` and `summary` come back in the requested language (default `ur`).
-- The response also carries `crop`, `mandi`, `data_source` and `is_synthetic`. `actual_price_4w_later` may be `null` near the end of the data.
-- `events_active` items are `{"event_type", "headline", "source_url"}`, the same shape as advice `alerts`. The forecast numbers in a step are the 4-week horizon.
-
-**`GET /api/meta`** returns `artifacts/meta.json` as is:
-
-```json
-{
-  "schema_version": 1,
-  "generated_at": "2026-10-04",
-  "crops": [{"id": "wheat", "name_ur": "گندم", "name_en": "Wheat"}],
-  "mandis": [{"id": "vehari", "name_ur": "وہاڑی", "name_en": "Vehari"}],
-  "series": [{"crop": "wheat", "mandi": "vehari"}],
-  "replay_cases": [{"case_id": "wheat_2024_crash", "crop": "wheat", "mandi": "vehari", "title_ur": "...", "title_en": "..."}],
-  "date_range": {"start": "2022-01-02", "end": "2026-10-04"},
-  "latest_as_of": "2026-10-04",
-  "unit": "40kg",
-  "price_type": "wholesale",
-  "models": [{"name": "chronos-2", "version": "...", "role": "primary"}],
-  "assumptions": {
-    "finance_cost_pct_month": {"value": 0, "source": "..."},
-    "storage_defaults": [{"crop": "wheat", "storage": "home", "storage_cost_per_maund_week": 0, "spoilage_pct_week": 0, "source": "..."}],
-    "transport": [{"from_mandi": "vehari", "to_mandi": "bahawalpur", "cost_per_maund": 0, "source": "..."}]
-  },
-  "data_source": "amis",
-  "is_synthetic": false
-}
-```
-
-**`GET /api/alerts?crop=&mandi=&as_of=`** (`mandi` optional):
-
-```json
-{
-  "crop": "wheat",
-  "as_of": "2026-10-04",
-  "alarms": [{"crop": "wheat", "mandi": "vehari", "date": "2026-10-04", "indicator": 0.0, "tier": "normal", "flags": []}],
-  "events": [{"date": "2024-04-01", "active_until": "2024-06-30", "event_type": "procurement_policy", "crops": ["wheat"], "direction": "down", "region": "punjab", "headline": "...", "source_url": "...", "confidence": "high", "is_synthetic": false}],
-  "data_source": "amis",
-  "is_synthetic": false
-}
-```
-
-- `alarms` holds the latest alarm on or before `as_of` for each mandi. `indicator` is signed: above zero means above the seasonal normal. `tier` comes from its absolute value (7.5). `flags` may contain `below_3yr_harvest_avg` and `yoy_drop_over_50pct`.
-- `events` holds the events active on `as_of`, meaning `date <= as_of <= active_until`. `ml/precompute.py` sets `active_until`, so the backend applies no rule of its own. Event `direction` is `up`, `down` or `unclear`.
-
-**`GET /api/backtest`** returns `artifacts/backtest.json` as is:
-
-```json
-{
-  "schema_version": 1,
-  "horizon_weeks": 4,
-  "cutoffs": ["2025-01-05"],
-  "metrics": [{"crop": "wheat", "mandi": "vehari", "model": "chronos-2", "mase": null, "quantile_loss": null, "coverage_80": null, "n_forecasts": 0}],
-  "rupee_backtest": null,
-  "limitations": ["..."],
-  "data_source": "amis",
-  "is_synthetic": false
-}
-```
-
-When present, `rupee_backtest` is `{"quantity_maund", "n_cases", "avg_gain_vs_harvest_pkr", "share_better", "worst_case_pkr", "hindsight_avg_gain_pkr", "assumptions": [{"name", "value", "source"}]}`.
-
-**Artifact files.** Every file in `artifacts/` carries `schema_version`, `data_source` and `is_synthetic`.
-
-- `forecasts.json` holds `series: [{crop, mandi, history: [{date, price}], forecasts: [{as_of, price_now, forecast, naive, model, mase_vs_naive}]}]`.
-- `replay.json` holds `cases: [{case_id, crop, mandi, title_ur, title_en, summary_ur, summary_en, steps}]`.
-- `alarms.json` holds `alarms` and `events` as above. The events come from `data/events/events.csv`, copied in by `ml/precompute.py` so the backend reads only `artifacts/`.
-
-**Checking artifacts.** Before committing artifacts, run `python -m app.check_artifacts` from `backend/` (see README). CI runs the same check.
-
----
-
-## 15. Repo structure and ownership
-
-```
-farmsight/
-├── CLAUDE.md                 # shared instructions for every Claude session
-├── README.md                 # setup, links, acknowledgements, disclosures
-├── docs/
-│   ├── PLAN.md               # this file
-│   ├── PROMPTS.md            # every LLM prompt we use
-│   ├── FACTS.md              # the fact sheet, with sources
-│   └── DEMO.md               # the demo script and backup plan
-├── data/                     # OWNER A
-│   ├── raw/                  # not in git
-│   ├── processed/            # cleaned series
-│   └── events/events.csv
-├── ml/
-│   ├── ingest/               # OWNER A: loaders and cleaners
-│   ├── events/               # OWNER A: LLM event extractor
-│   ├── eval/                 # OWNER A: baselines, backtest, rupee backtest
-│   ├── forecast/             # OWNER B: Chronos-2, boosting, ensemble
-│   ├── alarm/                # OWNER B: price alarm
-│   ├── decision/             # OWNER B: decision engine
-│   └── precompute.py         # OWNER B: writes artifacts/
-├── artifacts/                # OWNER B writes, everyone reads
-├── backend/                  # OWNER C: FastAPI and WhatsApp webhook
-├── frontend/                 # OWNER C: React app
-└── legacy/                   # v1 Streamlit code, kept for disclosure, not deployed
-```
-
-### 15.1 The three owners
-
-| Owner | Name | Owns | Delivers |
-|---|---|---|---|
-| **A: Data and Proof** | ________ | `data/`, `ml/ingest/`, `ml/events/`, `ml/eval/` | Real series, event timeline and extractor, backtest, rupee backtest |
-| **B: Models and Decisions** | ________ | `ml/forecast/`, `ml/alarm/`, `ml/decision/`, `artifacts/` | Forecast bands, price alarm, decision engine, replay cases |
-| **C: Product and Channels** | ________ | `backend/`, `frontend/`, `README.md`, `docs/DEMO.md` | API, React app, WhatsApp bot, Urdu, deployment, slides, journey video |
-
-**Economics inputs** (costs, interest, storage, transport, from `data/economics_inputs.json`) are collected by Owner A and consumed by Owner B, who turns them into the defaults in `artifacts/meta.json`.
-
-**Shared code.** The decision engine (`ml/decision/`) is pure Python with no heavy dependencies, because the backend imports it to answer `/api/advice` and `ml/precompute.py` imports it to build replay steps. One engine, every channel.
-
-**Balancing rule.** Owner C has the most surface area. Once the real data has landed, Owner A takes over the WhatsApp bot if C is behind. Decide this at the Saturday midday check-in.
-
-### 15.2 Shared files
-
-| File | Rule |
-|---|---|
-| `docs/PLAN.md` section 14 | Changed only by agreement at a check-in |
-| Config constants | One config file per owner's area. No shared mega-config. |
-| `CLAUDE.md` | Owner C edits. Others request changes. |
-| `README.md` acknowledgements | Everyone adds their own datasets and tools, at the bottom, one line each |
-
----
-
-## 16. Team workflow
-
-### 16.1 Git rules
-
-1. `main` always runs and is what the deployed link shows.
-2. Work on a short branch named `yourname/task`, for example `ali/real-data`.
-3. Merge into `main` through a pull request every one to two hours. No review is required, but the app must still run.
-4. Pull `main` before starting any new task.
-5. Never force-push to `main`.
-6. Commit under your own GitHub account. Check your git name and email tonight.
-7. Keys go in an ignored `.env` file and are shared outside git.
-8. Only Owner B commits files in `artifacts/`.
-9. Tag a commit `demo-v1`, `demo-v2` and so on each time the full demo flow works end to end.
-
-### 16.2 Working with Claude Code
-
-- Start every session from the repo root so it reads `CLAUDE.md`.
-- Tell your session which owner you are.
-- If your session wants to edit a file outside your folders, stop it and message that file's owner.
-- Read and understand what it writes before you merge. Judges may ask any of us about any part.
-- Do not name our app's LLM key `ANTHROPIC_API_KEY` in your shell. Claude Code would bill that key instead of your subscription. Use `FS_LLM_API_KEY`.
-
-### 16.3 CLAUDE.md starter
-
-Copy this into the repo root and fill in the names.
-
-```markdown
-# FarmSight: instructions for Claude sessions
-
-Read docs/PLAN.md before doing anything.
-
-## Ownership (do not edit outside your owner's folders)
-- Owner A (name): data/, ml/ingest/, ml/events/, ml/eval/
-- Owner B (name): ml/forecast/, ml/alarm/, ml/decision/, artifacts/
-- Owner C (name): backend/, frontend/, README.md, docs/DEMO.md
-Ask the human before touching any other path.
-
-## Hard rules
-- The API contract is docs/PLAN.md section 14. Do not change response shapes.
-- Forecasts for a date may only use data on or before that date.
-- Never hardcode a price, statistic or result. Numbers come from data or artifacts.
-- Anything synthetic or simulated must be flagged is_synthetic and labelled in the UI.
-- Do not copy code from other projects.
-- Every LLM prompt goes in docs/PROMPTS.md.
-- Every new dataset or library gets a line in the README acknowledgements.
-- The LLM never produces numbers shown to users. It parses and rephrases only.
-
-## Commands
-- Backend: (fill in)
-- Frontend: (fill in)
-- Precompute artifacts: (fill in)
-- Tests: (fill in)
-
-## Style
-- Small commits with clear messages.
-- Explain in the pull request what changed and why.
-```
-
-### 16.4 Check-ins
-
-Five minutes, every three hours, standing up. Each person answers three questions:
-
-1. What did I merge?
-2. What am I blocked on?
-3. Does `main` still run for me?
-
-Track tasks as GitHub issues assigned by name. On Saturday the judges are watching how we work together, so talk through decisions out loud.
-
-### 16.5 Evidence we keep as we go
-
-- Phone clips of us working, for the optional journey video (three minutes maximum).
-- Screenshots of the backtest results as they improve.
-- The commit history, which shows who built what and when.
-
----
-
-## 17. Timeline
-
-Confirm the official build end and the submission deadline at the venue, then adjust.
-
-### Friday 9 October, evening
-
-| Time | All | Owner A | Owner B | Owner C |
-|---|---|---|---|---|
-| 18:30 to 20:00 | Agree roles, read this plan, fill in names, create folders and `CLAUDE.md` | | | Deploy a hello-world backend and front end. Create the Twilio sandbox. |
-| 20:00 to 01:00 | | Find and load real series for the three crops. Report coverage (section 6.3). Start the event timeline. | Naive baselines. Chronos-2 running on whatever data exists. Draft the artifact format. | React shell with Urdu and right-to-left working. Ask screen on mock data. WhatsApp echo bot. |
-| 23:00 | Check-in: data coverage decides the replay cases | | | |
-
-Sleep. A tired team presents badly.
-
-### Saturday 10 October (on-site, mandatory)
-
-| Time | Owner A | Owner B | Owner C |
-|---|---|---|---|
-| 08:00 to 13:00 | Backtest harness on real data. Event extractor. | Quantile forecasts from both models. Decision engine v1. Price alarm. | Backend serving real artifacts. Forecast and Why screens. WhatsApp advice flow. |
-| 13:00 | Check-in. Apply the balancing rule if C is behind. | | |
-| 13:00 to 18:00 | Rupee backtest. Finish the event timeline. | Replay cases. With and without events comparison. Pick the final model per crop. | Replay and Proof screens. Alerts. Urdu review. |
-| 18:00 to 22:00 | README data acknowledgements. Help with integration. | Final artifacts. One-page "how the AI works" note. | Polish, mobile check, slides, deployed link check. |
-| **22:00** | **Feature freeze. Bug fixes only from here.** | | |
-| 22:00 to 24:00 | All: tag the demo commit, record the backup screen capture, submit if the deadline requires it | | |
-
-### Sunday 11 October
-
-| Time | What |
-|---|---|
-| 07:30 to 10:30 | Rehearse the five minutes at least five times with a timer. Rejoin the WhatsApp sandbox. Wake the server. Test on the hotspot. Load the demo locally on the laptop as well. |
-| 10:30 | Leave for the hall |
-| 11:00 | Seated, laptop open |
-| 11:27 | Present |
-
----
-
-## 18. Demo script (five minutes)
-
-Target 4:45 so we never run over.
-
-| Time | Who | What happens |
-|---|---|---|
-| 0:00 to 0:35 | Speaker 1 | **The problem.** (Framing from outside our three crops; keep only if it still fits after the replay is chosen.) This January potatoes fell from Rs 2,500 to Rs 200 a bag. A National Assembly committee blamed poor market forecasting. Farmers sell blind. |
-| 0:35 to 1:35 | Speaker 2 | **Live on WhatsApp.** Send "گندم وہاڑی 100 من" from a phone on screen. The Urdu verdict arrives. Then show the same verdict on the web app with the forecast band. |
-| 1:35 to 2:35 | Speaker 2 | **Replay.** Open the wheat 2024 crash. Move the date to before procurement stopped: the model sees nothing unusual. Show the procurement event and the alert that follows. |
-| 2:35 to 3:20 | Speaker 3 | **Where the AI is.** One slide: a foundation model forecasts the band, an LLM turns news into events, a decision engine applies the farmer's costs, and a language layer answers in Urdu. |
-| 3:20 to 4:10 | Speaker 3 | **Proof.** The backtest table against the naive forecast, and the rupee backtest. State what is real, what is a proxy and what is assumed. |
-| 4:10 to 4:45 | Speaker 1 | **Impact and what we built.** Who else would pay (lenders valuing stored crops). What we built this weekend, and which data and tools we used from elsewhere. |
-
-**Rules for the demo:**
-
-- Every one of us speaks.
-- If anything live fails, switch to the backup recording at once and say it is a recording.
-- No number on any slide without a source in `docs/FACTS.md`.
-
----
-
-## 19. Fact sheet (verified, with sources)
-
-Open each source and confirm the number before it goes on a slide.
-
-| Fact | Source |
-|---|---|
-| A National Assembly committee in February 2026 linked the potato glut to inadequate production forecasting and poor market intelligence | https://www.brecorder.com/news/40408622 |
-| Potato prices fell from Rs 2,500 to Rs 200 per 62 kg bag. Punjab production rose from 9 to 12 million tonnes. | https://dailytimes.com.pk/1437716/vegetable-glut-hits-farmers-as-pakistan-lacks-processing-storage/ |
-| The potato market crashed in late November 2025 as a glut met the Afghan border closure. Afghanistan had taken over 40% of Pakistan's potato exports. | https://dailytimes.com.pk/1410578/pakistan-potato-market-crashes-amid-afghan-border-closure/ |
-| Tomato prices rose over 400% to about Rs 600 per kg after border crossings closed in October 2025 | https://www.dawn.com/news/1950907/pak-afghan-border-closures-push-up-prices-of-essentials |
-| Wheat fell as low as Rs 2,200 per 40 kg from a peak near Rs 5,500 after procurement was halted | https://ukragroconsult.com/en/news/imf-backs-pakistans-wheat-buy-lets-govt-set-stock-target/ |
-| The Wheat Policy 2025-26 set Rs 3,500 per 40 kg, described by an official as indicative and not a fixed support price | https://profit.pakistantoday.com.pk/?p=215651 |
-| In a tied loan the farmer pre-sells the harvest at a discount. One worked cotton example equals about 46% annual interest. | https://criterion-quarterly.com/the-anatomy-of-agricultural-credit-in-pakistan/ |
-| Commission agents charge a higher commission to farmers who borrowed from them | https://www.theigc.org/sites/default/files/2014/09/Haq-Et-Al-2013-Working-Paper.pdf |
-| A randomised trial of SMS price information in India found no significant average effect on prices farmers received | https://ideas.repec.org/a/oup/wbecrv/v26y2012i3p383-414.html |
-| Warehouse receipt financing in Pakistan lets farmers use stored crops as collateral. The exchange's takeover of the collateral manager was approved in November 2025. | https://www.secp.gov.pk/wp-content/uploads/2025/11/Press-Release-SECP-Greenlights-PMEXs-Strategic-Acquisition-of-NCMCL-Strengthening-Pakistans-Agricultural-Market-Infrastructure.pdf |
-| The warehouse receipt scheme was launched primarily for paddy, rice and maize | https://profit.pakistantoday.com.pk/?p=111804 |
-| Foundation models took the top five places among 17 methods for agricultural price forecasting. Naive ranked 6th. | https://arxiv.org/abs/2601.06371 |
-| Chronos-2: pretrained, zero-shot, quantile forecasts, supports extra input variables | https://arxiv.org/abs/2510.15821 |
-| India's MIEWS forecasts tomato, onion and potato prices three months ahead and raises glut alerts | https://www.business-standard.com/article/pti-stories/govt-portal-to-alert-about-price-crash-in-staple-vegetables-120022601029_1.html |
-| The ALPS method and its tiers | https://documents.wfp.org/stellent/groups/public/documents/manual_guide_proced/wfp264186.pdf |
-| Arya.ag: storage, loans against stored grain, and market links at scale | https://finance.yahoo.com/news/even-global-crop-prices-fall-070000157.html |
-| Some Ergos farmers achieve prices 25 to 30% above the harvest price | https://rabobank.nl/en/about-us/rabofoundation/project/011098564/financial-inclusion-is-in-store-for-indian-smallholders |
-| AMIS publishes prices from 135 Punjab markets | https://pitb.gov.pk/node/2960 |
-| WFP food prices for Pakistan | https://data.humdata.org/dataset/wfp-food-prices-for-pakistan |
-| Twilio WhatsApp sandbox rules | https://www.twilio.com/docs/whatsapp/sandbox |
-
-### Numbers from v1 that we stop using
-
-| v1 claim | Problem | What to do |
-|---|---|---|
-| "Farmers lose 15 to 30% of income" | No source | Replace with the sourced crisis figures above |
-| Wheat support price of Rs 3,900 in 2024 and 2025, Rs 4,000 in 2026 | Does not match the record: the 2025-26 figure is Rs 3,500, and no support price was announced the year before | Use the sourced figures |
-| Middleman cut of 15 to 35% by crop | No source | Remove. Let the farmer enter their own costs. |
-| Production cost per crop | No source | Remove, or find a government source |
-| "Wheat is the most stable crop" as the lead demo | Wheat had a major crash in this period | Lead with the crisis replay |
-| R² of 0.92 | Measured on synthetic data | Replace with MASE on real data |
-
----
-
-## 20. Honesty and compliance checklist
-
-Run through this before the freeze and again before submitting.
-
-- [ ] Every number in the UI and slides comes from data, artifacts or `docs/FACTS.md`.
-- [ ] Retail-proxy and synthetic data are labelled wherever they appear.
-- [ ] The backtest is described as a backtest, not a field result.
-- [ ] Assumed costs are listed where the rupee result is shown.
-- [ ] Crops where we lose to the naive forecast are shown, not hidden.
-- [ ] The README lists every dataset, library, API, model and AI coding assistant we used.
-- [ ] The README discloses the v1 code and when it was written.
-- [ ] No code is copied from another project.
-- [ ] No real person's personal or financial data is in the repo.
-- [ ] Data sources were collected within their terms.
-- [ ] `docs/PROMPTS.md` contains every prompt.
-- [ ] No API key is in the repo or its history.
-- [ ] The deployed link opens on a phone, on mobile data.
-- [ ] The repository is accessible to judges.
-- [ ] Each of us can explain every part of section 22.
-- [ ] Commits exist from all three accounts.
-
----
-
-## 21. Cut list
+## 7. Cut list
 
 If we are behind at a check-in, cut from the top. Do not debate it.
 
-1. Voice notes on WhatsApp
-2. Lender view
-3. Events as model inputs (keep events as alerts)
-4. Live headline extraction (keep the curated timeline and show the extractor on one saved headline)
-5. Cross-mandi comparison
-6. The third crop
-7. The boosting challenger (keep Chronos-2 and naive)
+1. SMS gateway (A11)
+2. Voice notes (A10)
+3. Alert scheduler (C9). Show one manual WhatsApp alert instead
+4. Price history screen (P4.1, B9)
+5. Map pin on Register (district dropdown only)
+6. Margin view (part of C8)
+7. Offer check (part of C8)
+8. Web chat screen (keep WhatsApp text)
+9. Volatility rating
+10. JWT login (use the pre-seeded profile only)
 
-**Never cut:** real data, the naive comparison, the Urdu verdict, the WhatsApp text flow, the replay of at least one crisis, the deployed link.
-
----
-
-## 22. Glossary for judge questions
-
-Each of us should be able to say these in our own words.
-
-| Term | One-breath explanation |
-|---|---|
-| Naive forecast | "The price next month will be the same as today." It is the simplest possible forecast and surprisingly hard to beat. |
-| MASE | Our error divided by the naive forecast's error. Below 1 means we are better than naive. |
-| Foundation model for time series | A model pretrained on a very large number of time series from many fields, so it can forecast a new series without being trained on it. |
-| Zero-shot | Using the pretrained model as it is, with no training on our data. |
-| Chronos-2 | Amazon's pretrained forecasting model. We give it the price history and it returns a range of likely future prices. |
-| Quantile | A price level the real price is expected to fall below a set share of the time. q10 is the pessimistic case, q90 the optimistic one. |
-| Coverage | How often the real price landed inside our band. For a q10 to q90 band it should be about 80%. |
-| Backtest | Pretending it is a past date, forecasting with only the data available then, and checking against what happened. |
-| Data leakage | Accidentally letting the model see information from the future. Our time-machine rule prevents it. |
-| Gradient boosting | Many small decision trees built one after another, each correcting the previous ones' mistakes. |
-| SHAP | A method that shows how much each input pushed a prediction up or down. |
-| Event extraction | The LLM reads a headline and fills in a fixed form: what happened, when, which crop, which direction. |
-| Decision engine | Plain arithmetic: expected price minus storage, spoilage and finance costs, compared with selling today. |
-| Price alarm | How far today's price is from its normal seasonal level, graded Normal, Stress, Alert or Crisis. |
-| Tied credit | A loan from a commission agent that commits the farmer to sell the harvest through that agent. |
-| Warehouse receipt financing | Storing a crop in an accredited warehouse and borrowing against the receipt. |
-
-**Likely questions and honest answers**
-
-- *"Is this real data?"* Say exactly which series is real, which is a retail proxy, and which, if any, is synthetic.
-- *"Did the model predict the border closure?"* No. No price model could. The event layer raised the alert once the news broke, and we show that.
-- *"Why not just XGBoost?"* In the main published comparison for crop prices it ranked below the naive forecast. We kept it as a challenger and let the backtest decide.
-- *"What if the farmer owes the commission agent?"* The app asks, and says plainly when the sale is already tied.
-- *"Who pays for this?"* Lenders and warehouse operators who need to value stored crops, and provincial bodies that want early warning.
+**Never cut:** real data and the honest baseline comparison, the Wheat-at-Bahawalpur forecast with range, the Urdu SELL / WAIT signal with net rupee impact, Why, Compare Mandis, What to Grow with the selling window, the deployed link.
 
 ---
 
-## 23. Open decisions
+## 8. Honesty and compliance checklist (run before the freeze and before submitting)
 
-Settle these at the first check-in and write the answers here.
+- [ ] Every number in the UI and on slides comes from data, models or `docs/FACTS.md`. None typed by hand.
+- [ ] The model is shown next to the naive baseline, including any crop where the model loses.
+- [ ] Assumed values are labelled "estimate": transport rate, milling yield, Super Basmati cost.
+- [ ] Each screen shows the source and the "prices as of" date. Super Basmati's old dates show in amber.
+- [ ] No synthetic training row reaches validation, test or any metric we show.
+- [ ] The LLM never produces a number shown to users.
+- [ ] Every prompt is in `docs/PROMPTS.md`.
+- [ ] The README lists every dataset, library, API, model and AI coding assistant, and discloses the pre-event AMIS scraping.
+- [ ] No API key is in the repo or its history. The repo is public.
+- [ ] Commits exist from all three accounts.
+- [ ] Each of us can explain the forecast model, SHAP, the advisory rule and the data.
 
-| Decision | Options | Decided |
-|---|---|---|
-| Team size | | **3 people, 3 owners** (9 Oct) |
-| Who is Owner A, B and C | | Until assigned, the team lead covers all three |
-| Crops and mandis | | **Wheat, rice IRRI, cotton; Bahawalpur, Vehari, Rahim Yar Khan** (9 Oct, section 3.3) |
-| Main price series per crop | AMIS wholesale, weekly retail reports, WFP monthly | **AMIS wholesale** (9 Oct) |
-| Which crises we can replay | Depends on data coverage | **Draft: wheat 2024 crash, 2022 floods**, to verify against data (section 8.4) |
-| Front end | React or Streamlit | **React** (9 Oct) |
-| Verdict names | sell_now/sell_elsewhere/store/split or SELL/HOLD/WAIT | **sell_now, sell_elsewhere, store, split** (9 Oct) |
-| Front-end mock mode | Separate fixtures or the backend on placeholder artifacts | **No separate mocks.** The backend serves placeholder artifacts until real ones land (9 Oct) |
-| LLM provider for extraction and Urdu phrasing | Whatever the organisers provide or allow, otherwise our own key | |
-| Backend host | Any host that runs a Python web service. Check free-tier limits tonight. | |
-| Front-end host | Vercel | |
-| Repo visibility | Public by submission time | **Public from the start** (9 Oct). Never commit a key. |
-| Official build end and submission deadline | Ask at the venue | |
+---
+
+## 9. How we work
+
+### 9.1 Git
+
+1. `main` always runs and is what the deployed link shows.
+2. Work on a short branch `yourname/task-id`, e.g. `hamza/A1-features`. Open a pull request; merge when CI is green. Merge every one to two hours.
+3. Pull `main` before starting each task.
+4. Never force-push to `main`. Commit under your own GitHub account.
+5. Put task IDs in commit messages and PR titles (`A1: port feature builder to Python`).
+6. Keys go in the ignored `.env`, shared outside git.
+
+### 9.2 Working with Claude Code (three Claude Pro accounts, one shared context)
+
+The repo is the shared context: `CLAUDE.md`, `docs/BLUEPRINT.md`, this plan and the merged code are the same for all three sessions. Nothing important lives only in one person's chat.
+
+- Start every session from the repo root so it reads `CLAUDE.md`.
+- Start with the kickoff prompt below for your owner letter.
+- When a session learns something the others need (a changed signature, a data quirk, a decision), it goes into the repo: this plan, the blueprint, `docs/DATA_NOTES.md` or the PR description. Never only in chat.
+- If your session wants to edit outside your folders, stop and message that owner.
+- Read what Claude writes before you merge. Judges may ask any of us about any part.
+
+**Kickoff prompts** (paste as the first message of a session):
+
+> **Owner A (Hamza):** I am Owner A (Data, Proof and Channels) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (A*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named hamza/<task-id>. Only edit my folders.
+
+> **Owner B:** I am Owner B (Models and Advisory Engine) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (B*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named <myname>/<task-id>. Only edit my folders.
+
+> **Owner C (Abd):** I am Owner C (Product: API, Web App, Deployment) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (C*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named abd/<task-id>. Only edit my folders.
+
+### 9.3 Check-ins
+
+Five minutes, standing up: **Fri 23:30; Sat 10:00, 13:00, 16:00, 19:00, 22:00; Sun 08:00.** Each person answers: What did I merge? What am I blocked on? Does `main` still run for me? Decisions made at a check-in go into this file the same hour.
+
+### 9.4 Demo roles
+
+- **Hamza:** problem and data (real AMIS data, honest baseline), then WhatsApp live.
+- **Owner B:** how the AI works (model, range, SHAP, the advisory rule) and the accuracy vs baseline.
+- **Abd:** the app walk-through (Home → Why → Compare → What to Grow) and the close.
