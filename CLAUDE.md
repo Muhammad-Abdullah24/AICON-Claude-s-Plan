@@ -47,6 +47,7 @@ Ask the human before touching any other path.
 - Regenerate front-end API types after a schema change: .venv/Scripts/python -m backend.app.export_openapi && npm --prefix frontend run gen:api
 - Rebuild features.csv (Owner A): .venv/Scripts/python -m ml.features.build
 - Rebuild runtime tables (Owner A): .venv/Scripts/python -m ml.ingest.runtime_tables
+- Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

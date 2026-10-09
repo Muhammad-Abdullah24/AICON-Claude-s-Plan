@@ -147,7 +147,8 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 ### Phase 2 — Core (Sat 08:00 to 14:00) · must-work path on real models
 
 **A · Hamza**
-- [ ] **A5** (M) Evaluation gate in `ml/eval/` (NFR-01): MAPE pooled and per crop option vs persistence on real validation rows; directional accuracy on moves over 3%; q10 to q90 coverage (target about 80%). Test set only once, at the end. Output `ml/eval/report.json` and a short table for the slides.
+- [x] **A5** (M) Evaluation gate in `ml/eval/` (NFR-01): MAPE pooled and per crop option vs persistence on real validation rows; directional accuracy on moves over 3%; q10 to q90 coverage (target about 80%). Test set only once, at the end. Output `ml/eval/report.json` and a short table for the slides.
+  *How Usman uses it:* write a predictions CSV for every validation row (`series, week_start, pred_price_next_4w, q10, q90`, Rs per 40 kg), then run `python -m ml.eval.gate --predictions <file> --model <name>`. It reports MAPE, MASE vs persistence, direction on moves over 3%, band coverage and width, pooled and per crop, plus the PASS/FAIL verdict. Usman may commit the regenerated `ml/eval/report.json` and `report.md`; nothing else in `ml/eval/`. The test split needs `--split test --final` and can be used once. Baseline on validation: persistence MAPE 5.60%; persistence band covers 81% at 15.8% width (the B4 fallback); seasonal naive 7.65% (worse).
 - [ ] **A6** (M) Seasonal tables in `ml/seasonal/` → `data/processed/runtime/seasonal.csv`: monthly index (% of each year's average) and harvest-month ratios (median, min, max, number of years) per crop option and mandi. Feeds What to Grow, the selling window and the history chart.
 - [ ] **A7** (S) Check the headline demo case in the data: Wheat at Bahawalpur now (AMIS about Rs 3,820 vs about Rs 5,300 reported), and prepare a backup historical date (spring 2024 harvest).
 
