@@ -299,14 +299,23 @@ def compare_mandis(crop_option: str, mandi: str, quantity_maund: float = 100,
     return rows
 
 
-def set_alerts(phone: str, enabled: bool) -> None:
+def set_alerts(phone: str, enabled: bool) -> bool:
+    """False if no farmer has this phone number (nothing changed)."""
     from backend.app import db  # noqa: PLC0415 (keeps this module importable without a database)
-    db.set_alerts_by_phone(phone, enabled)
+    return db.set_alerts_by_phone(phone, enabled)
 
 
 def alerts_enabled(phone: str) -> bool:
     from backend.app import db  # noqa: PLC0415
     return db.alerts_enabled_by_phone(phone)
+
+
+def alerts_status(phone: str) -> bool | None:
+    """Whether a registered farmer's alerts are on; None for a number that is not registered (the channels
+    then do not claim to change anything)."""
+    from backend.app import db  # noqa: PLC0415
+    f = db.get_farmer_by_phone(phone)
+    return None if f is None else f["alerts_enabled"]
 
 
 # ---------------------------------------------------------------- offer check and margin
