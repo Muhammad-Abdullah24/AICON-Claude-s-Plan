@@ -121,7 +121,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 
 **For Usman (Owner B)**
 
-- [ ] **H-B1** (from A1) In `ml/forecast/predict.py`, build model inputs with `ml.features.runtime_features(city, crop, variety, history, daily_weather, week_start)`. It returns exactly the training columns. `FEATURE_COLUMNS` lists every allowed input; choose from it.
+- [x] **H-B1** (from A1) In `ml/forecast/predict.py`, build model inputs with `ml.features.runtime_features(city, crop, variety, history, daily_weather, week_start)`. It returns exactly the training columns. `FEATURE_COLUMNS` lists every allowed input; choose from it.
 - [ ] **H-B2** (from A1) The `action` column in `features.csv` is a legacy label (it includes a Rs 15 storage cost). Don't use it as the product rule; the blueprint's SELL/WAIT rule (5%, interest only) lives in your engine (B2).
 - [ ] **H-B3** (from A2) Read costs, yields and support prices from `data/processed/runtime/` (`crops.csv`, `support_prices.csv`), not hardcoded values. Rice cost is per 40 kg of **milled-rice equivalent** while yield is in **paddy** maund: milled maund per acre = `yield_maund_per_acre × milling_yield` (0.65, an assumption).
 - [ ] **H-B4** (from A2, updated in A4) Wheat support prices, from the AMIS official table: 2021-22 Rs 2,200; 2022-23 Rs 3,900; Rs 3,900 for the 2023-24 crop (spring 2024) was **announced but not procured**; the 2024-25 crop had **no** support price; 2025-26 is Rs 3,500 (indicative). Only wheat has a support price. Use the `status` column.
@@ -145,6 +145,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [ ] **H-C10** (from A4) Open-Meteo's CC BY 4.0 licence needs a link wherever weather data is shown: add "Weather data by Open-Meteo.com" linking to https://open-meteo.com/ on every screen with weather (and the README). Credit "Source: AMIS Punjab" on every price.
 - [ ] **H-C11** (from B3) Training needs `numpy` and `xgboost` (`ml/forecast/requirements.txt`). Add both to the README acknowledgements. CI does not install them, so `ml/forecast/test_train.py` is skipped there; add `pip install -r ml/forecast/requirements.txt` to the CI backend job to run it. When B6 lands, the runtime `predict.py` needs `xgboost` in `backend/requirements.txt` (B will say when).
 - [ ] **H-C12** (from B4) The model failed NFR-01 (validation MAPE 5.64% vs persistence 5.60%), so the deployed forecast is the persistence-band **baseline** (`artifacts/models/deployed.json`): forecast = today's price, range from past 4-week changes. Label it "baseline" on screen. The predicted change is 0%, so the signal is always SELL. Details and the open direction-signal question: `docs/MODEL_CARD.md`.
+- [ ] **H-C13** (from B6) `ml.forecast.forecast()` is real now (`is_synthetic: false`). Changes to I2: `weather` is the list of Open-Meteo **daily** records (`date, tmax, tmin, precip_mm, rh_mean, et0`, as in H-C5), not an aggregated dict; None uses the stored history. New fields: `forecast_type` ("baseline"), `direction` (`{call: UP|DOWN, validation_accuracy_pct, model_version}` for wheat only, else null) and, in each `shap` item, `features`, `text_en`, `text_ur` (show these as-is on Why). Pending team agreement on the direction call (docs/MODEL_CARD.md proposal). The direction call needs `xgboost==3.2.0` and `numpy==2.4.6` in `backend/requirements.txt`; without them it switches off (logged) and everything else still works.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
@@ -201,7 +202,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 **B · Usman**
 - [x] **B4** (M) Train the point model and the q10 and q90 quantile models. Run A's gate. If the model does not beat persistence on validation, ship the fallback: persistence as the point forecast and the range from the empirical 4-week change distribution, labelled "baseline" (blueprint NFR-01). Write the result in `docs/MODEL_CARD.md` either way.
 - [x] **B5** (M) SHAP TreeExplainer and a feature-to-sentence map in Urdu and English (top 3 to 5 factors with rupee effects). No LLM writes these reasons.
-- [ ] **B6** (M) Real `predict.py`: load `artifacts/models/`, build features with I1, return the I2 shape with `is_synthetic: false`.
+- [x] **B6** (M) Real `predict.py`: load `artifacts/models/`, build features with I1, return the I2 shape with `is_synthetic: false`.
 - [ ] **B7** (M) `crop_plan()` and `selling_window()` in the engine from A6's tables: profit per acre = harvest estimate × yield − cost per acre, risk badge from the year-to-year spread, best selling month window net of interest.
 
 **C · Abd**

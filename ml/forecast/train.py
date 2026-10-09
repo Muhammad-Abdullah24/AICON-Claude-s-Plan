@@ -140,12 +140,25 @@ def write_predictions(path: Path, rows: list[dict], point: np.ndarray, bands: di
             w.writerow([r["series"], r["week_start"], f"{point[i]:.2f}", q10, q90])
 
 
+def direction_accuracy(rows: list[dict], change_pct: np.ndarray, min_move_pct: float = 3.0) -> dict:
+    """% of real moves bigger than `min_move_pct` whose sign the model called right, per crop option."""
+    hits: dict[str, list[bool]] = {}
+    for r, c in zip(rows, change_pct, strict=True):
+        actual = float(r[TARGET])
+        if abs(actual) > min_move_pct:
+            for key in ("all", r["crop_option"]):
+                hits.setdefault(key, []).append((c > 0) == (actual > 0))
+    return {k: {"pct": round(sum(v) / len(v) * 100, 1), "moves": len(v)} for k, v in sorted(hits.items())}
+
+
 def save(models: dict[str, xgb.Booster], scores: dict) -> None:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     for name, model in models.items():
         model.save_model(MODELS_DIR / f"price_{name}.json")
+    trained_at = datetime.now(UTC)
     meta = {
-        "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "version": f"xgb-{trained_at:%Y%m%d}",
+        "trained_at": trained_at.isoformat(timespec="seconds"),
         "target": TARGET,
         "features": MODEL_FEATURES,
         "config": CONFIG,
@@ -153,6 +166,7 @@ def save(models: dict[str, xgb.Booster], scores: dict) -> None:
         "quantiles": {k: v for k, v in QUANTILES.items() if k in models},
         "training_rows": scores["train_rows"],
         "validation": scores,
+        "direction_accuracy_pct": {k: v["pct"] for k, v in scores.get("direction", {}).items()},
         "xgboost_version": xgb.__version__,
     }
     (MODELS_DIR / "price_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
@@ -211,13 +225,15 @@ def main(argv: list[str] | None = None) -> dict:
     if args.quantiles:
         models.update({name: fit(train_rows, q, config) for name, q in QUANTILES.items()})
 
-    point = to_prices(val_rows, predict_change(models["point"], val_rows))
+    val_change = predict_change(models["point"], val_rows)
+    point = to_prices(val_rows, val_change)
     bands = {name: to_prices(val_rows, predict_change(models[name], val_rows)) for name in QUANTILES if name in models}
     scores = {
         "train_rows": len(train_rows),
         "val_rows": len(val_rows),
         "val_mape_pct": round(mape(val_rows, point), 2),
         "val_persistence_mape_pct": round(persistence_mape(val_rows), 2),
+        "direction": direction_accuracy(val_rows, val_change),
     }
     if bands:
         actual = np.array([float(r["price_next_4w"]) for r in val_rows])

@@ -89,6 +89,7 @@ months old (hand-off H-B9).
 .venv/Scripts/python -m ml.forecast.train --quantiles --predictions preds.csv
 .venv/Scripts/python -m ml.eval.gate --predictions preds.csv --model xgb
 .venv/Scripts/python -m ml.forecast.train --record-fallback
+.venv/Scripts/python -m ml.forecast.train --save   # the wheat direction model
 ```
 
 ## Direction: where the model does have skill
@@ -123,3 +124,14 @@ Caveats to say openly:
   for it. Owner C needs it for the API and the Home and Why screens.
 
 Until the team agrees, B5 and B6 are built so that turning the direction call off is a one-line config change.
+
+## Built (B5, B6), pending the team's agreement
+
+- `ml/forecast/predict.py` serves the baseline price and range for every crop option, and for wheat the model's
+  direction call with its SHAP reasons (`ml/explain/`). `DIRECTION_CROP_OPTIONS = ("Wheat",)` in that file is
+  the switch; an empty tuple turns the direction call off.
+- The model file is `artifacts/models/price_point.json`, with its settings and per-crop direction accuracy in
+  `price_meta.json` (`python -m ml.forecast.train --save`).
+- On the two backup demo weeks (docs/DATA_NOTES.md A7, both validation weeks) the wheat call is right: 24 March
+  2025 **DOWN** (the price then fell 19.7%) and 4 August 2025 **UP** (it rose 48.6%). Two weeks are anecdotes,
+  not evidence; the evidence is the 72% over 50 moves above.

@@ -1,39 +1,80 @@
+import importlib.util
 from datetime import date
 
 import pytest
 
-from ml.forecast import forecast
-from ml.forecast.predict import _observed_prices
+from ml.forecast import forecast, predict
 
 I2_KEYS = {
     "current_price", "predicted_price", "q10", "q90", "trend", "volatility", "prices_as_of",
     "model_version", "shap", "data_source", "is_synthetic",
 }
+needs_xgboost = pytest.mark.skipif(importlib.util.find_spec("xgboost") is None, reason="needs xgboost")
 
 
-def test_returns_the_i2_shape():
-    out = forecast("Wheat", "Bahawalpur")
+def _latest_observed(city, crop, variety):
+    return [h for h in predict._weekly()[(city, crop, variety)] if h["filled"] == 0][-1]
+
+
+def test_returns_the_i2_shape_on_real_data():
+    out = forecast("Cotton", "Bahawalpur")
     assert I2_KEYS <= out.keys()
     assert out["unit"] == "40kg"
-    assert out["is_synthetic"] is True
-    assert out["model_version"].startswith("stub")
-    assert out["shap"] == []
+    assert out["is_synthetic"] is False
+    assert out["data_source"] == "amis"
+    assert out["forecast_type"] == "baseline"
+    assert out["model_version"].startswith("persistence_band@")
+
+
+def test_baseline_price_is_the_latest_observed_amis_price():
+    out = forecast("Wheat", "BahawalPur")
+    latest = _latest_observed("BahawalPur", "Wheat", "none")
+    assert out["prices_as_of"] == latest["week_start"].isoformat()
+    assert out["current_price"] == round(latest["price"], 2)
+    assert out["predicted_price"] == out["current_price"]
     assert out["trend"] == "STABLE"
 
 
-def test_current_price_is_the_latest_observed_amis_price():
-    out = forecast("Wheat", "BahawalPur")
-    week, price = _observed_prices()[("BahawalPur", "Wheat", "none")][-1]
-    assert out["prices_as_of"] == week.isoformat()
-    assert out["current_price"] == round(price, 2)
+def test_range_comes_from_the_deployed_band():
+    out = forecast("IRRI", "Vehari")
+    band = predict._deployed()["band_change_pct"]["IRRI"]
+    assert out["q10"] == round(out["current_price"] * (1 + band["q10"] / 100), 2)
+    assert out["q90"] == round(out["current_price"] * (1 + band["q90"] / 100), 2)
+    assert out["q10"] < out["predicted_price"] < out["q90"]
+    assert out["volatility"] in {"STABLE", "MODERATE", "VOLATILE"}
+
+
+def test_no_direction_for_crops_without_proven_skill():
+    for option in ("Cotton", "IRRI", "SuperBasmati"):
+        out = forecast(option, "Vehari")
+        assert out["direction"] is None
+        assert out["shap"] == []
+
+
+@needs_xgboost
+def test_wheat_gets_a_direction_call_with_reasons():
+    out = forecast("Wheat", "Bahawalpur")
+    assert out["direction"]["call"] in {"UP", "DOWN"}
+    assert out["direction"]["validation_accuracy_pct"] > 50
+    assert 1 <= len(out["shap"]) <= 5
+    for reason in out["shap"]:
+        assert {"feature", "rs_effect", "direction", "text_en", "text_ur"} <= reason.keys()
+    # the model's price is never shown: the forecast stays the baseline
     assert out["predicted_price"] == out["current_price"]
 
 
-def test_range_brackets_the_forecast():
-    for option in ("Wheat", "Cotton", "IRRI", "SuperBasmati"):
-        out = forecast(option, "Vehari")
-        assert out["q10"] <= out["predicted_price"] <= out["q90"]
-        assert out["volatility"] in {"STABLE", "MODERATE", "VOLATILE"}
+@needs_xgboost
+def test_direction_calls_on_the_demo_backup_weeks():
+    # docs/DATA_NOTES.md A7: 2025-03-24 fell 19.7%, 2025-08-04 rose 48.6% (both validation weeks)
+    assert forecast("Wheat", "Bahawalpur", as_of=date(2025, 3, 24))["direction"]["call"] == "DOWN"
+    assert forecast("Wheat", "Bahawalpur", as_of=date(2025, 8, 4))["direction"]["call"] == "UP"
+
+
+def test_direction_switches_off_without_a_model(monkeypatch):
+    monkeypatch.setattr(predict, "_direction_model", lambda: None)
+    out = forecast("Wheat", "Bahawalpur")
+    assert out["direction"] is None
+    assert out["shap"] == []
 
 
 def test_display_and_amis_mandi_names_agree():
@@ -42,10 +83,9 @@ def test_display_and_amis_mandi_names_agree():
 
 def test_never_uses_prices_after_as_of():
     as_of = date(2024, 3, 13)
-    out = forecast("Wheat", "Bahawalpur", as_of=as_of)
+    out = forecast("Cotton", "Bahawalpur", as_of=as_of)
     assert date.fromisoformat(out["prices_as_of"]) <= as_of
-    later = forecast("Wheat", "Bahawalpur")
-    assert out["prices_as_of"] < later["prices_as_of"]
+    assert out["prices_as_of"] < forecast("Cotton", "Bahawalpur")["prices_as_of"]
 
 
 def test_irri_has_no_rahim_yar_khan_series():
