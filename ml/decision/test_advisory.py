@@ -1,6 +1,17 @@
 import pytest
 
-from ml.decision import advise, compare_mandis, confidence, config, fair_price_range, inputs, margin, offer_check
+from ml.decision import (
+    advise,
+    compare_mandis,
+    confidence,
+    config,
+    crop_plan,
+    fair_price_range,
+    inputs,
+    margin,
+    offer_check,
+    selling_window,
+)
 
 RATE = 16.5  # % a year, as in the blueprint example
 
@@ -191,3 +202,93 @@ def test_staleness_flags():
     assert inputs.is_stale("SuperBasmati", "Vehari") is True
     assert inputs.is_stale("Wheat", "Bahawalpur") is False
     assert inputs.is_stale("IRRI", "Rahim Yar Khan") is True  # no series at all
+
+
+# ---------------------------------------------------------------- What to Grow (B7)
+
+def _crop(option, price, median, lo, hi, spread=10.0, enough=True, cost=1000.0, yield_maund=10.0, milling=None):
+    return {
+        "crop_option": option, "latest_price": price, "prices_as_of": "2026-10-05", "is_stale": False,
+        "harvest_ratio": {"ratio_median": median, "ratio_min": lo, "ratio_max": hi, "spread_pct": spread,
+                          "enough_years": enough, "n_years": 5, "months_ahead": 6},
+        "cost_per_acre": cost, "yield_maund_per_acre": yield_maund, "milling_yield": milling,
+    }
+
+
+def test_crop_plan_profit_per_acre_and_ranking():
+    plan = crop_plan([_crop("Wheat", 100, 1.1, 1.0, 1.2), _crop("Cotton", 300, 1.0, 0.9, 1.1)], land_area_acres=2)
+    wheat = next(c for c in plan["crops"] if c["crop_option"] == "Wheat")
+    assert wheat["harvest_price_estimate"] == pytest.approx(110)
+    assert wheat["profit_per_acre"] == round(110 * 10 - 1000)
+    assert wheat["profit_per_acre_range"] == {"low": 0, "high": 200}
+    assert wheat["profit_total"] == 200
+    assert [c["crop_option"] for c in plan["crops"]] == ["Cotton", "Wheat"]
+    assert plan["best_crop"] == "Cotton"
+    assert all(c["is_estimate"] for c in plan["crops"])
+
+
+def test_rice_yield_is_converted_from_paddy():
+    plan = crop_plan([_crop("IRRI", 100, 1.0, 1.0, 1.0, yield_maund=50, milling=0.65)], land_area_acres=1)
+    assert plan["crops"][0]["sale_maund_per_acre"] == 32.5
+    assert plan["crops"][0]["profit_per_acre"] == round(100 * 32.5 - 1000)
+
+
+def test_crop_without_data_is_listed_last():
+    missing = {**_crop("IRRI", None, 1, 1, 1), "harvest_ratio": None}
+    plan = crop_plan([missing, _crop("Wheat", 100, 1.1, 1.0, 1.2)], land_area_acres=1)
+    assert plan["crops"][-1] == {"crop_option": "IRRI", "has_data": False, "rank": None}
+
+
+def test_risk_badge():
+    from ml.decision import risk_badge
+
+    assert risk_badge(config.LOW_RISK_MAX_SPREAD_PCT, True) == "LOW"
+    assert risk_badge(config.MEDIUM_RISK_MAX_SPREAD_PCT, True) == "MEDIUM"
+    assert risk_badge(config.MEDIUM_RISK_MAX_SPREAD_PCT + 1, True) == "HIGH"
+    assert risk_badge(0, False) == "HIGH"  # too little history
+
+
+def test_land_area_must_be_positive():
+    with pytest.raises(ValueError):
+        crop_plan([], land_area_acres=0)
+
+
+def _month(k, ratio):
+    return {"offset_months": k, "month": 4 + k, "ratio_median": ratio}
+
+
+def test_selling_window_subtracts_interest():
+    # +5% two months after harvest, minus 2 x 1% interest = +3%; better than selling at harvest
+    w = selling_window([_month(0, 1.0), _month(1, 1.01), _month(2, 1.05), _month(3, 1.04)], 12.0)
+    assert w["best_month"] == 6
+    assert w["best_net_pct"] == pytest.approx(3.0)
+    assert w["sell_at_harvest"] is False
+    assert w["window_months"] == [6]
+
+
+def test_selling_window_includes_close_neighbours():
+    w = selling_window([_month(0, 1.0), _month(1, 1.02), _month(2, 1.0)], 0.0)
+    assert w["best_month"] == 5
+    assert w["window_months"] == [5]
+    w = selling_window([_month(0, 1.0), _month(1, 1.005)], 0.0)
+    assert w["window_months"] == [4, 5]
+
+
+def test_falling_prices_mean_sell_at_harvest():
+    w = selling_window([_month(0, 1.0), _month(1, 0.97), _month(2, 0.99)], 16.5)
+    assert w["sell_at_harvest"] is True
+    assert w["best_month"] == 4
+
+
+def test_selling_window_without_data():
+    assert selling_window([], 16.5) is None
+
+
+def test_crop_plan_on_the_real_tables():
+    plan = crop_plan(inputs.crop_plan_inputs("Rahim Yar Khan"), land_area_acres=1)
+    by_option = {c["crop_option"]: c for c in plan["crops"]}
+    assert by_option["IRRI"]["has_data"] is False  # no IRRI series at Rahim Yar Khan
+    assert by_option["Wheat"]["has_data"] is True
+    assert by_option["SuperBasmati"]["is_stale"] is True
+    w = selling_window(inputs.post_harvest_ratios("Wheat", "Bahawalpur"), inputs.interest_pct_per_year())
+    assert w["months"][0]["offset_months"] == 0

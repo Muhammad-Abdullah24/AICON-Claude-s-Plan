@@ -85,3 +85,84 @@ def is_stale(crop_option: str, mandi: str) -> bool:
         if row["crop_option"] == crop_option and row["mandi"] == target:
             return row["is_stale"] == "1"
     return True
+
+
+def latest_price(crop_option: str, mandi: str) -> tuple[float, str] | None:
+    """(latest AMIS price Rs per 40 kg, its date) from series_coverage.csv, or None if there is no series."""
+    target = amis_name(mandi)
+    for row in _rows("series_coverage.csv"):
+        if row["crop_option"] == crop_option and row["mandi"] == target and row["latest_price_per_40kg"]:
+            return float(row["latest_price_per_40kg"]), row["prices_as_of"]
+    return None
+
+
+def crop_economics(crop_option: str) -> dict:
+    """Cost per acre and the yield in the unit the price is quoted in (rice: paddy x milling yield)."""
+    for row in _rows("crops.csv"):
+        if row["crop_option"] == crop_option:
+            milling = float(row["milling_yield"]) if row["milling_yield"] else None
+            return {
+                "cost_per_acre": float(row["production_cost_per_acre"]),
+                "yield_maund_per_acre": float(row["yield_maund_per_acre"]),
+                "yield_unit": row["yield_unit"],
+                "milling_yield": milling,
+                "yield_is_estimate": milling is not None,  # the 0.65 milling yield is an assumption
+            }
+    raise ValueError(f"unknown crop option: {crop_option!r}")
+
+
+def crop_calendar(crop_option: str) -> dict:
+    for row in _rows("crop_calendar.csv"):
+        if row["crop_option"] == crop_option:
+            return {k: int(row[k]) for k in
+                    ("sowing_start_month", "sowing_end_month", "harvest_start_month", "harvest_end_month")}
+    raise ValueError(f"unknown crop option: {crop_option!r}")
+
+
+def _ratio(row: dict) -> dict:
+    return {
+        "ratio_median": float(row["ratio_median"]),
+        "ratio_min": float(row["ratio_min"]),
+        "ratio_max": float(row["ratio_max"]),
+        "spread_pct": float(row["spread_pct"]),
+        "n_years": int(row["n_years"]),
+        "enough_years": row["enough_years"] == "1",
+    }
+
+
+def harvest_ratio(crop_option: str, mandi: str, ref_month: int) -> dict | None:
+    """Next-harvest price / price in `ref_month` (A6), keyed on the month of the latest price (H-B7)."""
+    target = amis_name(mandi)
+    for row in _rows("harvest_ratios.csv"):
+        if (row["crop_option"] == crop_option and row["mandi"] == target and int(row["ref_month"]) == ref_month
+                and row["ratio_median"]):
+            return {**_ratio(row), "months_ahead": int(row["months_ahead"]), "harvest_months": row["harvest_months"]}
+    return None
+
+
+def post_harvest_ratios(crop_option: str, mandi: str) -> list[dict]:
+    """Price k months after harvest starts / price in the harvest-start month (A6), by offset k."""
+    target = amis_name(mandi)
+    rows = [
+        {**_ratio(r), "offset_months": int(r["offset_months"]), "month": int(r["month"])}
+        for r in _rows("post_harvest_ratios.csv")
+        if r["crop_option"] == crop_option and r["mandi"] == target and r["ratio_median"]
+    ]
+    return sorted(rows, key=lambda r: r["offset_months"])
+
+
+def crop_plan_inputs(mandi: str) -> list[dict]:
+    """Everything crop_plan() needs for every crop option at one mandi, read from the runtime tables."""
+    out = []
+    for crop_option in sorted({r["crop_option"] for r in _rows("crops.csv")}):
+        latest = latest_price(crop_option, mandi)
+        ratio = harvest_ratio(crop_option, mandi, int(latest[1][5:7])) if latest else None
+        out.append({
+            "crop_option": crop_option,
+            "latest_price": latest[0] if latest else None,
+            "prices_as_of": latest[1] if latest else None,
+            "is_stale": is_stale(crop_option, mandi),
+            "harvest_ratio": ratio,
+            **crop_economics(crop_option),
+        })
+    return out

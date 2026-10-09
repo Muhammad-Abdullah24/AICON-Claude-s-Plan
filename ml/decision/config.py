@@ -39,3 +39,11 @@ HORIZON_WEEKS = 4
 # coverage A5's gate reports after B4, and write the final values in docs/MODEL_CARD.md.
 HIGH_CONFIDENCE_MAX_WIDTH_PCT = 10.0
 MEDIUM_CONFIDENCE_MAX_WIDTH_PCT = 20.0
+
+# Crop plan risk badge (B7): year-to-year spread of the harvest ratio, (max - min) / median, in %.
+# First draft; a crop with fewer than ENOUGH_YEARS of history (A6's flag) is always HIGH.
+LOW_RISK_MAX_SPREAD_PCT = 20.0
+MEDIUM_RISK_MAX_SPREAD_PCT = 40.0
+
+# Selling window (B7): months whose price after interest is within this many % points of the best month.
+SELLING_WINDOW_TOLERANCE_PCT = 1.0
