@@ -56,6 +56,7 @@ Ask the human before touching any other path.
 - Rebuild seasonal tables (Owner A): .venv/Scripts/python -m ml.seasonal.tables
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
+- WhatsApp channel (Owner A): backend/app/channels/whatsapp.py; needs FS_WA_* in .env (see the module docstring); tests run with the rest of pytest
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

@@ -2,7 +2,7 @@
 # Every Python command runs from the repo root, e.g. `python -m pytest`.
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests", "ml"]
+testpaths = ["backend/tests", "backend/app/channels", "ml"]
 pythonpath = ["."]
 addopts = "-q --strict-markers"
 
