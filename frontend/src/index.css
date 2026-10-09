@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+/*
+ * FarmSight visual system. Every colour and font in the app comes from here.
+ *
+ * Palette: ajrak, the indigo-and-madder block print of south Punjab and Sindh,
+ * plus the crops themselves. Charts read these same tokens at runtime
+ * (src/lib/tokens.ts), so change a colour here and the charts follow.
+ *
+ * Layout rule: use only logical utilities (ms-, me-, ps-, pe-, start-, end-,
+ * text-start, text-end) so right-to-left Urdu mirrors automatically.
+ * src/rtl.test.ts fails the build if left/right utilities sneak in.
+ */
+@theme {
+  --color-ink: #1b2559; /* indigo: text, primary surfaces */
+  --color-cotton: #f2f3ee; /* page background */
+  --color-paper: #ffffff; /* cards, the parchi */
+  --color-wheat: #d4a017; /* forecast band, highlights */
+  --color-wheat-soft: #f3e3ad;
+  --color-madder: #a3302e; /* risk, the synthetic tape */
+  --color-field: #3e6b3a; /* gains */
+  --color-slate: #5b6178; /* secondary text */
+  --color-line: #d9dbe3; /* hairlines */
+
+  --font-sans: 'IBM Plex Sans', 'Noto Nastaliq Urdu', system-ui, sans-serif;
+  --font-urdu: 'Noto Nastaliq Urdu', 'IBM Plex Sans', serif;
+  --font-figures: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    background: var(--color-cotton);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Nastaliq is tall and slanted: it needs roughly double line height or lines collide (PLAN.md 13). */
+  html:lang(ur) {
+    font-size: 17px;
+    line-height: 2.1;
+  }
+  html:lang(en) {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-wheat);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Rupee figures: tabular, Latin digits, never mirrored. */
+  .figures {
+    font-family: var(--font-figures);
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  /* The "synthetic data" tape: diagonal stripes, impossible to miss. */
+  .tape {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--color-madder) 0 8px,
+      color-mix(in oklab, var(--color-madder) 82%, black) 8px 16px
+    );
+    color: white;
+  }
+
+  /*
+   * The parchi: the slip an arhti hands a farmer. A perforated top edge, a
+   * dashed tear line, and a receipt-style total. It prints in once.
+   */
+  .parchi {
+    --perf: 7px;
+    background: var(--color-paper);
+    mask:
+      radial-gradient(circle var(--perf) at 50% 0, transparent 98%, black) 50% 0 / calc(var(--perf) * 3) 51% repeat-x,
+      linear-gradient(black, black) 0 100% / 100% 50% no-repeat;
+    padding-top: calc(var(--perf) + 1rem);
+    filter: drop-shadow(0 1px 0 var(--color-line)) drop-shadow(0 8px 18px rgb(27 37 89 / 0.1));
+    animation: parchi-print 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .tear {
+    border-top: 2px dashed var(--color-line);
+  }
+}
+
+@keyframes parchi-print {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}

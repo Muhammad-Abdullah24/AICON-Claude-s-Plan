@@ -1,0 +1,1800 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FarmSight API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/meta": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Meta",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/forecast": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Forecast",
+        "operationId": "forecast_api_forecast_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest data on or before this date. Omit for latest.",
+              "title": "As Of"
+            },
+            "description": "Latest data on or before this date. Omit for latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/advice": {
+      "post": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Advice",
+        "operationId": "advice_api_advice_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdviceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Alerts",
+        "operationId": "alerts_api_alerts_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest data on or before this date. Omit for latest.",
+              "title": "As Of"
+            },
+            "description": "Latest data on or before this date. Omit for latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/replay/{case_id}": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Replay",
+        "operationId": "replay_api_replay__case_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ur",
+                "en"
+              ],
+              "type": "string",
+              "default": "ur",
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/backtest": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Backtest",
+        "operationId": "backtest_api_backtest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestArtifact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "ops"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/whatsapp": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Whatsapp",
+        "operationId": "whatsapp_whatsapp_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_whatsapp_whatsapp_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdviceRequest": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "quantity_maund": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity Maund"
+          },
+          "storage": {
+            "type": "string",
+            "enum": [
+              "none",
+              "home",
+              "cold_store",
+              "warehouse"
+            ],
+            "title": "Storage"
+          },
+          "storage_cost_per_maund_week": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Cost Per Maund Week"
+          },
+          "spoilage_pct_week": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spoilage Pct Week"
+          },
+          "finance_cost_pct_month": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finance Cost Pct Month"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "ur",
+              "en"
+            ],
+            "title": "Lang",
+            "default": "ur"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi",
+          "quantity_maund",
+          "storage"
+        ],
+        "title": "AdviceRequest"
+      },
+      "AdviceResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "sell_now",
+              "sell_elsewhere",
+              "store",
+              "split"
+            ],
+            "title": "Verdict"
+          },
+          "verdict_text": {
+            "type": "string",
+            "title": "Verdict Text"
+          },
+          "rupee_difference": {
+            "type": "number",
+            "title": "Rupee Difference"
+          },
+          "best_week": {
+            "type": "integer",
+            "title": "Best Week"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "risk_line": {
+            "type": "string",
+            "title": "Risk Line"
+          },
+          "alternative_mandi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlternativeMandi"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/EventRef"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "alarm_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "stress",
+                  "alert",
+                  "crisis"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alarm Tier"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/AssumptionUsed"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "as_of",
+          "verdict",
+          "verdict_text",
+          "rupee_difference",
+          "best_week",
+          "reasons",
+          "risk_line",
+          "alternative_mandi",
+          "alerts",
+          "alarm_tier",
+          "assumptions"
+        ],
+        "title": "AdviceResponse"
+      },
+      "Alarm": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "indicator": {
+            "type": "number",
+            "title": "Indicator"
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "stress",
+              "alert",
+              "crisis"
+            ],
+            "title": "Tier"
+          },
+          "flags": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "below_3yr_harvest_avg",
+                "yoy_drop_over_50pct"
+              ]
+            },
+            "type": "array",
+            "title": "Flags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi",
+          "date",
+          "indicator",
+          "tier",
+          "flags"
+        ],
+        "title": "Alarm"
+      },
+      "AlertsResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "alarms": {
+            "items": {
+              "$ref": "#/components/schemas/Alarm"
+            },
+            "type": "array",
+            "title": "Alarms"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "as_of",
+          "alarms",
+          "events"
+        ],
+        "title": "AlertsResponse"
+      },
+      "AlternativeMandi": {
+        "properties": {
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "net_price": {
+            "type": "number",
+            "title": "Net Price"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandi",
+          "net_price"
+        ],
+        "title": "AlternativeMandi"
+      },
+      "AssumptionUsed": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "farmer",
+              "default"
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "source"
+        ],
+        "title": "AssumptionUsed"
+      },
+      "AssumptionValue": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Value"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "source"
+        ],
+        "title": "AssumptionValue"
+      },
+      "Assumptions": {
+        "properties": {
+          "finance_cost_pct_month": {
+            "$ref": "#/components/schemas/AssumptionValue"
+          },
+          "storage_defaults": {
+            "items": {
+              "$ref": "#/components/schemas/StorageDefault"
+            },
+            "type": "array",
+            "title": "Storage Defaults"
+          },
+          "transport": {
+            "items": {
+              "$ref": "#/components/schemas/TransportCost"
+            },
+            "type": "array",
+            "title": "Transport"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "finance_cost_pct_month",
+          "storage_defaults",
+          "transport"
+        ],
+        "title": "Assumptions"
+      },
+      "BacktestArtifact": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version"
+          },
+          "horizon_weeks": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Horizon Weeks"
+          },
+          "cutoffs": {
+            "items": {
+              "type": "string",
+              "format": "date"
+            },
+            "type": "array",
+            "title": "Cutoffs"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricRow"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "rupee_backtest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RupeeBacktest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "schema_version",
+          "horizon_weeks",
+          "cutoffs",
+          "metrics",
+          "rupee_backtest",
+          "limitations"
+        ],
+        "title": "BacktestArtifact"
+      },
+      "BandPoint": {
+        "properties": {
+          "weeks_ahead": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Weeks Ahead"
+          },
+          "q10": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Q10"
+          },
+          "q50": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Q50"
+          },
+          "q90": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Q90"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "weeks_ahead",
+          "q10",
+          "q50",
+          "q90"
+        ],
+        "title": "BandPoint"
+      },
+      "Body_whatsapp_whatsapp_post": {
+        "properties": {
+          "Body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "Body_whatsapp_whatsapp_post"
+      },
+      "DateRange": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "DateRange"
+      },
+      "Event": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "active_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Active Until"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "border_closure",
+              "export_ban",
+              "import_permission",
+              "procurement_policy",
+              "flood",
+              "drought",
+              "bumper_crop",
+              "transport_disruption",
+              "other"
+            ],
+            "title": "Event Type"
+          },
+          "crops": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Crops"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "unclear"
+            ],
+            "title": "Direction"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "headline": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Headline"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Confidence"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "active_until",
+          "event_type",
+          "crops",
+          "direction",
+          "region",
+          "headline",
+          "source_url",
+          "confidence",
+          "is_synthetic"
+        ],
+        "title": "Event"
+      },
+      "EventRef": {
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "enum": [
+              "border_closure",
+              "export_ban",
+              "import_permission",
+              "procurement_policy",
+              "flood",
+              "drought",
+              "bumper_crop",
+              "transport_disruption",
+              "other"
+            ],
+            "title": "Event Type"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_type",
+          "headline",
+          "source_url"
+        ],
+        "title": "EventRef"
+      },
+      "ForecastResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "price_now": {
+            "type": "number",
+            "title": "Price Now"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/PricePoint"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "forecast": {
+            "items": {
+              "$ref": "#/components/schemas/BandPoint"
+            },
+            "type": "array",
+            "title": "Forecast"
+          },
+          "naive": {
+            "items": {
+              "$ref": "#/components/schemas/NaivePoint"
+            },
+            "type": "array",
+            "title": "Naive"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "mase_vs_naive": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mase Vs Naive"
+          },
+          "price_type": {
+            "type": "string",
+            "enum": [
+              "wholesale",
+              "retail"
+            ],
+            "title": "Price Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "as_of",
+          "unit",
+          "price_now",
+          "history",
+          "forecast",
+          "naive",
+          "model",
+          "mase_vs_naive",
+          "price_type"
+        ],
+        "title": "ForecastResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Health"
+      },
+      "Meta": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date",
+            "title": "Generated At"
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/NamedItem"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Crops"
+          },
+          "mandis": {
+            "items": {
+              "$ref": "#/components/schemas/NamedItem"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Mandis"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesKey"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Series"
+          },
+          "replay_cases": {
+            "items": {
+              "$ref": "#/components/schemas/ReplayCaseRef"
+            },
+            "type": "array",
+            "title": "Replay Cases"
+          },
+          "date_range": {
+            "$ref": "#/components/schemas/DateRange"
+          },
+          "latest_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Latest As Of"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "price_type": {
+            "type": "string",
+            "enum": [
+              "wholesale",
+              "retail"
+            ],
+            "title": "Price Type"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelInfo"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Models"
+          },
+          "assumptions": {
+            "$ref": "#/components/schemas/Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "schema_version",
+          "generated_at",
+          "crops",
+          "mandis",
+          "series",
+          "replay_cases",
+          "date_range",
+          "latest_as_of",
+          "unit",
+          "price_type",
+          "models",
+          "assumptions"
+        ],
+        "title": "Meta"
+      },
+      "MetricRow": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "mase": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mase"
+          },
+          "quantile_loss": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantile Loss"
+          },
+          "coverage_80": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage 80"
+          },
+          "n_forecasts": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Forecasts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi",
+          "model",
+          "mase",
+          "quantile_loss",
+          "coverage_80",
+          "n_forecasts"
+        ],
+        "title": "MetricRow"
+      },
+      "ModelInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "challenger",
+              "baseline",
+              "placeholder"
+            ],
+            "title": "Role"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "role"
+        ],
+        "title": "ModelInfo"
+      },
+      "NaivePoint": {
+        "properties": {
+          "weeks_ahead": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Weeks Ahead"
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "weeks_ahead",
+          "price"
+        ],
+        "title": "NaivePoint"
+      },
+      "NamedAssumption": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "source"
+        ],
+        "title": "NamedAssumption"
+      },
+      "NamedItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Id"
+          },
+          "name_ur": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name Ur"
+          },
+          "name_en": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name En"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name_ur",
+          "name_en"
+        ],
+        "title": "NamedItem"
+      },
+      "PricePoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "price"
+        ],
+        "title": "PricePoint"
+      },
+      "ReplayCaseRef": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Case Id"
+          },
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "title_ur": {
+            "type": "string",
+            "title": "Title Ur"
+          },
+          "title_en": {
+            "type": "string",
+            "title": "Title En"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_id",
+          "crop",
+          "mandi",
+          "title_ur",
+          "title_en"
+        ],
+        "title": "ReplayCaseRef"
+      },
+      "ReplayResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ReplayStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "case_id",
+          "crop",
+          "mandi",
+          "title",
+          "summary",
+          "steps"
+        ],
+        "title": "ReplayResponse"
+      },
+      "ReplayStep": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "price_now": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price Now"
+          },
+          "forecast_q10": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Forecast Q10"
+          },
+          "forecast_q50": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Forecast Q50"
+          },
+          "forecast_q90": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Forecast Q90"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "sell_now",
+              "sell_elsewhere",
+              "store",
+              "split"
+            ],
+            "title": "Verdict"
+          },
+          "alarm_tier": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "stress",
+              "alert",
+              "crisis"
+            ],
+            "title": "Alarm Tier"
+          },
+          "events_active": {
+            "items": {
+              "$ref": "#/components/schemas/EventRef"
+            },
+            "type": "array",
+            "title": "Events Active"
+          },
+          "actual_price_4w_later": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Price 4W Later"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "as_of",
+          "price_now",
+          "forecast_q10",
+          "forecast_q50",
+          "forecast_q90",
+          "verdict",
+          "alarm_tier",
+          "events_active"
+        ],
+        "title": "ReplayStep"
+      },
+      "RupeeBacktest": {
+        "properties": {
+          "quantity_maund": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity Maund"
+          },
+          "n_cases": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Cases"
+          },
+          "avg_gain_vs_harvest_pkr": {
+            "type": "number",
+            "title": "Avg Gain Vs Harvest Pkr"
+          },
+          "share_better": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Share Better"
+          },
+          "worst_case_pkr": {
+            "type": "number",
+            "title": "Worst Case Pkr"
+          },
+          "hindsight_avg_gain_pkr": {
+            "type": "number",
+            "title": "Hindsight Avg Gain Pkr"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/NamedAssumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quantity_maund",
+          "n_cases",
+          "avg_gain_vs_harvest_pkr",
+          "share_better",
+          "worst_case_pkr",
+          "hindsight_avg_gain_pkr",
+          "assumptions"
+        ],
+        "title": "RupeeBacktest"
+      },
+      "SeriesKey": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "title": "Mandi"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi"
+        ],
+        "title": "SeriesKey"
+      },
+      "StorageDefault": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "title": "Crop"
+          },
+          "storage": {
+            "type": "string",
+            "enum": [
+              "home",
+              "cold_store",
+              "warehouse"
+            ],
+            "title": "Storage"
+          },
+          "storage_cost_per_maund_week": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Storage Cost Per Maund Week"
+          },
+          "spoilage_pct_week": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Spoilage Pct Week"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "storage",
+          "storage_cost_per_maund_week",
+          "spoilage_pct_week",
+          "source"
+        ],
+        "title": "StorageDefault"
+      },
+      "TransportCost": {
+        "properties": {
+          "from_mandi": {
+            "type": "string",
+            "title": "From Mandi"
+          },
+          "to_mandi": {
+            "type": "string",
+            "title": "To Mandi"
+          },
+          "cost_per_maund": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cost Per Maund"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "from_mandi",
+          "to_mandi",
+          "cost_per_maund",
+          "source"
+        ],
+        "title": "TransportCost"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

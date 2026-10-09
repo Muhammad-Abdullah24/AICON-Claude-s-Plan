@@ -1,0 +1,73 @@
+{
+  "app": {
+    "name": "فارم سائٹ",
+    "tagline": "کب بیچیں، کہاں بیچیں"
+  },
+  "nav": {
+    "ask": "مشورہ",
+    "forecast": "ریٹ کا اندازہ"
+  },
+  "lang": {
+    "switchTo": "English",
+    "switchLabel": "Switch to English"
+  },
+  "data": {
+    "synthetic": "مصنوعی ڈیٹا",
+    "syntheticNote": "یہ نمبر اصلی نہیں، صرف جانچ کے لیے ہیں",
+    "real": "اصلی ڈیٹا",
+    "wholesale": "تھوک ریٹ",
+    "retail": "پرچون ریٹ (اندازہ)",
+    "per40kg": "فی 40 کلو",
+    "basedOn": "{{date}} تک کے ڈیٹا پر"
+  },
+  "ask": {
+    "crop": "فصل",
+    "mandi": "منڈی",
+    "quantity": "مقدار",
+    "maund": "من",
+    "storage": "کیا آپ فصل رکھ سکتے ہیں؟",
+    "storageOptions": {
+      "none": "نہیں",
+      "home": "گھر پر",
+      "cold_store": "کولڈ اسٹور",
+      "warehouse": "گودام"
+    },
+    "submit": "مشورہ دیکھیں",
+    "submitting": "حساب ہو رہا ہے…",
+    "quantityInvalid": "مقدار 1 سے زیادہ لکھیں"
+  },
+  "verdict": {
+    "advice": "مشورہ",
+    "gainFor": "آپ کے {{qty}} من پر اضافی فائدہ",
+    "gainSplit": "رکھے گئے حصے پر اضافی فائدہ",
+    "bestWeek": "{{count}} ہفتے بعد بیچیں",
+    "why": "وجہ",
+    "risk": "خطرہ",
+    "alert": "الرٹ",
+    "altMandi": "{{mandi}} میں کرایہ نکال کر",
+    "disclaimer": "یہ اندازہ ہے، ضمانت نہیں۔",
+    "assumptions": "حساب میں لیے گئے خرچ",
+    "assumptionDefault": "عام اندازہ",
+    "assumptionFarmer": "آپ کا"
+  },
+  "forecast": {
+    "today": "آج کا ریٹ",
+    "weeksAhead": "{{count}} ہفتے بعد",
+    "range": "اندازے کی حد",
+    "legendHistory": "پچھلا ریٹ",
+    "legendBand": "اندازے کی حد (10% سے 90%)",
+    "legendMedian": "درمیانہ اندازہ",
+    "legendNaive": "کوئی تبدیلی نہیں (موازنہ)",
+    "model": "ماڈل",
+    "accuracy": "سادہ اندازے سے موازنہ",
+    "notMeasured": "ابھی ناپا نہیں گیا",
+    "chartLabel": "{{crop}}، {{mandi}}: پچھلا ریٹ اور اگلے ہفتوں کا اندازہ"
+  },
+  "status": {
+    "loading": "لوڈ ہو رہا ہے…",
+    "error": "سرور سے رابطہ نہیں ہو سکا۔",
+    "errorHint": "انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔",
+    "retry": "دوبارہ کوشش کریں",
+    "notFound": "اس تاریخ کا ڈیٹا موجود نہیں۔"
+  }
+}

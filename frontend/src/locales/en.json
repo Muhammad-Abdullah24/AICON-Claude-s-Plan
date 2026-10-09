@@ -1,0 +1,73 @@
+{
+  "app": {
+    "name": "FarmSight",
+    "tagline": "When to sell, where to sell"
+  },
+  "nav": {
+    "ask": "Advice",
+    "forecast": "Price forecast"
+  },
+  "lang": {
+    "switchTo": "اردو",
+    "switchLabel": "اردو میں دیکھیں"
+  },
+  "data": {
+    "synthetic": "Synthetic data",
+    "syntheticNote": "These numbers are not real. They are for testing only.",
+    "real": "Real data",
+    "wholesale": "Wholesale",
+    "retail": "Retail (proxy)",
+    "per40kg": "per 40 kg",
+    "basedOn": "Based on data up to {{date}}"
+  },
+  "ask": {
+    "crop": "Crop",
+    "mandi": "Mandi",
+    "quantity": "Quantity",
+    "maund": "maund",
+    "storage": "Can you store your crop?",
+    "storageOptions": {
+      "none": "No",
+      "home": "At home",
+      "cold_store": "Cold store",
+      "warehouse": "Warehouse"
+    },
+    "submit": "Get advice",
+    "submitting": "Working it out…",
+    "quantityInvalid": "Enter a quantity above 0"
+  },
+  "verdict": {
+    "advice": "Advice",
+    "gainFor": "Extra on your {{qty}} maund",
+    "gainSplit": "Extra on the stored share",
+    "bestWeek": "Sell in {{count}} weeks",
+    "why": "Why",
+    "risk": "Risk",
+    "alert": "Alert",
+    "altMandi": "{{mandi}}, after transport",
+    "disclaimer": "This is an estimate, not a guarantee.",
+    "assumptions": "Costs used",
+    "assumptionDefault": "default",
+    "assumptionFarmer": "yours"
+  },
+  "forecast": {
+    "today": "Today's price",
+    "weeksAhead": "In {{count}} weeks",
+    "range": "Likely range",
+    "legendHistory": "Past price",
+    "legendBand": "Likely range (10% to 90%)",
+    "legendMedian": "Middle estimate",
+    "legendNaive": "No change (baseline)",
+    "model": "Model",
+    "accuracy": "Accuracy vs no-change baseline",
+    "notMeasured": "not measured yet",
+    "chartLabel": "{{crop}}, {{mandi}}: past price and forecast for the coming weeks"
+  },
+  "status": {
+    "loading": "Loading…",
+    "error": "Could not reach the server.",
+    "errorHint": "Check your connection and try again.",
+    "retry": "Try again",
+    "notFound": "No data for this date."
+  }
+}
