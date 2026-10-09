@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "horizon_weeks": 4,
+  "cutoffs": [],
+  "metrics": [
+    {
+      "crop": "wheat",
+      "mandi": "bahawalpur",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "wheat",
+      "mandi": "vehari",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "wheat",
+      "mandi": "rahim_yar_khan",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "rice",
+      "mandi": "bahawalpur",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "rice",
+      "mandi": "vehari",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "cotton",
+      "mandi": "bahawalpur",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "cotton",
+      "mandi": "vehari",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    },
+    {
+      "crop": "cotton",
+      "mandi": "rahim_yar_khan",
+      "model": "placeholder-random-walk",
+      "mase": null,
+      "quantile_loss": null,
+      "coverage_80": null,
+      "n_forecasts": 0
+    }
+  ],
+  "rupee_backtest": null,
+  "limitations": [
+    "Placeholder artifact: no backtest has been run yet."
+  ],
+  "data_source": "placeholder",
+  "is_synthetic": true
+}

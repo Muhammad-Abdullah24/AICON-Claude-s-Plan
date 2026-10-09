@@ -712,12 +712,15 @@ The shapes above did not cover every endpoint. These drafts fill the gaps. **The
 
 - `storage` is one of `none`, `home`, `cold_store`, `warehouse`.
 - `storage_cost_per_maund_week`, `spoilage_pct_week` and `finance_cost_pct_month` may be `null`, meaning "use the default from `meta.json`". `0` means zero. Each one appears in `assumptions` with `source` set to `farmer` or `default`.
-- `alternative_mandi` may be `null`. `alarm_tier` is one of `normal`, `stress`, `alert`, `crisis`.
+- `alternative_mandi` may be `null`. `alarm_tier` is one of `normal`, `stress`, `alert`, `crisis`, or `null` when no alarm exists for that date (never a guessed `normal`).
+- The response also carries `as_of`: the date of the forecast the advice was based on.
+- `rupee_difference` is for the farmer's whole quantity, compared with selling at this mandi today. For `split` it counts only the stored share.
 
 **Changes to 14.4 (replay)**
 
 - `GET /api/replay/{case_id}?lang=ur|en`. `title` and `summary` come back in the requested language (default `ur`).
-- The response also carries `crop` and `mandi`. `actual_price_4w_later` may be `null` near the end of the data.
+- The response also carries `crop`, `mandi`, `data_source` and `is_synthetic`. `actual_price_4w_later` may be `null` near the end of the data.
+- `events_active` items are `{"event_type", "headline", "source_url"}`, the same shape as advice `alerts`. The forecast numbers in a step are the 4-week horizon.
 
 **`GET /api/meta`** returns `artifacts/meta.json` as is:
 

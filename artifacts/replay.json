@@ -1,0 +1,679 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "wheat_2024_crash",
+      "crop": "wheat",
+      "mandi": "vehari",
+      "title_ur": "گندم 2024 (عارضی ڈیٹا)",
+      "title_en": "Wheat 2024 crash (placeholder data)",
+      "summary_ur": "عارضی: یہ مراحل مصنوعی قیمتوں سے بنے ہیں، اصل بحران سے نہیں۔",
+      "summary_en": "Placeholder: these steps come from synthetic prices, not the real crisis.",
+      "steps": [
+        {
+          "as_of": "2024-02-04",
+          "price_now": 3606,
+          "forecast_q10": 3412,
+          "forecast_q50": 3690,
+          "forecast_q90": 3967,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3632
+        },
+        {
+          "as_of": "2024-02-11",
+          "price_now": 3619,
+          "forecast_q10": 3408,
+          "forecast_q50": 3686,
+          "forecast_q90": 3964,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3657
+        },
+        {
+          "as_of": "2024-02-18",
+          "price_now": 3621,
+          "forecast_q10": 3384,
+          "forecast_q50": 3662,
+          "forecast_q90": 3941,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3690
+        },
+        {
+          "as_of": "2024-02-25",
+          "price_now": 3637,
+          "forecast_q10": 3395,
+          "forecast_q50": 3675,
+          "forecast_q90": 3955,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3657
+        },
+        {
+          "as_of": "2024-03-03",
+          "price_now": 3632,
+          "forecast_q10": 3359,
+          "forecast_q50": 3639,
+          "forecast_q90": 3918,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3682
+        },
+        {
+          "as_of": "2024-03-10",
+          "price_now": 3657,
+          "forecast_q10": 3385,
+          "forecast_q50": 3667,
+          "forecast_q90": 3948,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3765
+        },
+        {
+          "as_of": "2024-03-17",
+          "price_now": 3690,
+          "forecast_q10": 3424,
+          "forecast_q50": 3708,
+          "forecast_q90": 3991,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 3748
+        },
+        {
+          "as_of": "2024-03-24",
+          "price_now": 3657,
+          "forecast_q10": 3381,
+          "forecast_q50": 3662,
+          "forecast_q90": 3943,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 3802
+        },
+        {
+          "as_of": "2024-03-31",
+          "price_now": 3682,
+          "forecast_q10": 3412,
+          "forecast_q50": 3695,
+          "forecast_q90": 3978,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 3824
+        },
+        {
+          "as_of": "2024-04-07",
+          "price_now": 3765,
+          "forecast_q10": 3503,
+          "forecast_q50": 3793,
+          "forecast_q90": 4082,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3845
+        },
+        {
+          "as_of": "2024-04-14",
+          "price_now": 3748,
+          "forecast_q10": 3475,
+          "forecast_q50": 3763,
+          "forecast_q90": 4051,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3780
+        },
+        {
+          "as_of": "2024-04-21",
+          "price_now": 3802,
+          "forecast_q10": 3547,
+          "forecast_q50": 3840,
+          "forecast_q90": 4132,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3789
+        },
+        {
+          "as_of": "2024-04-28",
+          "price_now": 3824,
+          "forecast_q10": 3567,
+          "forecast_q50": 3861,
+          "forecast_q90": 4155,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3735
+        },
+        {
+          "as_of": "2024-05-05",
+          "price_now": 3845,
+          "forecast_q10": 3570,
+          "forecast_q50": 3865,
+          "forecast_q90": 4161,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3728
+        },
+        {
+          "as_of": "2024-05-12",
+          "price_now": 3780,
+          "forecast_q10": 3497,
+          "forecast_q50": 3788,
+          "forecast_q90": 4079,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3757
+        },
+        {
+          "as_of": "2024-05-19",
+          "price_now": 3789,
+          "forecast_q10": 3494,
+          "forecast_q50": 3786,
+          "forecast_q90": 4077,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3698
+        },
+        {
+          "as_of": "2024-05-26",
+          "price_now": 3735,
+          "forecast_q10": 3426,
+          "forecast_q50": 3713,
+          "forecast_q90": 4000,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3608
+        },
+        {
+          "as_of": "2024-06-02",
+          "price_now": 3728,
+          "forecast_q10": 3413,
+          "forecast_q50": 3700,
+          "forecast_q90": 3986,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3633
+        },
+        {
+          "as_of": "2024-06-09",
+          "price_now": 3757,
+          "forecast_q10": 3462,
+          "forecast_q50": 3751,
+          "forecast_q90": 4040,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3576
+        },
+        {
+          "as_of": "2024-06-16",
+          "price_now": 3698,
+          "forecast_q10": 3391,
+          "forecast_q50": 3676,
+          "forecast_q90": 3960,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3499
+        },
+        {
+          "as_of": "2024-06-23",
+          "price_now": 3608,
+          "forecast_q10": 3300,
+          "forecast_q50": 3577,
+          "forecast_q90": 3855,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3456
+        },
+        {
+          "as_of": "2024-06-30",
+          "price_now": 3633,
+          "forecast_q10": 3330,
+          "forecast_q50": 3610,
+          "forecast_q90": 3889,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [
+            {
+              "event_type": "other",
+              "headline": "Placeholder event for testing the UI. Not real news.",
+              "source_url": null
+            }
+          ],
+          "actual_price_4w_later": 3395
+        },
+        {
+          "as_of": "2024-07-07",
+          "price_now": 3576,
+          "forecast_q10": 3258,
+          "forecast_q50": 3533,
+          "forecast_q90": 3808,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [],
+          "actual_price_4w_later": 3457
+        },
+        {
+          "as_of": "2024-07-14",
+          "price_now": 3499,
+          "forecast_q10": 3183,
+          "forecast_q50": 3452,
+          "forecast_q90": 3721,
+          "verdict": "sell_now",
+          "alarm_tier": "normal",
+          "events_active": [],
+          "actual_price_4w_later": 3359
+        },
+        {
+          "as_of": "2024-07-21",
+          "price_now": 3456,
+          "forecast_q10": 3154,
+          "forecast_q50": 3420,
+          "forecast_q90": 3685,
+          "verdict": "sell_now",
+          "alarm_tier": "normal",
+          "events_active": [],
+          "actual_price_4w_later": 3293
+        },
+        {
+          "as_of": "2024-07-28",
+          "price_now": 3395,
+          "forecast_q10": 3078,
+          "forecast_q50": 3339,
+          "forecast_q90": 3600,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [],
+          "actual_price_4w_later": 3294
+        }
+      ]
+    },
+    {
+      "case_id": "cotton_2022_floods",
+      "crop": "cotton",
+      "mandi": "rahim_yar_khan",
+      "title_ur": "کپاس، 2022 کا سیلاب (عارضی ڈیٹا)",
+      "title_en": "Cotton, 2022 floods (placeholder data)",
+      "summary_ur": "عارضی: یہ مراحل مصنوعی قیمتوں سے بنے ہیں، اصل بحران سے نہیں۔",
+      "summary_en": "Placeholder: these steps come from synthetic prices, not the real crisis.",
+      "steps": [
+        {
+          "as_of": "2022-07-03",
+          "price_now": 8503,
+          "forecast_q10": 7838,
+          "forecast_q50": 8492,
+          "forecast_q90": 9146,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 8069
+        },
+        {
+          "as_of": "2022-07-10",
+          "price_now": 8401,
+          "forecast_q10": 7716,
+          "forecast_q50": 8362,
+          "forecast_q90": 9008,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [],
+          "actual_price_4w_later": 7983
+        },
+        {
+          "as_of": "2022-07-17",
+          "price_now": 8269,
+          "forecast_q10": 7599,
+          "forecast_q50": 8235,
+          "forecast_q90": 8871,
+          "verdict": "sell_now",
+          "alarm_tier": "normal",
+          "events_active": [],
+          "actual_price_4w_later": 7869
+        },
+        {
+          "as_of": "2022-07-24",
+          "price_now": 8240,
+          "forecast_q10": 7584,
+          "forecast_q50": 8217,
+          "forecast_q90": 8851,
+          "verdict": "sell_now",
+          "alarm_tier": "normal",
+          "events_active": [],
+          "actual_price_4w_later": 7817
+        },
+        {
+          "as_of": "2022-07-31",
+          "price_now": 8069,
+          "forecast_q10": 7346,
+          "forecast_q50": 7966,
+          "forecast_q90": 8587,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [],
+          "actual_price_4w_later": 7797
+        },
+        {
+          "as_of": "2022-08-07",
+          "price_now": 7983,
+          "forecast_q10": 7270,
+          "forecast_q50": 7884,
+          "forecast_q90": 8498,
+          "verdict": "sell_now",
+          "alarm_tier": "stress",
+          "events_active": [],
+          "actual_price_4w_later": 7761
+        },
+        {
+          "as_of": "2022-08-14",
+          "price_now": 7869,
+          "forecast_q10": 7169,
+          "forecast_q50": 7774,
+          "forecast_q90": 8379,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7768
+        },
+        {
+          "as_of": "2022-08-21",
+          "price_now": 7817,
+          "forecast_q10": 7116,
+          "forecast_q50": 7717,
+          "forecast_q90": 8318,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7552
+        },
+        {
+          "as_of": "2022-08-28",
+          "price_now": 7797,
+          "forecast_q10": 7132,
+          "forecast_q50": 7731,
+          "forecast_q90": 8331,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7540
+        },
+        {
+          "as_of": "2022-09-04",
+          "price_now": 7761,
+          "forecast_q10": 7110,
+          "forecast_q50": 7707,
+          "forecast_q90": 8304,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7574
+        },
+        {
+          "as_of": "2022-09-11",
+          "price_now": 7768,
+          "forecast_q10": 7146,
+          "forecast_q50": 7743,
+          "forecast_q90": 8340,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7373
+        },
+        {
+          "as_of": "2022-09-18",
+          "price_now": 7552,
+          "forecast_q10": 6907,
+          "forecast_q50": 7488,
+          "forecast_q90": 8069,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 7457
+        },
+        {
+          "as_of": "2022-09-25",
+          "price_now": 7540,
+          "forecast_q10": 6898,
+          "forecast_q50": 7478,
+          "forecast_q90": 8058,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 7267
+        },
+        {
+          "as_of": "2022-10-02",
+          "price_now": 7574,
+          "forecast_q10": 6946,
+          "forecast_q50": 7528,
+          "forecast_q90": 8111,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7382
+        },
+        {
+          "as_of": "2022-10-09",
+          "price_now": 7373,
+          "forecast_q10": 6712,
+          "forecast_q50": 7279,
+          "forecast_q90": 7846,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 7377
+        },
+        {
+          "as_of": "2022-10-16",
+          "price_now": 7457,
+          "forecast_q10": 6860,
+          "forecast_q50": 7434,
+          "forecast_q90": 8007,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7319
+        },
+        {
+          "as_of": "2022-10-23",
+          "price_now": 7267,
+          "forecast_q10": 6642,
+          "forecast_q50": 7201,
+          "forecast_q90": 7760,
+          "verdict": "sell_now",
+          "alarm_tier": "crisis",
+          "events_active": [],
+          "actual_price_4w_later": 7268
+        },
+        {
+          "as_of": "2022-10-30",
+          "price_now": 7382,
+          "forecast_q10": 6768,
+          "forecast_q50": 7335,
+          "forecast_q90": 7903,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7343
+        },
+        {
+          "as_of": "2022-11-06",
+          "price_now": 7377,
+          "forecast_q10": 6811,
+          "forecast_q50": 7378,
+          "forecast_q90": 7945,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7251
+        },
+        {
+          "as_of": "2022-11-13",
+          "price_now": 7319,
+          "forecast_q10": 6722,
+          "forecast_q50": 7285,
+          "forecast_q90": 7848,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7212
+        },
+        {
+          "as_of": "2022-11-20",
+          "price_now": 7268,
+          "forecast_q10": 6709,
+          "forecast_q50": 7268,
+          "forecast_q90": 7827,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7363
+        },
+        {
+          "as_of": "2022-11-27",
+          "price_now": 7343,
+          "forecast_q10": 6769,
+          "forecast_q50": 7333,
+          "forecast_q90": 7898,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7342
+        },
+        {
+          "as_of": "2022-12-04",
+          "price_now": 7251,
+          "forecast_q10": 6662,
+          "forecast_q50": 7220,
+          "forecast_q90": 7778,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7520
+        },
+        {
+          "as_of": "2022-12-11",
+          "price_now": 7212,
+          "forecast_q10": 6631,
+          "forecast_q50": 7186,
+          "forecast_q90": 7740,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7494
+        },
+        {
+          "as_of": "2022-12-18",
+          "price_now": 7363,
+          "forecast_q10": 6821,
+          "forecast_q50": 7387,
+          "forecast_q90": 7953,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7582
+        },
+        {
+          "as_of": "2022-12-25",
+          "price_now": 7342,
+          "forecast_q10": 6777,
+          "forecast_q50": 7342,
+          "forecast_q90": 7906,
+          "verdict": "sell_now",
+          "alarm_tier": "alert",
+          "events_active": [],
+          "actual_price_4w_later": 7454
+        }
+      ]
+    }
+  ],
+  "data_source": "placeholder",
+  "is_synthetic": true
+}

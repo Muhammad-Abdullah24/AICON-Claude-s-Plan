@@ -1,0 +1,5 @@
+# Tests and lint. Install with: python -m pip install -r backend/requirements-dev.txt
+-r requirements.txt
+pytest==9.1.1
+httpx2==2.13.1
+ruff==0.16.10

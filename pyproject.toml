@@ -1,0 +1,15 @@
+# Tool configuration only. This repo is not an installable package.
+# Every Python command runs from the repo root, e.g. `python -m pytest`.
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests", "ml"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["frontend", "legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
