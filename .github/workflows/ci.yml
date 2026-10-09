@@ -1,0 +1,80 @@
+# Runs on every pull request and every push to main. With branch protection
+# on main ("require status checks"), a red check blocks the merge, so main
+# always runs (PLAN.md 16.1).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend, engine and artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: backend/constraints.txt
+      - run: python -m pip install -r backend/requirements-dev.txt
+      - name: Lint
+        run: python -m ruff check .
+      - name: Artifacts match the contract
+        run: python -m backend.app.check_artifacts
+      - name: Tests
+        run: python -m pytest -W error
+
+  frontend:
+    name: Front end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  contract:
+    name: Front-end types match the backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: backend/constraints.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m pip install -r backend/requirements.txt
+      - run: npm ci
+        working-directory: frontend
+      - name: Regenerate the schema and types
+        run: |
+          python -m backend.app.export_openapi
+          npm --prefix frontend run gen:api
+      - name: Fail if they changed
+        run: |
+          if ! git diff --exit-code -- frontend/src/api; then
+            echo "::error::The API changed but the front-end types were not regenerated. Run: python -m backend.app.export_openapi && npm --prefix frontend run gen:api"
+            exit 1
+          fi
