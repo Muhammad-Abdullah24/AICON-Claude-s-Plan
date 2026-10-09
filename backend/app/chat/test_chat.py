@@ -103,7 +103,8 @@ def test_needs_crop_and_mandi_before_calling_the_llm():
 def test_no_data_and_service_not_ready():
     assert ask("irri ryk", FakeLLM("x"), FakeProvider(error=LookupError())).fallback_reason == "no_data"
     assert ask("gandum vehari", FakeLLM("x"), FakeProvider(error=NotReady("x"))).answer == reply.NOT_READY
-    assert ask("gandum vehari", FakeLLM("x"), ServicesProvider()).fallback_reason == "service_not_ready"
+    real = ask("gandum bahawalpur", FakeLLM(error=LLMUnavailable("no key")), ServicesProvider())
+    assert real.fallback_reason == "llm_unavailable" and real.data_source == "amis"   # real data, template reply
 
 
 def test_synthetic_data_is_always_labelled():

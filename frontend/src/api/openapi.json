@@ -291,6 +291,131 @@
         }
       }
     },
+    "/webhooks/whatsapp": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Verify",
+        "operationId": "verify_webhooks_whatsapp_get",
+        "parameters": [
+          {
+            "name": "hub.mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Hub.Mode"
+            }
+          },
+          {
+            "name": "hub.verify_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Hub.Verify Token"
+            }
+          },
+          {
+            "name": "hub.challenge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Hub.Challenge"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Receive",
+        "operationId": "receive_webhooks_whatsapp_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Receive Webhooks Whatsapp Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Chat",
+        "operationId": "chat_api_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -305,39 +430,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Health"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/whatsapp": {
-      "post": {
-        "tags": [
-          "channels"
-        ],
-        "summary": "Whatsapp",
-        "operationId": "whatsapp_whatsapp_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_whatsapp_whatsapp_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -849,16 +941,139 @@
         ],
         "title": "BandPoint"
       },
-      "Body_whatsapp_whatsapp_post": {
+      "ChatRequest": {
         "properties": {
-          "Body": {
+          "question": {
             "type": "string",
-            "title": "Body",
-            "default": ""
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "crop_option": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Wheat",
+                  "Cotton",
+                  "IRRI",
+                  "SuperBasmati"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Option"
+          },
+          "mandi": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "BahawalPur",
+                  "Vehari",
+                  "RahimYarKhan"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandi"
+          },
+          "quantity_maund": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity Maund"
           }
         },
         "type": "object",
-        "title": "Body_whatsapp_whatsapp_post"
+        "required": [
+          "question"
+        ],
+        "title": "ChatRequest"
+      },
+      "ChatResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "used_fallback": {
+            "type": "boolean",
+            "title": "Used Fallback"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "need_crop_and_mandi",
+                  "no_data",
+                  "service_not_ready",
+                  "rate_limited",
+                  "llm_unavailable",
+                  "unverified_numbers",
+                  "wrong_script"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          },
+          "crop_option": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crop Option"
+          },
+          "mandi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandi"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "used_fallback",
+          "fallback_reason",
+          "crop_option",
+          "mandi",
+          "data_source",
+          "is_synthetic"
+        ],
+        "title": "ChatResponse"
       },
       "DateRange": {
         "properties": {

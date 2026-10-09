@@ -1,5 +1,4 @@
 import datetime as dt
-import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -193,15 +192,7 @@ def test_backtest_reports_unmeasured_metrics_as_null(client):
 # ---------------------------------------------------------- whatsapp
 
 
-def test_whatsapp_returns_twiml_in_urdu(client):
-    r = client.post("/whatsapp", data={"Body": "گندم وہاڑی 100 من", "From": "whatsapp:+920000000000"})
-    assert r.status_code == 200
-    assert r.headers["content-type"].startswith("application/xml")
-    root = ET.fromstring(r.content)
-    assert root.tag == "Response"
-    message = root.find("Message").text
-    assert any("؀" <= ch <= "ۿ" for ch in message)
-
-
-def test_whatsapp_accepts_empty_body(client):
-    assert client.post("/whatsapp", data={}).status_code == 200
+def test_whatsapp_webhook_is_mounted_and_refuses_unsigned(client):
+    # The Meta webhook lives in backend/app/channels (tested there). Unsigned posts never get through.
+    assert client.post("/webhooks/whatsapp", content=b"{}").status_code in (403, 503)
+    assert client.post("/whatsapp", data={"Body": "x"}).status_code == 404   # the Twilio placeholder is gone
