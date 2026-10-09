@@ -39,7 +39,7 @@ from fastapi.responses import PlainTextResponse
 from backend.app import db
 from backend.app.channels import conversation as conv
 from backend.app.channels import reply
-from backend.app.channels.provider import AdviceProvider, NotReady, get_provider
+from backend.app.channels.provider import AdviceProvider, get_provider
 from backend.app.chat import service as chat_service
 from backend.app.chat.llm import get_llm
 
@@ -208,14 +208,6 @@ def render(r: conv.Reply, chat: ChatFn | None, phone: str) -> dict:
     return _answer(reply.SORRY, ch)   # a free question, but no chat function was given
 
 
-def _alerts_status(provider: AdviceProvider, phone: str) -> bool | None:
-    status = getattr(provider, "alerts_enabled", None)   # older providers do not report it
-    try:
-        return status(phone) if status else None
-    except NotReady:
-        return None
-
-
 def respond(msg: dict, provider: AdviceProvider, chat: ChatFn | None = None, now: datetime | None = None) -> dict:
     """The reply to one incoming message, as a Cloud API message object. The conversation engine decides; the
     session is read from and saved to the database (backend/app/db.py), so a restart does not lose it."""
@@ -224,20 +216,7 @@ def respond(msg: dict, provider: AdviceProvider, chat: ChatFn | None = None, now
         return text_message(reply.VOICE_SOON)  # task A10
     if not db.digits(phone):
         return text_message(reply.HELP)
-    now = now or datetime.now(UTC)
-    status = _alerts_status(provider, phone)
-    out = conv.handle(message_text(msg) or "", conv.load(CHANNEL, phone), provider, phone=phone, now=now,
-                      alerts_enabled=bool(status))
-    r = out.reply
-    if out.alert_action is not None:
-        try:
-            done = provider.set_alerts(phone, out.alert_action)
-        except NotReady:
-            done = False
-        if done is False:   # not a registered farmer (or no service): nothing changed, so say that
-            post = out.state is not None and out.state.step == conv.POST_ADVICE
-            r = conv.Reply("not_registered", {}, conv.post_choices(bool(status)) if post else r.choices)
-    conv.store(CHANNEL, phone, out, now)
+    r = conv.converse(CHANNEL, phone, message_text(msg) or "", provider, now or datetime.now(UTC))
     return render(r, chat, phone)
 
 

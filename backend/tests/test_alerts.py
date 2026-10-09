@@ -141,3 +141,55 @@ def test_route_needs_the_admin_token(client, monkeypatch, fresh_db):
     body = r.json()
     assert body["dry_run"] is True and body["sent"] == 0 and body["farmers_checked"] == 1
     assert "phone" not in str(body) and body["results"][0]["items"][0]["kind"] == "PRICE_SPIKE"
+
+
+# ---------------------------------------------------------------- SMS fallback (task A11)
+
+@pytest.fixture
+def sms_vendor(monkeypatch):
+    """A configured SMS provider whose sender only records (no vendor is integrated; nothing is sent)."""
+    from backend.app.channels import sms
+
+    sender = sms.FakeSmsSender()
+
+    class Vendor:
+        def sender(self):
+            return sender
+    monkeypatch.setitem(sms.ADAPTERS, "testvendor", lambda settings: Vendor())
+    monkeypatch.setenv("FS_SMS_PROVIDER", "testvendor")
+    return sender
+
+
+def test_sms_fallback_sends_the_roman_urdu_alert_only_when_whatsapp_fails(fresh_db, market, sms_vendor):
+    from backend.app.channels import sms_reply
+
+    alerts.run(send=Outbox(), as_of=DAY)
+    market["Wheat"][0] = "WAIT"
+    [r] = alerts.run(send=Outbox(ok=False), as_of=later(1))
+    assert r["status"] == "SENT" and r["channel"] == "sms"
+    [(phone, text)] = sms_vendor.sent
+    assert phone == "920000000001" and text.startswith("FarmSight alert: Gandum Bahawalpur: mashwara badal gaya")
+    assert sms_reply.is_gsm7(text) and len(text) <= sms_reply.MAX_CHARS and sms_reply.ALERT_STOP in text
+    logged = db.connect().execute("SELECT channel, content FROM messages").fetchone()
+    assert logged["channel"] == "sms" and logged["content"] == text
+    market["Wheat"][0] = "SELL"
+    [r] = alerts.run(send=Outbox(), as_of=later(9))   # WhatsApp works: no SMS
+    assert r["channel"] == "whatsapp" and len(sms_vendor.sent) == 1
+
+
+def test_sms_fallback_keeps_the_weekly_limit_and_opt_out(fresh_db, market, sms_vendor):
+    alerts.run(send=Outbox(), as_of=DAY)
+    market["Wheat"][0] = "WAIT"
+    alerts.run(send=Outbox(ok=False), as_of=later(1))
+    market["Wheat"][0] = "SELL"
+    [r] = alerts.run(send=Outbox(ok=False), as_of=later(2))
+    assert r["skipped"] == "weekly_limit" and len(sms_vendor.sent) == 1
+    db.set_alerts_by_phone("920000000001", False)
+    assert alerts.run(send=Outbox(ok=False), as_of=later(20)) == [] and len(sms_vendor.sent) == 1
+
+
+def test_no_sms_provider_means_no_fallback(fresh_db, market):
+    alerts.run(send=Outbox(), as_of=DAY)
+    market["Wheat"][0] = "WAIT"
+    [r] = alerts.run(send=Outbox(ok=False), as_of=later(1))
+    assert r["status"] == "FAILED" and r["channel"] == "whatsapp"

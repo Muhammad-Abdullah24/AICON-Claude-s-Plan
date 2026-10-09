@@ -342,3 +342,31 @@ def store(channel: str, phone: str, outcome: Outcome, at: datetime | None = None
         db.save_conversation(channel, phone, to_fields(outcome.state), SESSION_MINUTES, at)
     else:
         db.clear_conversation(channel, phone)
+
+
+# ---------------------------------------------------------------- one turn, as every channel runs it
+
+def _alerts_status(provider: AdviceProvider, phone: str) -> bool | None:
+    status = getattr(provider, "alerts_enabled", None)   # older providers do not report it
+    try:
+        return status(phone) if status else None
+    except NotReady:
+        return None
+
+
+def converse(channel: str, phone: str, text: str, provider: AdviceProvider, now: datetime) -> Reply:
+    """Load the session, decide the reply, apply an alert change, save the session. WhatsApp and SMS both call
+    this, so they cannot drift apart; only the wording differs."""
+    status = _alerts_status(provider, phone)
+    out = handle(text, load(channel, phone), provider, phone=phone, now=now, alerts_enabled=bool(status))
+    r = out.reply
+    if out.alert_action is not None:
+        try:
+            done = provider.set_alerts(phone, out.alert_action)
+        except NotReady:
+            done = False
+        if done is False:   # not a registered farmer (or no service): nothing changed, so say that
+            post = out.state is not None and out.state.step == POST_ADVICE
+            r = Reply("not_registered", {}, post_choices(bool(status)) if post else r.choices)
+    store(channel, phone, out, now)
+    return r
