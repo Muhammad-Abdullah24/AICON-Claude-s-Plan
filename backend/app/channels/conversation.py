@@ -303,3 +303,42 @@ class _Engine:
             return Outcome(Reply("alerts", {"enabled": enabled}, post_choices(enabled)), s, "save",
                            alert_action=enabled)
         return Outcome(Reply("alerts", {"enabled": enabled}, (("0", MENU),)), None, "clear", alert_action=enabled)
+
+
+# ---------------------------------------------------------------- persistence (backend/app/db.py)
+
+def to_fields(state: State) -> dict:
+    return {k: getattr(state, k) for k in ("step", "pending", "draft_crop", "draft_mandi", "draft_quantity",
+                                           "last_crop", "last_mandi", "last_quantity")}
+
+
+def from_fields(row: dict | None, options: Options | None = None) -> State | None:
+    """A stored row as a State. A row that no longer makes sense (an unknown step or crop, e.g. after a code
+    change) counts as no session, so the farmer is sent back to the main menu instead of a broken step."""
+    if row is None:
+        return None
+    o = options or default_options()
+    crops = {*o.crops, *o.rice_varieties, None}
+    try:
+        state = State(**{k: row.get(k) for k in (*to_fields(State()), "expires_at")})
+    except (TypeError, ValueError):
+        return None
+    if state.pending not in (None, ADVICE, COMPARE, WHY) or state.draft_crop not in crops \
+            or state.last_crop not in crops or state.draft_mandi not in (*o.mandis, None) \
+            or state.last_mandi not in (*o.mandis, None):
+        return None
+    return state
+
+
+def load(channel: str, phone: str) -> State | None:
+    from backend.app import db  # noqa: PLC0415 (the engine itself stays free of storage)
+    return from_fields(db.get_conversation(channel, phone))
+
+
+def store(channel: str, phone: str, outcome: Outcome, at: datetime | None = None) -> None:
+    """Save or clear the session after a reply, with a fresh SESSION_MINUTES expiry."""
+    from backend.app import db  # noqa: PLC0415
+    if outcome.persist == "save" and outcome.state is not None:
+        db.save_conversation(channel, phone, to_fields(outcome.state), SESSION_MINUTES, at)
+    else:
+        db.clear_conversation(channel, phone)
