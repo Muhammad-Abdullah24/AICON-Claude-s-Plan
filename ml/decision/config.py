@@ -24,3 +24,18 @@ SPLIT_STORE_SHARE = 0.5
 
 # Converts a monthly finance cost to a weekly one.
 WEEKS_PER_MONTH = 52 / 12
+
+# ---------------------------------------------------------------- blueprint rules (B2, ml/decision/advisory.py)
+# The constants above belong to the superseded engine.py and go when C3 retires it.
+
+# Blueprint section 7: WAIT when the 4-week forecast is at least this much above today, otherwise SELL.
+# A 5% rise in 4 weeks happens in only 14-19% of real weeks, so SELL is the usual answer, by design.
+WAIT_THRESHOLD_PCT = 5.0
+
+# The forecast horizon the signal and the interest cost refer to.
+HORIZON_WEEKS = 4
+
+# Confidence from the q10-q90 width as % of today's price. First draft: re-check against the
+# coverage A5's gate reports after B4, and write the final values in docs/MODEL_CARD.md.
+HIGH_CONFIDENCE_MAX_WIDTH_PCT = 10.0
+MEDIUM_CONFIDENCE_MAX_WIDTH_PCT = 20.0

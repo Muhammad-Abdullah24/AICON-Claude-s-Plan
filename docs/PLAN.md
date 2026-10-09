@@ -122,10 +122,10 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 **For Usman (Owner B)**
 
 - [ ] **H-B1** (from A1) In `ml/forecast/predict.py`, build model inputs with `ml.features.runtime_features(city, crop, variety, history, daily_weather, week_start)`. It returns exactly the training columns. `FEATURE_COLUMNS` lists every allowed input; choose from it.
-- [ ] **H-B2** (from A1) The `action` column in `features.csv` is a legacy label (it includes a Rs 15 storage cost). Don't use it as the product rule; the blueprint's SELL/WAIT rule (5%, interest only) lives in your engine (B2).
+- [x] **H-B2** (from A1) The `action` column in `features.csv` is a legacy label (it includes a Rs 15 storage cost). Don't use it as the product rule; the blueprint's SELL/WAIT rule (5%, interest only) lives in your engine (B2).
 - [ ] **H-B3** (from A2) Read costs, yields and support prices from `data/processed/runtime/` (`crops.csv`, `support_prices.csv`), not hardcoded values. Rice cost is per 40 kg of **milled-rice equivalent** while yield is in **paddy** maund: milled maund per acre = `yield_maund_per_acre × milling_yield` (0.65, an assumption).
-- [ ] **H-B4** (from A2) Wheat support prices were corrected: Rs 3,900 for the 2023-24 crop (spring 2024) was **announced but not procured**; the 2024-25 crop had **no** support price; 2025-26 is Rs 3,500 (indicative). Only wheat has a support price. Use the `status` column.
-- [ ] **H-B5** (from A2) If `series_coverage.csv` says `is_stale = 1` (all Super Basmati, Vehari wheat), set confidence to LOW in `advise()`.
+- [x] **H-B4** (from A2) Wheat support prices were corrected: Rs 3,900 for the 2023-24 crop (spring 2024) was **announced but not procured**; the 2024-25 crop had **no** support price; 2025-26 is Rs 3,500 (indicative). Only wheat has a support price. Use the `status` column.
+- [x] **H-B5** (from A2) If `series_coverage.csv` says `is_stale = 1` (all Super Basmati, Vehari wheat), set confidence to LOW in `advise()`.
 - [ ] **H-B6** (from A5) Score every model with the gate: write predictions for **every** validation row (`series, week_start, pred_price_next_4w, q10, q90`), run `python -m ml.eval.gate --predictions <file> --model <name>`, commit the regenerated `ml/eval/report.json` and `report.md`. If it fails, ship the `persistence_band` fallback (79–81% coverage).
 - [ ] **H-B7** (from A6) In `crop_plan()`, key `harvest_ratios.csv` on the **month of the latest price**, not today's month (cotton has no mandi price from March to June). Use `enough_years` and `spread_pct` for the risk badge; pick the selling window from `post_harvest_ratios.csv` after interest per month.
 - [ ] **H-B8** (from A12) Never use `price_is_frozen` or `target_is_frozen` as model inputs: they look at days after the week. Try training with and without frozen rows (`is_frozen` rows are a third of val/test) and report the gate both ways in `docs/MODEL_CARD.md`.
@@ -142,6 +142,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [ ] **H-C7** (from A12) If a series' latest price falls inside a `frozen_stretches.csv` stretch, show "price unchanged since <from_date>" and lower the confidence.
 - [ ] **H-C8** (from A7) `docs/DEMO.md`: show "AMIS mandi price, as of <date>" on the headline card; backup weeks are 2025-03-24 (−19.7%, sell early) and 2025-08-04 (+48.6%, wait), and 2026-03-16 only after the final test run; avoid 2026-08-31 and 2026-09-07 (frozen artifacts); prepare the Rs 5,300 answer (open-market rate; AMIS mandis 3,475–4,700). Details: `docs/DATA_NOTES.md` section A7.
 - [ ] **H-C9** (from A2/A5/A6/A12) Add the new commands to the README "Common tasks" and the data files to the acknowledgements (A4 will send the dataset lines).
+- [ ] **H-C10** (from B2) The blueprint engine is `ml.decision` (`advise`, `compare_mandis`, `offer_check`, `margin`, `fair_price_range`, `confidence`); read its inputs with `ml.decision.inputs` (`interest_pct_per_year`, `transport_cost`, `production_cost_per_40kg`, `support_price`, `is_stale`). Prices Rs per 40 kg, quantities in maund. Switch `/advice` and the service layer to it, and tell Usman once `backend/` and `ml/precompute.py` no longer import `ml.decision.engine`, so B can delete the old engine (part of C3). Interest is for 4 weeks (weeks / 52), so it is about 7.7% lower than the blueprint section 12 example, which used one month.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
@@ -170,7 +171,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 
 **B · Usman**
 - [ ] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
-- [ ] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
+- [x] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
 - [ ] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
 
 **C · Abd**
