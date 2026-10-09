@@ -10,8 +10,8 @@ is today's price moved by the 10th and 90th percentile of past 4-week changes fo
 years only). The record is `artifacts/models/deployed.json`.
 
 The model is not useless: it calls the direction of moves bigger than 3% right **60%** of the time on
-validation, where persistence by definition never predicts a move. Whether to show that as a separate
-"direction" signal is a team decision (see Open questions).
+validation (72% for wheat), where persistence by definition never predicts a move. Whether to show that as
+a separate "direction" signal is a team decision (see the proposal at the end).
 
 ## Data
 
@@ -91,10 +91,35 @@ months old (hand-off H-B9).
 .venv/Scripts/python -m ml.forecast.train --record-fallback
 ```
 
-## Open questions for the team
+## Direction: where the model does have skill
 
-1. **Direction signal.** Show the model's 60% direction call next to the baseline forecast (as "likely up /
-   likely down", not a price)? It would give "Why?" (B5) a real model to explain. If not, "Why?" can only
-   show the seasonal pattern and recent momentum, not SHAP.
-2. **WAIT almost never fires.** With a persistence forecast, the predicted change is 0%, so `advise()` always
-   says SELL. That is honest, but the demo should say so.
+Direction is scored on validation rows where the real price moved more than 3% in 4 weeks. "Right" means the
+sign of the model's predicted change matched the real move. The p-value is one-sided, against a coin flip.
+
+| Crop | Moves > 3% | Direction right | p-value |
+|---|---|---|---|
+| **Wheat** | 50 | **72%** | **0.001** |
+| IRRI | 51 | 61% | 0.08 |
+| Cotton | 39 | 49% | 0.63 |
+| Super Basmati | 13 | 46% | 0.71 |
+| All crops | 153 | 60% | 0.008 |
+
+## Proposal for the team (B4 → B5/B6), needs agreement at a check-in
+
+1. **Price and range: the baseline, for every crop.** It is the more accurate forecast, and its range is well
+   calibrated (81% coverage).
+2. **Direction: the model's call, for wheat only.** Shown as "likely to rise" / "likely to fall", with no price
+   number. Other crops show "no reliable direction". IRRI joins only if the final test run supports it.
+3. **SELL / WAIT stays on the baseline price,** so it stays SELL. The model's price numbers failed the gate,
+   so they do not drive the decision.
+4. **"Why?" uses SHAP on the wheat direction call.** Other crops show recent momentum and the seasonal
+   pattern instead.
+
+Caveats to say openly:
+
+- Wheat was picked **after** seeing validation results, a mild form of selection. The one-time 2026 test run
+  confirms or rejects it, and the result goes in this card either way.
+- Interface I2 gains a `direction` field (additive; nothing existing changes), and the blueprint needs a line
+  for it. Owner C needs it for the API and the Home and Why screens.
+
+Until the team agrees, B5 and B6 are built so that turning the direction call off is a one-line config change.
