@@ -109,9 +109,11 @@ function CropCard({ item }: { item: CropPlanItem }) {
       </p>
       <MonthStrip item={item} />
       <p className="text-sm">
-        {item.best_sell_month != null && item.best_sell_gain_pct != null
-          ? t('grow.bestSell', { month: t(`months.${item.best_sell_month}`), gain: item.best_sell_gain_pct.toFixed(1) })
-          : t('grow.noBestSell')}
+        {item.best_sell_month == null || item.best_sell_gain_pct == null
+          ? t('grow.noBestSell')
+          : item.best_sell_gain_pct <= 0
+            ? t('grow.sellAtHarvest', { month: t(`months.${item.best_sell_month}`) })
+            : t('grow.bestSell', { month: t(`months.${item.best_sell_month}`), gain: item.best_sell_gain_pct.toFixed(1) })}
       </p>
       <p className="text-xs text-slate">
         {t('grow.years', { n: item.n_years })} ·{' '}

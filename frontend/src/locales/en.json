@@ -106,6 +106,7 @@
     },
     "years": "Based on {{n}} years of AMIS prices",
     "bestSell": "Best month to sell: {{month}} (usually {{gain}}% after interest)",
+    "sellAtHarvest": "Best to sell at harvest ({{month}}): holding usually does not beat the interest",
     "noBestSell": "Not enough years of prices to pick a selling month",
     "sow": "Sow",
     "harvest": "Harvest",
@@ -183,6 +184,8 @@
     "error": "Could not reach the server.",
     "errorHint": "Check your connection and try again.",
     "retry": "Try again",
+    "replay": "Replaying {{date}}: prices and advice as the app would have shown them that day. Weather and chat are today's.",
+    "replayExit": "Back to today",
     "notFound": "No price data for this crop at this mandi.",
     "invalid": "Some of the details you entered are not valid. Please check them."
   }

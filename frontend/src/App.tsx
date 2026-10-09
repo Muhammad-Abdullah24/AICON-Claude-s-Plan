@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router'
 
 import { api } from './api/client'
 import { Header } from './components/Header'
+import { ReplayBanner } from './components/ReplayBanner'
 import { ErrorBox, Loading } from './components/Status'
 import { useAsync } from './lib/useAsync'
 import { Chat } from './pages/Chat'
@@ -31,6 +32,7 @@ export default function App() {
   return (
     <AppStateProvider meta={meta.data}>
       <Header />
+      <ReplayBanner />
       <main className="mx-auto max-w-xl px-4 py-5">
         <Suspense fallback={<Loading />}>
           <Routes>

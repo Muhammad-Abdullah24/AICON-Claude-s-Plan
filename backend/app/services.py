@@ -392,6 +392,9 @@ def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None
         spread = float(row["spread_pct"]) if row["spread_pct"] else None
         risk = ("HIGH" if n < MIN_YEARS or spread is None or spread >= RISK_SPREAD_PCT[1]
                 else "MEDIUM" if spread >= RISK_SPREAD_PCT[0] else "LOW")
+        stale = is_stale(price_date, as_of)
+        if stale:   # an old starting price makes the estimate shakier, whatever the history says
+            risk = {"LOW": "MEDIUM", "MEDIUM": "HIGH"}.get(risk, risk)
         best_month, best_gain = selling_window(series)
         items.append({
             "crop_option": option, "latest_price": price, "latest_price_date": price_date,
@@ -401,7 +404,7 @@ def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None
             "profit_per_acre": round(profit_acre, 2), "expected_profit": round(profit_acre * land_area_acres, 2),
             "risk_level": risk, "spread_pct": spread, "n_years": n,
             "best_sell_month": best_month, "best_sell_gain_pct": best_gain,
-            "is_stale": is_stale(price_date, as_of), **calendar(option),
+            "is_stale": stale, **calendar(option),
         })
     items.sort(key=lambda i: -i["expected_profit"])
     for rank, item in enumerate(items, start=1):
