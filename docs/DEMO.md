@@ -99,6 +99,7 @@ on the Meta test number):
 | `2` | Compare mandis |
 
 If a number gets "یہ نمبر کس سوال کا جواب ہے" (no session), the 30 minutes ran out: send `0` and start again.
+Always start with `0`: outside a session a bare `3` keeps its old meaning and turns alerts **off**.
 
 **SMS is not live.** No SMS vendor is chosen, so there is nothing to show on a basic phone. If asked: "SMS is built and
 tested as an adapter with the same menu in Roman Urdu, two SMS at most; it goes live once we pick an SMS gateway". Do

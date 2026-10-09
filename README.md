@@ -117,8 +117,9 @@ Farmer: 100    FarmSight: (the same advice as above)
 Farmer: 1      FarmSight: (why: the model's reasons)
 ```
 
-Rice asks Super Basmati or IRRI. A number means something only in the step the farmer is on; with no active
-session (or after 30 minutes), a bare number gets the main menu and nothing else happens. "0" always opens the menu.
+Rice asks Super Basmati or IRRI. A number means something only in the step the farmer is on. With no active
+session (or after 30 minutes), a bare "3" still stops alerts, as it always has, and any other bare number gets the
+main menu and nothing else happens. "0" always opens the menu.
 "بند" / "stop" turns alerts off and "شروع" / "shuru" turns them on; a number that is not a registered farmer is told
 nothing changed.
 

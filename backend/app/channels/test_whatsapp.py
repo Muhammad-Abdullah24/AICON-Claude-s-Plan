@@ -250,8 +250,21 @@ def test_invalid_option_repeats_the_choices():
 def test_bare_number_without_a_session_shows_the_menu_and_changes_nothing():
     provider = FakeProvider()
     provider.alerts[PHONE] = True
-    body = body_of(say(provider, "3"))   # used to mean "stop alerts"; now it is never guessed
+    body = body_of(say(provider, "4"))
     assert body.startswith(reply.MENU_NOTE["no_session"]) and provider.alerts[PHONE] is True
+
+
+def test_legacy_3_without_a_session_still_stops_alerts():
+    provider = FakeProvider()
+    provider.alerts[PHONE] = True
+    assert body_of(say(provider, "3")).startswith(reply.STOPPED) and provider.alerts[PHONE] is False
+
+
+def test_3_inside_the_main_menu_means_why_not_stop():
+    provider = FakeProvider()
+    provider.alerts[PHONE] = True
+    body = body_of(say(provider, "0", "3"))
+    assert reply.ASK_NUMBERED["ask_crop"] in body and provider.alerts[PHONE] is True
 
 
 def test_expired_session_returns_to_the_menu():

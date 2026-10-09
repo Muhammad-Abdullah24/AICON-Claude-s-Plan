@@ -176,13 +176,31 @@ def test_nothing_else_touches_alerts():
 
 # ---------------------------------------------------------------- numbers are never guessed
 
-@pytest.mark.parametrize("text", ["1", "2", "3", "4", "5", "100"])
+@pytest.mark.parametrize("text", ["1", "2", "4", "5", "100"])
 def test_bare_number_without_a_session_shows_the_menu_and_does_nothing(text):
     provider = FakeProvider()
     out = say(text, None, provider)
     assert out.reply.kind == "menu" and out.reply.data == {"note": "no_session"}
     assert out.alert_action is None and provider.calls == []
     assert out.state.step == conv.MENU   # so the next number is read against this menu
+
+
+@pytest.mark.parametrize("expired", [False, True])
+def test_legacy_bare_3_outside_a_session_still_stops_alerts(expired):
+    old = State(step=conv.MANDI, draft_crop="Wheat", expires_at=NOW - timedelta(seconds=1)) if expired else None
+    provider = FakeProvider()
+    out = say("3", old, provider)
+    assert out.alert_action is False and out.reply.kind == "alerts" and provider.calls == []
+    assert out.persist == "clear"
+
+
+@pytest.mark.parametrize("texts, kind", [(("0", "3"), "ask_crop"), (("gandum bwp 5", "3"), "alerts"),
+                                         (("0", "1", "3"), "ask_variety")])
+def test_inside_a_session_3_follows_the_step(texts, kind):
+    out, _ = chat(*texts)
+    assert out.reply.kind == kind
+    if kind != "alerts":
+        assert out.alert_action is None
 
 
 def test_expired_session_returns_to_the_menu_and_says_why():

@@ -11,7 +11,8 @@ After it:   1 why   2 compare   3 alerts on/off   0 menu
 
 Rules:
 - A bare number means something only in the farmer's current step, and every reply that expects a number lists
-  them. With no live session, a bare number (other than 0) gets the main menu: it is never guessed.
+  them. With no live session (none, or expired), "3" keeps its old meaning, stop alerts (LEGACY_STOP), and any
+  other number (except 0) gets the main menu: it is never guessed.
 - Free text works at any step as before ("گندم بہاولپور 100 من", "gandum vehari 50 mann", "why", "بند").
   A full query answers at once; part of one ("gandum") fills in the step it answers.
 - The session lasts SESSION_MINUTES; an expired one counts as none. Only codes and numbers are kept, never text.
@@ -42,6 +43,7 @@ STEPS = (MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE, VOICE_CONFIRM)
 ADVICE, COMPARE, WHY = "advice", "compare", "why"
 RICE = "rice"   # draft crop while the variety is still unknown
 
+LEGACY_STOP = "3"   # the pre-menu WhatsApp command "3 = stop alerts", honoured only outside a session
 _NUMBER = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*[.)]?\s*$")
 _NEGATIVE = re.compile(r"^\s*[-−]\s*[\d۰-۹٠-٩]")
 
@@ -164,6 +166,8 @@ class _Engine:
             if number.group(1) == "0":
                 return self._menu(state)
             if state is None:
+                if number.group(1) == LEGACY_STOP:   # before the menu, a bare "3" stopped alerts: keep that
+                    return self._alerts(None, False)
                 return self._menu(None, note="expired" if expired else "no_session")
             return self._number(state, number.group(1))
         if state is not None and state.step == QUANTITY:
