@@ -49,6 +49,7 @@ Ask the human before touching any other path.
 - Rebuild runtime tables (Owner A): .venv/Scripts/python -m ml.ingest.runtime_tables
 - Rebuild seasonal tables (Owner A): .venv/Scripts/python -m ml.seasonal.tables
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
+- Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

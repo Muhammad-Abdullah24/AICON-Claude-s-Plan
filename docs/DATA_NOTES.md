@@ -108,3 +108,65 @@ Always report a **naive baseline** (price in 4 weeks = price today). The model o
 
 ## 11. Tech
 Python 3.10+, XGBoost, SHAP, Streamlit, Plotly, pandas, Open-Meteo. Data scraping was done with Node.js (`scrape_amis_focused.js`, `build_dataset.js`). Python is not installed on the scraping machine, so install it before ML work.
+
+---
+
+## A7: demo case check and data-quality findings (9 Oct 2026, Owner A)
+
+Reproduce the in-repo checks with `python -m ml.eval.demo_check`. The all-mandi comparison used the raw AMIS
+exports (`amis_2026_09.csv`, `amis_2026_10.csv`), which stay out of git.
+
+### 1. The headline case: Wheat at Bahawalpur
+
+| Wheat, Oct 2026, Rs per 40 kg | Price |
+|---|---|
+| AMIS, median of 18 Punjab mandis | 4,450 |
+| AMIS, highest (Faisalabad, Rawalpindi) | 4,700 |
+| **AMIS, Bahawalpur** | **3,820** (3,450 in Sep) |
+| AMIS, Rahim Yar Khan | 3,475 |
+| ARY News, "Punjab open market", 8 Oct 2026 | 5,300 (4,700 a week earlier) |
+
+- AMIS is not lagging across the board. South Punjab mandis sit at the bottom of the Punjab range; central Punjab is 15–25% higher.
+- The Rs 5,300 is a Punjab-wide open-market rate with no mandi named, above every AMIS mandi. It is a different price layer, not what a farmer gets at the Bahawalpur mandi. Source: https://arynews.tv/flour-price-rises-in-punjab-as-wheat-cost-surges-sharply-in-punjab
+- **But Bahawalpur's own wheat reporting froze:** exactly Rs 3,450 for 75 reported days (27 Jun – 24 Sep 2026), then one day at 4,550, then 3,820 from 26 Sep. The flat summer is stale reporting, not a flat market.
+
+**For the demo:** show the Bahawalpur price as "AMIS mandi price, as of <date>". If a judge quotes Rs 5,300, the honest answer is: that is an open-market rate; AMIS mandi prices across Punjab are 3,475–4,700, and South Punjab is at the low end, which is why "where to sell" matters.
+
+### 2. Frozen prices across the data
+
+Share of reported days that sit inside a stretch of the same price for at least 28 days in a row:
+
+| Series | Frozen | Longest |
+|---|---|---|
+| Vehari IRRI | 66% | 135 days |
+| Vehari Super Basmati | 57% | 131 |
+| Rahim Yar Khan Super Basmati | 48% | 156 |
+| Bahawalpur wheat | 30% | 98 |
+| Bahawalpur Super Basmati | 24% | 70 |
+| Vehari wheat | 15% | 96 |
+| Bahawalpur IRRI | 7% | 52 |
+| All three cotton series, Rahim Yar Khan wheat | 0% | – |
+
+Frozen weeks make "price stays the same" look more accurate than it is, which is part of why the persistence
+baseline is hard to beat, and they put fake zero-change weeks into training. Two Bahawalpur wheat test rows
+(31 Aug and 7 Sep 2026, "+10.7%") are artifacts of the 2026 freeze.
+
+**Proposed fix (task A12, to confirm at a check-in, because it changes `features.csv` under Owner B):** flag
+frozen stretches in the clean data (`is_frozen`), carry the flag into `features.csv`, and have the gate report
+metrics with and without frozen rows. Do not silently drop them.
+
+### 3. Backup demo weeks (honest replay)
+
+Rows in the **train** split (everything with a target before 2025, including the spring 2024 crash) were seen
+by the model, so a replay there proves nothing about accuracy. Use held-out weeks. All three below move the
+same way at the other mandis, so they are real moves, not reporting artifacts.
+
+| Week (Bahawalpur wheat) | Split | Price → 4 weeks later | What it shows |
+|---|---|---|---|
+| **2025-03-24** | val | 2,874 → 2,308 (−19.7%) | Pre-harvest crash in the year with no support price. Selling early was right. Vehari fell to 2,108, Rahim Yar Khan to 2,202 |
+| **2025-08-04** | val | 2,342 → 3,480 (+48.6%) | Rally after the summer low. Waiting was right. Rahim Yar Khan 2,292 → 3,176 |
+| **2026-03-16** | test | 4,100 → 3,206 (−21.8%) | Drop into the 2026 harvest. Vehari 3,158. Test split: use only after the final test run |
+
+- Validation weeks are held out from training but used for tuning, so say "held-out week", not "unseen test".
+- Avoid 2026-08-31 and 2026-09-07 (frozen-price artifacts).
+- The spring 2024 crash (4,825 → 3,432, −28.9% from 18 Mar 2024) is good **story** for the problem slide, labelled as history, not as a model result.
