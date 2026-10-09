@@ -5,12 +5,12 @@ so quantity x price is rupees. The functions take plain numbers; `ml/decision/in
 that come from the runtime tables (interest rate, costs, transport, support prices, staleness).
 
 The engine returns numbers and codes only. Turning them into Urdu or English is the caller's job.
-alert_check() (B8) is added in a later task.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from datetime import date
 
 from ml.decision import config
 
@@ -279,3 +279,50 @@ def selling_window(post_harvest: Iterable[Mapping], interest_pct_per_year: float
         "months": months,
         "is_estimate": True,
     }
+
+
+# ---------------------------------------------------------------- alerts (UC-10; task B8)
+
+def _events(c: Mapping) -> list[dict]:
+    """The alert-worthy events for one crop at one mandi. Signal changes rank above unusual prices."""
+    events = []
+    previous = c.get("previous_signal")
+    if previous and c["signal"] != previous:
+        events.append({"type": "SELL_SIGNAL", "priority": 0, "size": 0.0,
+                       "signal": c["signal"], "previous_signal": previous})
+    change = c.get("change_4w_pct")
+    if change is not None and not c.get("is_frozen") and not c.get("is_stale"):
+        if change > c["band_q90_pct"]:
+            events.append({"type": "PRICE_SPIKE", "priority": 1, "size": change - c["band_q90_pct"],
+                           "direction": "UP", "change_4w_pct": change})
+        elif change < c["band_q10_pct"]:
+            events.append({"type": "PRICE_SPIKE", "priority": 1, "size": c["band_q10_pct"] - change,
+                           "direction": "DOWN", "change_4w_pct": change})
+    for e in events:
+        e.update(crop_option=c["crop_option"], mandi=c["mandi"], prices_as_of=c.get("prices_as_of"))
+    return events
+
+
+def alert_check(candidates: Iterable[Mapping], last_alert_on: date | None, today: date) -> dict:
+    """Decide the one alert, if any, to send a farmer today (UC-10). Codes only; the channel phrases it.
+
+    Each candidate (one per crop the farmer follows; see ml.decision.inputs.alert_candidate) has
+    `crop_option`, `mandi`, `signal`, `previous_signal` (the last signal the farmer was told, or None),
+    `change_4w_pct` (latest observed price vs 4 weeks earlier), `band_q10_pct` / `band_q90_pct` (the
+    forecast band), `is_frozen` (a frozen AMIS stretch, so a jump is a reporting artifact) and `is_stale`
+    (the latest price is months old, so a move is not news). Neither raises a price alert.
+
+    Events: SELL_SIGNAL when the signal changed; PRICE_SPIKE when the 4-week change is outside the band.
+    At most one alert per farmer every ALERT_MIN_DAYS_BETWEEN days: the most important event is sent
+    (signal changes first, then the move furthest outside the band) and the rest are `suppressed`.
+    """
+    events = sorted((e for c in candidates if c for e in _events(c)), key=lambda e: (e["priority"], -e["size"]))
+    for e in events:
+        e.pop("priority")
+        e["size"] = round(e["size"], 2)
+    if not events:
+        return {"send": False, "status": None, "alert": None, "suppressed": [], "reason": "NO_EVENT"}
+    if last_alert_on is not None and (today - last_alert_on).days < config.ALERT_MIN_DAYS_BETWEEN:
+        return {"send": False, "status": "SUPPRESSED", "alert": None, "suppressed": events,
+                "reason": "ALERTED_THIS_WEEK"}
+    return {"send": True, "status": "CREATED", "alert": events[0], "suppressed": events[1:], "reason": None}

@@ -47,3 +47,6 @@ MEDIUM_RISK_MAX_SPREAD_PCT = 40.0
 
 # Selling window (B7): months whose price after interest is within this many % points of the best month.
 SELLING_WINDOW_TOLERANCE_PCT = 1.0
+
+# Alerts (B8). At most one alert per farmer in this many days, across all their crops.
+ALERT_MIN_DAYS_BETWEEN = 7

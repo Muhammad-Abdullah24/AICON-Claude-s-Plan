@@ -1,7 +1,10 @@
+from datetime import date
+
 import pytest
 
 from ml.decision import (
     advise,
+    alert_check,
     compare_mandis,
     confidence,
     config,
@@ -292,3 +295,71 @@ def test_crop_plan_on_the_real_tables():
     assert by_option["SuperBasmati"]["is_stale"] is True
     w = selling_window(inputs.post_harvest_ratios("Wheat", "Bahawalpur"), inputs.interest_pct_per_year())
     assert w["months"][0]["offset_months"] == 0
+
+
+# ---------------------------------------------------------------- alerts (B8)
+
+TODAY = date(2026, 10, 10)
+
+
+def _cand(option="Wheat", signal="SELL", previous="SELL", change=0.0, frozen=False, stale=False):
+    return {"crop_option": option, "mandi": "BahawalPur", "signal": signal, "previous_signal": previous,
+            "prices_as_of": "2026-10-05", "change_4w_pct": change, "band_q10_pct": -5.0, "band_q90_pct": 6.0,
+            "is_frozen": frozen, "is_stale": stale}
+
+
+def test_no_event_no_alert():
+    out = alert_check([_cand()], None, TODAY)
+    assert out == {"send": False, "status": None, "alert": None, "suppressed": [], "reason": "NO_EVENT"}
+
+
+def test_signal_change_alerts():
+    out = alert_check([_cand(signal="WAIT", previous="SELL")], None, TODAY)
+    assert out["send"] is True and out["status"] == "CREATED"
+    assert out["alert"]["type"] == "SELL_SIGNAL"
+    assert (out["alert"]["previous_signal"], out["alert"]["signal"]) == ("SELL", "WAIT")
+
+
+def test_first_signal_is_not_a_change():
+    assert alert_check([_cand(previous=None)], None, TODAY)["send"] is False
+
+
+def test_unusual_moves_alert_both_ways():
+    up = alert_check([_cand(change=8.0)], None, TODAY)["alert"]
+    assert (up["type"], up["direction"], up["size"]) == ("PRICE_SPIKE", "UP", 2.0)
+    down = alert_check([_cand(change=-9.0)], None, TODAY)["alert"]
+    assert (down["direction"], down["size"]) == ("DOWN", 4.0)
+
+
+def test_moves_inside_the_band_do_not_alert():
+    assert alert_check([_cand(change=5.9), _cand(change=-4.9)], None, TODAY)["send"] is False
+
+
+def test_frozen_or_stale_prices_never_raise_a_price_alert():
+    assert alert_check([_cand(change=20.0, frozen=True)], None, TODAY)["send"] is False
+    assert alert_check([_cand(change=-20.0, stale=True)], None, TODAY)["send"] is False
+
+
+def test_one_alert_per_farmer_signal_change_first():
+    out = alert_check([_cand("Cotton", change=-30.0), _cand("Wheat", signal="WAIT"), None], None, TODAY)
+    assert out["alert"]["type"] == "SELL_SIGNAL" and out["alert"]["crop_option"] == "Wheat"
+    assert [e["crop_option"] for e in out["suppressed"]] == ["Cotton"]
+
+
+def test_biggest_unusual_move_wins():
+    out = alert_check([_cand("Wheat", change=7.0), _cand("Cotton", change=-15.0)], None, TODAY)
+    assert out["alert"]["crop_option"] == "Cotton"
+
+
+def test_at_most_one_alert_a_week():
+    out = alert_check([_cand(signal="WAIT")], date(2026, 10, 4), TODAY)
+    assert out["send"] is False and out["status"] == "SUPPRESSED" and out["reason"] == "ALERTED_THIS_WEEK"
+    assert out["suppressed"][0]["type"] == "SELL_SIGNAL"
+    assert alert_check([_cand(signal="WAIT")], date(2026, 10, 3), TODAY)["send"] is True
+
+
+def test_alert_candidates_from_the_real_data():
+    wheat = inputs.alert_candidate("Wheat", "Bahawalpur", "SELL", None)
+    assert wheat["mandi"] == "BahawalPur" and wheat["band_q10_pct"] < 0 < wheat["band_q90_pct"]
+    assert inputs.alert_candidate("IRRI", "Rahim Yar Khan", "SELL", None) is None
+    assert inputs.alert_candidate("SuperBasmati", "Vehari", "SELL", None)["is_stale"] is True

@@ -2,6 +2,7 @@
 
 from ml.decision.advisory import (
     advise,
+    alert_check,
     compare_mandis,
     confidence,
     crop_plan,
@@ -13,6 +14,6 @@ from ml.decision.advisory import (
 )
 
 __all__ = [
-    "advise", "compare_mandis", "confidence", "crop_plan", "fair_price_range", "margin", "offer_check",
+    "advise", "alert_check", "compare_mandis", "confidence", "crop_plan", "fair_price_range", "margin", "offer_check",
     "risk_badge", "selling_window",
 ]

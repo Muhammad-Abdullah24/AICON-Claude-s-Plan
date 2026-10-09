@@ -166,3 +166,55 @@ def crop_plan_inputs(mandi: str) -> list[dict]:
             **crop_economics(crop_option),
         })
     return out
+
+
+MODELS = ROOT / "artifacts" / "models"
+
+
+@lru_cache(maxsize=1)
+def _weekly_observed() -> dict[tuple[str, str], dict[str, float]]:
+    """(crop_option, AMIS mandi) -> {week_start: observed Rs per 40 kg}, forward-filled weeks left out."""
+    options = {(r["amis_crop"], r["amis_variety"]): r["crop_option"] for r in _rows("crops.csv")}
+    out: dict[tuple[str, str], dict[str, float]] = {}
+    with open(PROCESSED / "farmsight_prices_clean_weekly.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            option = options.get((r["crop"], r["variety"]))
+            if option and r["filled"] == "0":
+                out.setdefault((option, r["city"]), {})[r["week_start"]] = float(r["price_rs_per_40kg"])
+    return out
+
+
+def _in_frozen_stretch(crop_option: str, mandi: str, week_start: str) -> bool:
+    for r in _rows("frozen_stretches.csv"):
+        if r["crop_option"] == crop_option and r["mandi"] == mandi and r["from_date"] <= week_start <= r["to_date"]:
+            return True
+    return False
+
+
+def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: str | None) -> dict | None:
+    """Inputs for alert_check() for one crop at one mandi, or None without prices.
+
+    change_4w_pct compares the latest observed weekly price with the observed price exactly 4 weeks earlier
+    (None if that week has no price). The band is the deployed forecast band (artifacts/models/deployed.json).
+    """
+    from datetime import date, timedelta
+
+    target = amis_name(mandi)
+    prices = _weekly_observed().get((crop_option, target))
+    if not prices:
+        return None
+    latest = max(prices)
+    earlier = (date.fromisoformat(latest) - timedelta(weeks=4)).isoformat()
+    band = json.loads((MODELS / "deployed.json").read_text(encoding="utf-8"))["band_change_pct"][crop_option]
+    return {
+        "crop_option": crop_option,
+        "mandi": target,
+        "signal": signal,
+        "previous_signal": previous_signal,
+        "prices_as_of": latest,
+        "change_4w_pct": round((prices[latest] / prices[earlier] - 1) * 100, 2) if earlier in prices else None,
+        "band_q10_pct": band["q10"],
+        "band_q90_pct": band["q90"],
+        "is_frozen": any(_in_frozen_stretch(crop_option, target, week) for week in (latest, earlier)),
+        "is_stale": is_stale(crop_option, mandi),
+    }

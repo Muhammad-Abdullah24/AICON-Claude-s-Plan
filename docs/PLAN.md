@@ -151,10 +151,11 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [ ] **H-C16** (from B6) `ml.forecast.forecast()` is real now (`is_synthetic: false`). Changes to I2: `weather` is the list of Open-Meteo **daily** records (`date, tmax, tmin, precip_mm, rh_mean, et0`, as in H-C5), not an aggregated dict; None uses the stored history. New fields: `forecast_type` ("baseline"), `direction` (`{call: UP|DOWN, validation_accuracy_pct, model_version}` for wheat only, else null) and, in each `shap` item, `features`, `text_en`, `text_ur` (show these as-is on Why). Pending team agreement on the direction call (docs/MODEL_CARD.md proposal). The direction call needs `xgboost==3.2.0` and `numpy==2.4.6` in `backend/requirements.txt`; without them it switches off (logged) and everything else still works.
 - [ ] **H-C17** (from B2) The blueprint engine is `ml.decision` (`advise`, `compare_mandis`, `offer_check`, `margin`, `fair_price_range`, `confidence`); read its inputs with `ml.decision.inputs` (`interest_pct_per_year`, `transport_cost`, `production_cost_per_40kg`, `support_price`, `is_stale`). Prices Rs per 40 kg, quantities in maund. Switch `/advice` and the service layer to it, and tell Usman once `backend/` and `ml/precompute.py` no longer import `ml.decision.engine`, so B can delete the old engine (part of C3). Interest is for 4 weeks (weeks / 52), so it is about 7.7% lower than the blueprint section 12 example, which used one month.
 - [ ] **H-C18** (from B7) What to Grow: `ml.decision.crop_plan(ml.decision.inputs.crop_plan_inputs(mandi), land_area_acres)` ranks the crop options by profit per acre at the next harvest, with a price range, a profit range, a risk badge and `is_estimate: true`; crops without data come last (`has_data: false`, e.g. IRRI at Rahim Yar Khan). Show `prices_as_of` and amber when `is_stale` (Super Basmati ranks first everywhere on months-old prices; say so). Selling window: `ml.decision.selling_window(ml.decision.inputs.post_harvest_ratios(crop, mandi), ml.decision.inputs.interest_pct_per_year())` gives `best_month`, `window_months` and per-month `net_pct` after interest; `sell_at_harvest: true` means holding does not pay. Sowing months: `ml.decision.inputs.crop_calendar(crop)`.
+- [ ] **H-C19** (from B8) Alert job (C9): for each farmer, build one candidate per crop they follow with `ml.decision.inputs.alert_candidate(crop_option, mandi, signal, previous_signal)` (`signal` from `advise()`, `previous_signal` = the last signal that farmer was sent, None at first), then call `ml.decision.alert_check(candidates, last_alert_on, today)`. Send `alert` only when `send` is true, store `status` (CREATED or SUPPRESSED) in the alerts table, and store the new signal and `last_alert_on` per farmer. With the baseline forecast the signal is always SELL, so expect PRICE_SPIKE alerts only.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
-- *(none yet)*
+- [ ] **H-A1** (from B8) WhatsApp and SMS alert text: `alert_check()` returns codes only. Phrase `{type: SELL_SIGNAL, previous_signal, signal}` as the signal change, and `{type: PRICE_SPIKE, direction: UP|DOWN, change_4w_pct, prices_as_of}` as "the <crop> price at <mandi> moved <x>% in 4 weeks, more than usual", with the "as of" date. Quick replies as in A8 (Why / Compare mandis / Stop alerts).
 
 ---
 
@@ -229,7 +230,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [ ] **A11** (C) SMS gateway webhook `backend/app/channels/sms.py` with the 160-character format and number menu.
 
 **B · Usman**
-- [ ] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
+- [x] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
 - [ ] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
 - [ ] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
 
