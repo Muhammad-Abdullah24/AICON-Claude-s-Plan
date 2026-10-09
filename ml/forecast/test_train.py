@@ -91,3 +91,9 @@ def test_fallback_record_uses_the_train_band(tmp_path, monkeypatch):
 def test_no_fallback_when_the_model_passed(tmp_path):
     with pytest.raises(ValueError):
         train.write_fallback(_report(tmp_path, passes=True))
+
+
+def test_every_model_input_can_be_explained():
+    from ml.explain import GROUPS
+
+    assert set(train.MODEL_FEATURES) <= set(GROUPS)

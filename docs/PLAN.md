@@ -200,7 +200,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 
 **B · Usman**
 - [x] **B4** (M) Train the point model and the q10 and q90 quantile models. Run A's gate. If the model does not beat persistence on validation, ship the fallback: persistence as the point forecast and the range from the empirical 4-week change distribution, labelled "baseline" (blueprint NFR-01). Write the result in `docs/MODEL_CARD.md` either way.
-- [ ] **B5** (M) SHAP TreeExplainer and a feature-to-sentence map in Urdu and English (top 3 to 5 factors with rupee effects). No LLM writes these reasons.
+- [x] **B5** (M) SHAP TreeExplainer and a feature-to-sentence map in Urdu and English (top 3 to 5 factors with rupee effects). No LLM writes these reasons.
 - [ ] **B6** (M) Real `predict.py`: load `artifacts/models/`, build features with I1, return the I2 shape with `is_synthetic: false`.
 - [ ] **B7** (M) `crop_plan()` and `selling_window()` in the engine from A6's tables: profit per acre = harvest estimate × yield − cost per acre, risk badge from the year-to-year spread, best selling month window net of interest.
 
