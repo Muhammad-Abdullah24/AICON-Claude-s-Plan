@@ -26,13 +26,16 @@ import urllib.request
 from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
 from backend.app.channels import reply
 from backend.app.channels.parse import Parsed, parse
+from backend.app.channels.provider import AdviceProvider, NotReady, get_provider
+from backend.app.chat import service as chat_service
+from backend.app.chat.llm import get_llm
 
 log = logging.getLogger("farmsight.whatsapp")
 router = APIRouter(prefix="/webhooks", tags=["channels"])
@@ -67,55 +70,7 @@ def signature_ok(raw_body: bytes, header: str | None, app_secret: str) -> bool:
     return hmac.compare_digest(expected, header.removeprefix("sha256="))
 
 
-# ---------------------------------------------------------------- advice (interface I6)
 
-class NotReady(Exception):
-    """The service layer the channel needs does not exist yet."""
-
-
-class AdviceProvider(Protocol):
-    def advice(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
-    def explain(self, crop_option: str, mandi: str, phone: str) -> list[dict]: ...
-    def compare(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> list[dict]: ...
-    def set_alerts(self, phone: str, enabled: bool) -> None: ...
-
-
-class ServicesProvider:
-    """Adapter over backend/app/services.py (I6). The function names are hand-off H-C12 in docs/PLAN.md.
-
-    services.get_advice(crop_option, mandi, quantity_maund, phone=...)  -> blueprint advice dict
-    services.get_explanation(crop_option, mandi)                         -> [{text_ur, direction}]
-    services.compare_mandis(crop_option, mandi, quantity_maund)          -> [{mandi, net_price, transport_cost,
-                                                                             gain_vs_preferred, has_data}]
-    services.set_alerts(phone, enabled)
-    A LookupError means "no price data for this crop at this mandi".
-    """
-
-    def _fn(self, name: str) -> Callable[..., Any]:
-        try:
-            from backend.app import services  # noqa: PLC0415 (lazy: Owner C's module may not exist yet)
-        except ImportError as e:
-            raise NotReady("backend/app/services.py") from e
-        fn = getattr(services, name, None)
-        if fn is None:
-            raise NotReady(f"services.{name}")
-        return fn
-
-    def advice(self, crop_option, mandi, quantity_maund, phone):
-        return self._fn("get_advice")(crop_option, mandi, quantity_maund, phone=phone)
-
-    def explain(self, crop_option, mandi, phone):
-        return self._fn("get_explanation")(crop_option, mandi)
-
-    def compare(self, crop_option, mandi, quantity_maund, phone):
-        return self._fn("compare_mandis")(crop_option, mandi, quantity_maund)
-
-    def set_alerts(self, phone, enabled):
-        self._fn("set_alerts")(phone, enabled)
-
-
-def get_provider() -> AdviceProvider:
-    return ServicesProvider()
 
 
 # ---------------------------------------------------------------- sending
@@ -205,7 +160,18 @@ def message_text(msg: dict) -> str | None:
     return None
 
 
-def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY) -> dict:
+ChatFn = Callable[[str, Parsed, str], str]   # (question, remembered query, phone) -> answer text
+
+
+def default_chat(provider: AdviceProvider) -> ChatFn:
+    """Free questions go to the same guarded chat as the web app (task A9)."""
+    def run(question: str, q: Parsed, phone: str) -> str:
+        return chat_service.answer(question, q.crop_option, q.mandi, q.quantity_maund, provider, get_llm(),
+                                   phone=phone).answer
+    return run
+
+
+def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY, chat: ChatFn | None = None) -> dict:
     """The reply to one incoming message, as a Cloud API message object. Pure apart from `provider`."""
     phone = msg.get("from", "")
     if msg.get("type") in ("audio", "voice"):
@@ -219,6 +185,9 @@ def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY) -> dic
         if p.kind == "help":
             return text_message(reply.HELP)
         if p.kind == "unknown":
+            q = memory.last.get(phone)
+            if chat and q:
+                return buttons_message(chat(text, q, phone))
             return text_message(reply.NOT_UNDERSTOOD)
         if p.kind in ("stop", "start"):
             provider.set_alerts(phone, p.kind == "start")
@@ -251,7 +220,7 @@ def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY) -> dic
 
 
 def _handle(msg: dict, provider: AdviceProvider, sender: Sender) -> None:
-    sender.send(msg.get("from", ""), respond(msg, provider))
+    sender.send(msg.get("from", ""), respond(msg, provider, chat=default_chat(provider)))
 
 
 # ---------------------------------------------------------------- routes

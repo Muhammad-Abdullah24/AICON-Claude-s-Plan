@@ -6,6 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from backend.app.channels import provider as advice_provider
 from backend.app.channels import reply, whatsapp
 from backend.app.channels.parse import parse
 
@@ -120,7 +121,7 @@ def test_no_price_data_is_said_plainly():
 
 
 def test_until_services_exist_the_reply_is_honest():
-    provider = whatsapp.ServicesProvider()
+    provider = advice_provider.ServicesProvider()
     body = body_of(whatsapp.respond(text_msg("gandum bahawalpur 100"), provider, whatsapp.Memory()))
     assert body == reply.NOT_READY
 

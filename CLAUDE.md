@@ -57,6 +57,7 @@ Ask the human before touching any other path.
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
 - WhatsApp channel (Owner A): backend/app/channels/whatsapp.py; needs FS_WA_* in .env (see the module docstring); tests run with the rest of pytest
+- Chat (Owner A): backend/app/chat/ (POST /api/chat); needs FS_LLM_API_KEY; the prompt lives word for word in docs/PROMPTS.md
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style
