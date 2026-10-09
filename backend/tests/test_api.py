@@ -1,10 +1,11 @@
+"""The API contract (docs/BLUEPRINT.md section 12), end to end on the real data files."""
+
 import datetime as dt
 
 import pytest
 
-from backend.app.config import HISTORY_WEEKS
-
-VERDICTS = {"sell_now", "sell_elsewhere", "store", "split"}
+CROPS = ["wheat", "cotton", "irri", "super_basmati"]
+MANDIS = ["bahawalpur", "vehari", "rahim_yar_khan"]
 
 
 def test_health(client):
@@ -16,183 +17,181 @@ def test_root_redirects_to_docs(client):
     assert r.status_code in (302, 307) and r.headers["location"] == "/docs"
 
 
+# ---------------------------------------------------------------- meta
+
 def test_meta_is_labelled_and_complete(meta):
-    assert meta["is_synthetic"] is True
-    assert meta["unit"] == "40kg"
-    crops = {c["id"] for c in meta["crops"]}
-    mandis = {m["id"] for m in meta["mandis"]}
-    assert meta["series"] and all(s["crop"] in crops and s["mandi"] in mandis for s in meta["series"])
+    assert meta["is_synthetic"] is False and meta["data_source"] == "amis" and meta["unit"] == "40kg"
+    assert [c["id"] for c in meta["crops"]] and {c["id"] for c in meta["crops"]} == set(CROPS)
+    assert {m["id"] for m in meta["mandis"]} == set(MANDIS)
+    pairs = {(s["crop"], s["mandi"]) for s in meta["series"]}
+    assert len(pairs) == 11 and ("irri", "rahim_yar_khan") not in pairs
+    assert all(c["name_ur"] and c["name_en"] for c in meta["crops"] + meta["mandis"])
 
 
-def test_every_series_has_a_latest_forecast(client, meta):
+# ---------------------------------------------------------------- every series
+
+def test_every_series_forecasts_and_advises(client, meta):
     for s in meta["series"]:
-        r = client.get("/api/forecast", params=s)
-        assert r.status_code == 200, s
-        body = r.json()
-        assert body["as_of"] == meta["latest_as_of"]
-        assert body["is_synthetic"] is True and body["unit"] == "40kg"
-        assert 0 < len(body["history"]) <= HISTORY_WEEKS
-        assert body["history"][-1]["price"] == body["price_now"]
+        f = client.get("/api/forecast", params={"crop": s["crop"], "mandi": s["mandi"]})
+        assert f.status_code == 200, s
+        body = f.json()
+        assert body["prices_as_of"] == s["prices_as_of"] and body["current_price"] == s["latest_price"]
+        assert body["range"]["low"] <= body["predicted_price"] <= body["range"]["high"]
+        assert 0 < len(body["history"]) <= 52
+        assert all(p["date"] <= body["prices_as_of"] for p in body["history"])
+        a = client.get("/api/advice", params={"crop": s["crop"], "mandi": s["mandi"]}).json()
+        assert a["signal"] in ("SELL", "WAIT") and a["rupee_impact"] == a["gross_gain"] - a["interest_cost"]
+        if s["is_stale"]:
+            assert a["confidence"] == "LOW"
 
 
-# ---------------------------------------------------------- time machine
+def test_missing_series_is_404_with_a_reason(client):
+    r = client.get("/api/advice", params={"crop": "irri", "mandi": "rahim_yar_khan"})
+    assert r.status_code == 404 and "IRRI" in r.json()["detail"]
 
 
-def test_as_of_between_forecasts_uses_the_earlier_one(client, meta):
-    s = meta["series"][0]
-    latest = dt.date.fromisoformat(meta["latest_as_of"])
-    midweek = latest - dt.timedelta(days=10)  # a Thursday between two weekly forecasts
-    body = client.get("/api/forecast", params={**s, "as_of": midweek.isoformat()}).json()
-    used = dt.date.fromisoformat(body["as_of"])
-    assert used <= midweek
-    assert midweek - used < dt.timedelta(days=7)
-    assert all(dt.date.fromisoformat(p["date"]) <= used for p in body["history"])
+def test_unknown_ids_are_422(client):
+    assert client.get("/api/forecast", params={"crop": "potato", "mandi": "vehari"}).status_code == 422
+    assert client.get("/api/forecast", params={"crop": "wheat", "mandi": "lahore"}).status_code == 422
 
 
-def test_as_of_never_returns_future_data(client, meta):
-    s = meta["series"][0]
-    for days_back in (0, 3, 50, 400, 1000):
-        as_of = dt.date.fromisoformat(meta["latest_as_of"]) - dt.timedelta(days=days_back)
-        r = client.get("/api/forecast", params={**s, "as_of": as_of.isoformat()})
-        if r.status_code == 404:
-            continue
-        body = r.json()
-        assert dt.date.fromisoformat(body["as_of"]) <= as_of
-        assert all(dt.date.fromisoformat(p["date"]) <= as_of for p in body["history"])
+# ---------------------------------------------------------------- time machine
+
+@pytest.mark.parametrize("as_of", ["2025-03-24", "2025-08-04", "2024-04-15"])
+def test_as_of_never_uses_later_data(client, as_of):
+    q = {"crop": "wheat", "mandi": "bahawalpur", "as_of": as_of}
+    f = client.get("/api/forecast", params=q).json()
+    assert f["prices_as_of"] <= as_of and all(p["date"] <= as_of for p in f["history"])
+    h = client.get("/api/history", params=q).json()
+    assert all(p["date"] <= as_of for p in h["weekly"])
+    c = client.get("/api/compare-mandis", params=q).json()
+    assert all(r["prices_as_of"] <= as_of for r in c["rows"] if r["has_data"])
 
 
-def test_as_of_before_any_data_is_404(client, meta):
-    s = meta["series"][0]
-    r = client.get("/api/forecast", params={**s, "as_of": "2000-01-01"})
+def test_as_of_before_any_data_is_404(client):
+    r = client.get("/api/forecast", params={"crop": "wheat", "mandi": "bahawalpur", "as_of": "2000-01-01"})
     assert r.status_code == 404
 
 
-def test_advice_respects_as_of(client, meta):
-    s = meta["series"][0]
-    body = client.post("/api/advice", json={
-        **s, "quantity_maund": 10, "storage": "home", "as_of": "2024-03-13",
-    }).json()
-    assert dt.date.fromisoformat(body["as_of"]) <= dt.date(2024, 3, 13)
+# ---------------------------------------------------------------- advice details
+
+def test_advice_scales_with_quantity(client):
+    q = {"crop": "wheat", "mandi": "bahawalpur"}
+    one = client.get("/api/advice", params={**q, "quantity_maund": 1}).json()
+    hundred = client.get("/api/advice", params={**q, "quantity_maund": 100}).json()
+    assert abs(hundred["interest_cost"] - 100 * one["interest_cost"]) <= 100
 
 
-# ---------------------------------------------------------- errors
+def test_guest_gets_the_100_maund_example(client):
+    assert client.get("/api/advice", params={"crop": "cotton", "mandi": "vehari"}).json()["quantity_maund"] == 100
 
 
-def test_undeclared_series_is_404(client, meta):
-    declared = {(s["crop"], s["mandi"]) for s in meta["series"]}
-    for c in meta["crops"]:
-        for m in meta["mandis"]:
-            if (c["id"], m["id"]) not in declared:
-                r = client.get("/api/forecast", params={"crop": c["id"], "mandi": m["id"]})
-                assert r.status_code == 404
+def test_explain_gives_reasons_in_both_languages(client):
+    e = client.get("/api/explain", params={"crop": "wheat", "mandi": "bahawalpur"}).json()
+    assert e["source"] in ("facts", "shap") and e["reasons"]
+    assert all(r["text_ur"] and r["text_en"] for r in e["reasons"])
 
 
-def test_unknown_crop_is_404(client):
-    assert client.get("/api/forecast", params={"crop": "banana", "mandi": "vehari"}).status_code == 404
-    assert client.get("/api/alerts", params={"crop": "banana"}).status_code == 404
+def test_compare_best_first_and_flags_missing(client):
+    c = client.get("/api/compare-mandis", params={"crop": "irri", "mandi": "vehari"}).json()
+    priced = [r for r in c["rows"] if r["has_data"]]
+    assert [r["net_price"] for r in priced] == sorted((r["net_price"] for r in priced), reverse=True)
+    assert {"mandi": "rahim_yar_khan", "has_data": False}.items() <= next(
+        r for r in c["rows"] if r["mandi"] == "rahim_yar_khan").items()
+    assert c["transport_is_estimate"] is True
 
 
-def test_bad_date_is_422(client, meta):
-    s = meta["series"][0]
-    assert client.get("/api/forecast", params={**s, "as_of": "yesterday"}).status_code == 422
+def test_offer_check(client):
+    base = {"crop": "wheat", "mandi": "bahawalpur"}
+    fair = client.post("/api/offer-check", json={**base, "offer_price": 1}).json()
+    assert fair["verdict"] == "below" and fair["difference_total"] < 0
+    high = client.post("/api/offer-check", json={**base, "offer_price": 999_999}).json()
+    assert high["verdict"] == "above"
+    assert client.post("/api/offer-check", json={**base, "offer_price": -5}).status_code == 422
 
 
-@pytest.mark.parametrize("bad", [
-    {"quantity_maund": 0},
-    {"quantity_maund": -5},
-    {"storage": "fridge"},
-    {"lang": "fr"},
-    {"spoilage_pct_week": 150},
-    {"typo_field": 1},
-])
-def test_advice_rejects_bad_input(client, meta, bad):
-    req = {**meta["series"][0], "quantity_maund": 100, "storage": "home", **bad}
-    assert client.post("/api/advice", json=req).status_code == 422
+def test_margin_with_support_price_for_wheat_only(client):
+    w = client.get("/api/margin", params={"crop": "wheat", "price": 3820, "arhti_pct": 2}).json()
+    assert w["support_price"] is not None and w["arhti_amount"] == pytest.approx(76.4)
+    assert w["profit"] == pytest.approx(3820 - w["production_cost"] - 76.4)
+    assert client.get("/api/margin", params={"crop": "cotton", "price": 9000}).json()["support_price"] is None
 
 
-# ---------------------------------------------------------- advice
+def test_crop_plan_ranks_by_profit(client):
+    p = client.get("/api/crop-plan", params={"mandi": "rahim_yar_khan", "land_area_acres": 5}).json()
+    profits = [i["expected_profit"] for i in p["items"]]
+    assert profits == sorted(profits, reverse=True)
+    assert [i["rank"] for i in p["items"]] == list(range(1, len(profits) + 1))
+    assert "irri" in p["not_available"] and p["is_estimate"] is True
+    for i in p["items"]:
+        assert i["harvest_price_low"] <= i["harvest_price_estimate"] <= i["harvest_price_high"]
+        assert i["expected_profit"] == pytest.approx(i["profit_per_acre"] * 5, rel=1e-6)
 
 
-@pytest.mark.parametrize("storage", ["none", "home", "cold_store", "warehouse"])
-@pytest.mark.parametrize("lang", ["ur", "en"])
-def test_advice_for_every_series(client, meta, storage, lang):
-    for s in meta["series"]:
-        r = client.post("/api/advice", json={**s, "quantity_maund": 100, "storage": storage, "lang": lang})
-        assert r.status_code == 200, (s, r.text)
-        body = r.json()
-        assert body["verdict"] in VERDICTS
-        assert body["reasons"] and body["risk_line"] and body["verdict_text"]
-        assert body["is_synthetic"] is True
-        if storage == "none":
-            assert body["verdict"] in {"sell_now", "sell_elsewhere"}
-            assert not any(a["name"].startswith(("storage", "spoilage", "finance")) for a in body["assumptions"])
+def test_history_has_twelve_seasonal_months(client):
+    h = client.get("/api/history", params={"crop": "cotton", "mandi": "vehari"}).json()
+    assert [s["month"] for s in h["seasonal"]] == list(range(1, 13)) and h["weekly"]
 
 
-def test_advice_text_follows_language(client, meta):
-    req = {**meta["series"][0], "quantity_maund": 100, "storage": "none"}
-    ur = client.post("/api/advice", json={**req, "lang": "ur"}).json()
-    en = client.post("/api/advice", json={**req, "lang": "en"}).json()
-    assert any("؀" <= ch <= "ۿ" for ch in ur["verdict_text"])  # Arabic-script block
-    assert en["verdict_text"].isascii()
+def test_weather_falls_back_to_offline_when_live_is_down(client, monkeypatch):
+    from backend.app import weather
+
+    def down(lat, lon, timeout=8.0):
+        raise TimeoutError
+
+    monkeypatch.setattr(weather, "fetch_open_meteo", down)
+    monkeypatch.setattr(weather, "_cache", {})
+    w = client.get("/api/weather", params={"mandi": "vehari"}).json()["weather"]
+    assert w["cached"] is True and w["source"] == "offline file" and "Open-Meteo" in w["attribution"]
 
 
-def test_farmer_costs_override_defaults(client, meta):
-    req = {
-        **meta["series"][0], "quantity_maund": 100, "storage": "home",
-        "storage_cost_per_maund_week": 0, "spoilage_pct_week": 0.3,
-    }
-    body = client.post("/api/advice", json=req).json()
-    used = {a["name"]: a for a in body["assumptions"]}
-    assert used["storage_cost_per_maund_week"]["value"] == 0
-    assert used["storage_cost_per_maund_week"]["source"] == "farmer"
-    assert used["spoilage_pct_week"]["source"] == "farmer"
-    assert used["finance_cost_pct_month"]["source"] == "default"
+# ---------------------------------------------------------------- farmers and login
+
+def test_login_and_profile(client):
+    t = client.post("/api/auth/login", json={"phone": "+92 000 0000001"}).json()
+    headers = {"Authorization": f"Bearer {t['token']}"}
+    me = client.get("/api/farmers/me", headers=headers).json()
+    assert me["name"] == "Ahmed" and me["district"] == "bahawalpur"
+    # The profile's quantity is used when none is given.
+    a = client.get("/api/advice", params={"crop": "cotton", "mandi": "bahawalpur"}, headers=headers).json()
+    assert a["quantity_maund"] == 60
+    updated = client.put("/api/farmers/me", json={"arhti_commission_pct": 3}, headers=headers).json()
+    assert updated["arhti_commission_pct"] == 3
 
 
-def test_rupee_difference_scales_with_quantity(client, meta):
-    req = {**meta["series"][0], "storage": "home"}
-    small = client.post("/api/advice", json={**req, "quantity_maund": 10}).json()
-    big = client.post("/api/advice", json={**req, "quantity_maund": 100}).json()
-    assert small["verdict"] == big["verdict"]
-    assert abs(big["rupee_difference"] - 10 * small["rupee_difference"]) <= 10
+def test_register_then_duplicate_is_409(client):
+    body = {"name": "Test", "phone": "+920000000777", "district": "vehari",
+            "crops": [{"crop": "irri", "preferred_mandi": "vehari", "harvest_quantity_maund": 40}]}
+    first = client.post("/api/farmers", json=body)
+    assert first.status_code == 201 and first.json()["token"]
+    assert client.post("/api/farmers", json=body).status_code == 409
 
 
-# ---------------------------------------------------------- alerts, replay, backtest
+def test_auth_failures(client):
+    assert client.get("/api/farmers/me").status_code == 401
+    assert client.get("/api/farmers/me", headers={"Authorization": "Bearer nope"}).status_code == 401
+    assert client.post("/api/auth/login", json={"phone": "+920000009999"}).status_code == 404
 
 
-def test_alerts_only_return_active_events(client, meta):
-    for c in meta["crops"]:
-        body = client.get("/api/alerts", params={"crop": c["id"]}).json()
-        on = dt.date.fromisoformat(body["as_of"])
-        for e in body["events"]:
-            assert dt.date.fromisoformat(e["date"]) <= on <= dt.date.fromisoformat(e["active_until"])
-            assert c["id"] in e["crops"]
-        assert all(dt.date.fromisoformat(a["date"]) <= on for a in body["alarms"])
-
-
-def test_every_replay_case_loads_in_both_languages(client, meta):
-    assert meta["replay_cases"]
-    for ref in meta["replay_cases"]:
-        ur = client.get(f"/api/replay/{ref['case_id']}").json()
-        en = client.get(f"/api/replay/{ref['case_id']}", params={"lang": "en"}).json()
-        assert ur["title"] == ref["title_ur"] and en["title"] == ref["title_en"]
-        assert ur["steps"] and ur["is_synthetic"] is True
-
-
-def test_unknown_replay_case_is_404(client):
-    assert client.get("/api/replay/nope").status_code == 404
-
-
-def test_backtest_reports_unmeasured_metrics_as_null(client):
-    body = client.get("/api/backtest").json()
-    assert body["is_synthetic"] is True
-    assert all(row["mase"] is None for row in body["metrics"])
-
-
-# ---------------------------------------------------------- whatsapp
-
+# ---------------------------------------------------------------- channels are mounted
 
 def test_whatsapp_webhook_is_mounted_and_refuses_unsigned(client):
-    # The Meta webhook lives in backend/app/channels (tested there). Unsigned posts never get through.
     assert client.post("/webhooks/whatsapp", content=b"{}").status_code in (403, 503)
     assert client.post("/whatsapp", data={"Body": "x"}).status_code == 404   # the Twilio placeholder is gone
+
+
+def test_chat_route_uses_api_ids(client):
+    from backend.app.chat import llm
+
+    client.app.dependency_overrides[llm.get_llm] = lambda: type("L", (), {"generate": lambda s, a, b: "Rs 1"})()
+    try:
+        r = client.post("/api/chat", json={"question": "rate?", "crop": "super_basmati", "mandi": "vehari"})
+    finally:
+        client.app.dependency_overrides.clear()
+    assert r.status_code == 200 and r.json()["crop"] == "super_basmati" and r.json()["mandi"] == "vehari"
+    assert client.post("/api/chat", json={"question": "x", "crop": "Wheat"}).status_code == 422
+
+
+def test_dates_in_responses_are_iso(client):
+    f = client.get("/api/forecast", params={"crop": "wheat", "mandi": "vehari"}).json()
+    dt.date.fromisoformat(f["prices_as_of"])

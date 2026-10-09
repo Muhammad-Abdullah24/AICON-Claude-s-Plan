@@ -1,40 +1,31 @@
-"""The API contract as code (PLAN.md section 14).
+"""The API contract as code (docs/BLUEPRINT.md section 12).
 
-Every artifact file and every API response is defined here. The backend
-validates artifacts against these models on startup, FastAPI uses them to
-shape responses, and the front end's TypeScript types are generated from the
-resulting OpenAPI schema. Change a shape here and in PLAN.md section 14 in the
-same commit.
+FastAPI shapes every response with these models and the front end's TypeScript types are generated from the
+resulting OpenAPI schema (`python -m backend.app.export_openapi && npm --prefix frontend run gen:api`).
+Change a shape here and in blueprint section 12 in the same commit.
 
-`extra="forbid"` everywhere: a misspelt field in an artifact or a request is
-an error, not something silently ignored.
+Every price is Rs per 40 kg (`unit: "40kg"`). Every data-bearing response says where its numbers came from
+(`data_source`, `is_synthetic`). `extra="forbid"` on requests: a misspelt field is an error.
 """
 
 from __future__ import annotations
 
 import datetime as dt
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
-Id = str  # lowercase ids such as "wheat" or "rahim_yar_khan"; checked by ID_PATTERN
-ID_PATTERN = r"^[a-z][a-z0-9_]*$"
-
-Tier = Literal["normal", "stress", "alert", "crisis"]
-Verdict = Literal["sell_now", "sell_elsewhere", "store", "split"]
-Storage = Literal["none", "home", "cold_store", "warehouse"]
-StoringOption = Literal["home", "cold_store", "warehouse"]
+CropId = Literal["wheat", "cotton", "irri", "super_basmati"]
+MandiId = Literal["bahawalpur", "vehari", "rahim_yar_khan"]
 Lang = Literal["ur", "en"]
 Unit = Literal["40kg"]
-PriceType = Literal["wholesale", "retail"]
-EventType = Literal[
-    "border_closure", "export_ban", "import_permission", "procurement_policy",
-    "flood", "drought", "bumper_crop", "transport_disruption", "other",
-]
-AlarmFlag = Literal["below_3yr_harvest_avg", "yoy_drop_over_50pct"]
-ModelRole = Literal["primary", "challenger", "baseline", "placeholder"]
-
-Price = Annotated[float, Field(gt=0)]  # Rs per 40 kg
+Signal = Literal["SELL", "WAIT"]
+Trend = Literal["UP", "DOWN", "STABLE"]
+Volatility = Literal["STABLE", "MODERATE", "VOLATILE"]
+Confidence = Literal["HIGH", "MEDIUM", "LOW"]
+RiskLevel = Literal["LOW", "MEDIUM", "HIGH"]
+Direction = Literal["UP", "DOWN", ""]
+Season = Literal["RABI", "KHARIF"]
 
 
 class Strict(BaseModel):
@@ -42,320 +33,316 @@ class Strict(BaseModel):
 
 
 class Labelled(Strict):
-    """Every artifact and data-bearing response says where its numbers came from (PLAN.md 6.4)."""
-
     data_source: str
     is_synthetic: bool
-
-
-# ---------------------------------------------------------------- meta.json
-
-
-class NamedItem(Strict):
-    id: Id = Field(pattern=ID_PATTERN)
-    name_ur: str = Field(min_length=1)
-    name_en: str = Field(min_length=1)
-
-
-class SeriesKey(Strict):
-    crop: Id
-    mandi: Id
-
-
-class ReplayCaseRef(Strict):
-    case_id: Id = Field(pattern=ID_PATTERN)
-    crop: Id
-    mandi: Id
-    title_ur: str
-    title_en: str
-
-
-class DateRange(Strict):
-    start: dt.date
-    end: dt.date
-
-    @model_validator(mode="after")
-    def _ordered(self) -> DateRange:
-        if self.start > self.end:
-            raise ValueError("date_range.start is after date_range.end")
-        return self
-
-
-class ModelInfo(Strict):
-    name: str
-    version: str
-    role: ModelRole
-
-
-class AssumptionValue(Strict):
-    value: float = Field(ge=0)
-    source: str
-
-
-class StorageDefault(Strict):
-    crop: Id
-    storage: StoringOption
-    storage_cost_per_maund_week: float = Field(ge=0)
-    spoilage_pct_week: float = Field(ge=0, le=100)
-    source: str
-
-
-class TransportCost(Strict):
-    from_mandi: Id
-    to_mandi: Id
-    cost_per_maund: float = Field(ge=0)
-    source: str
-
-
-class Assumptions(Strict):
-    finance_cost_pct_month: AssumptionValue
-    storage_defaults: list[StorageDefault]
-    transport: list[TransportCost]
-
-
-class Meta(Labelled):
-    schema_version: Literal[1]
-    generated_at: dt.date
-    crops: list[NamedItem] = Field(min_length=1)
-    mandis: list[NamedItem] = Field(min_length=1)
-    series: list[SeriesKey] = Field(min_length=1)
-    replay_cases: list[ReplayCaseRef]
-    date_range: DateRange
-    latest_as_of: dt.date
-    unit: Unit
-    price_type: PriceType
-    models: list[ModelInfo] = Field(min_length=1)
-    assumptions: Assumptions
-
-
-# ----------------------------------------------------------- forecasts.json
-
-
-class PricePoint(Strict):
-    date: dt.date
-    price: Price
-
-
-class BandPoint(Strict):
-    weeks_ahead: int = Field(ge=1, le=12)
-    q10: Price
-    q50: Price
-    q90: Price
-
-    @model_validator(mode="after")
-    def _ordered(self) -> BandPoint:
-        if not self.q10 <= self.q50 <= self.q90:
-            raise ValueError(f"quantiles out of order at weeks_ahead={self.weeks_ahead}")
-        return self
-
-
-class NaivePoint(Strict):
-    weeks_ahead: int = Field(ge=1, le=12)
-    price: Price
-
-
-class ForecastEntry(Strict):
-    as_of: dt.date
-    price_now: Price
-    forecast: list[BandPoint] = Field(min_length=1)
-    naive: list[NaivePoint]
-    model: str
-    mase_vs_naive: float | None = Field(default=None, ge=0)  # null = not measured
-
-
-class SeriesForecasts(Strict):
-    crop: Id
-    mandi: Id
-    history: list[PricePoint] = Field(min_length=1)
-    forecasts: list[ForecastEntry] = Field(min_length=1)
-
-
-class ForecastsArtifact(Labelled):
-    schema_version: Literal[1]
-    series: list[SeriesForecasts]
-
-
-# -------------------------------------------------------------- alarms.json
-
-
-class Alarm(Strict):
-    crop: Id
-    mandi: Id
-    date: dt.date
-    indicator: float  # signed: above zero means above the seasonal normal
-    tier: Tier
-    flags: list[AlarmFlag]
-
-
-class Event(Strict):
-    date: dt.date
-    active_until: dt.date
-    event_type: EventType
-    crops: list[Id] = Field(min_length=1)
-    direction: Literal["up", "down", "unclear"]
-    region: str
-    headline: str = Field(min_length=1)
-    source_url: HttpUrl | None
-    confidence: Literal["high", "medium", "low"]
-    is_synthetic: bool
-
-    @model_validator(mode="after")
-    def _ordered(self) -> Event:
-        if self.active_until < self.date:
-            raise ValueError("event active_until is before its date")
-        return self
-
-
-class AlarmsArtifact(Labelled):
-    schema_version: Literal[1]
-    alarms: list[Alarm]
-    events: list[Event]
-
-
-# -------------------------------------------------------------- replay.json
-
-
-class EventRef(Strict):
-    event_type: EventType
-    headline: str
-    source_url: HttpUrl | None
-
-
-class ReplayStep(Strict):
-    as_of: dt.date
-    price_now: Price
-    forecast_q10: Price
-    forecast_q50: Price
-    forecast_q90: Price
-    verdict: Verdict
-    alarm_tier: Tier
-    events_active: list[EventRef]
-    actual_price_4w_later: float | None = Field(default=None, gt=0)
-
-
-class ReplayCase(Strict):
-    case_id: Id = Field(pattern=ID_PATTERN)
-    crop: Id
-    mandi: Id
-    title_ur: str
-    title_en: str
-    summary_ur: str
-    summary_en: str
-    steps: list[ReplayStep] = Field(min_length=1)
-
-
-class ReplayArtifact(Labelled):
-    schema_version: Literal[1]
-    cases: list[ReplayCase]
-
-
-# ------------------------------------------------------------ backtest.json
-
-
-class MetricRow(Strict):
-    crop: Id
-    mandi: Id
-    model: str
-    mase: float | None = Field(ge=0)
-    quantile_loss: float | None = Field(ge=0)
-    coverage_80: float | None = Field(ge=0, le=1)
-    n_forecasts: int = Field(ge=0)
-
-
-class NamedAssumption(Strict):
-    name: str
-    value: float
-    source: str
-
-
-class RupeeBacktest(Strict):
-    quantity_maund: float = Field(gt=0)
-    n_cases: int = Field(ge=0)
-    avg_gain_vs_harvest_pkr: float
-    share_better: float = Field(ge=0, le=1)
-    worst_case_pkr: float
-    hindsight_avg_gain_pkr: float
-    assumptions: list[NamedAssumption]
-
-
-class BacktestArtifact(Labelled):
-    schema_version: Literal[1]
-    horizon_weeks: int = Field(ge=1)
-    cutoffs: list[dt.date]
-    metrics: list[MetricRow]
-    rupee_backtest: RupeeBacktest | None
-    limitations: list[str]
-
-
-# ------------------------------------------------------------ API responses
 
 
 class Health(Strict):
     status: Literal["ok"]
 
 
-class ForecastResponse(Labelled):
-    crop: Id
-    mandi: Id
-    as_of: dt.date  # date of the forecast actually used (latest on or before the request)
-    unit: Unit
-    price_now: float
-    history: list[PricePoint]  # only points dated on or before as_of
-    forecast: list[BandPoint]
-    naive: list[NaivePoint]
-    model: str
-    mase_vs_naive: float | None
-    price_type: PriceType
+# ---------------------------------------------------------------- meta
+
+class NamedItem(Strict):
+    id: str
+    name_ur: str
+    name_en: str
 
 
-class AdviceRequest(Strict):
-    crop: Id
-    mandi: Id
-    quantity_maund: float = Field(gt=0, le=1_000_000)
-    storage: Storage
-    storage_cost_per_maund_week: float | None = Field(default=None, ge=0)  # null = default
-    spoilage_pct_week: float | None = Field(default=None, ge=0, le=100)
-    finance_cost_pct_month: float | None = Field(default=None, ge=0, le=100)
-    as_of: dt.date | None = None
-    lang: Lang = "ur"
+class CropInfo(NamedItem):
+    season: Season
+    sowing_months: tuple[int, int]
+    harvest_months: tuple[int, int]
 
 
-class AlternativeMandi(Strict):
-    mandi: Id
-    net_price: float
+class SeriesInfo(Strict):
+    crop: CropId
+    mandi: MandiId
+    prices_as_of: dt.date
+    latest_price: float
+    is_stale: bool
 
 
-class AssumptionUsed(Strict):
+class DataSourceInfo(Strict):
     name: str
-    value: float
-    source: Literal["farmer", "default"]
+    url: str
+    covers: str
 
+
+class Meta(Labelled):
+    unit: Unit
+    price_type: Literal["wholesale"]
+    crops: list[CropInfo]
+    mandis: list[NamedItem]
+    series: list[SeriesInfo]
+    prices_as_of: dt.date          # the newest price in the data; each series has its own date too
+    horizon_weeks: int
+    wait_threshold_pct: float
+    interest_pct_per_month: float
+    sources: list[DataSourceInfo]
+
+
+# ---------------------------------------------------------------- forecast, explain, history
+
+class PriceRange(Strict):
+    low: float
+    high: float
+
+
+class PricePoint(Strict):
+    date: dt.date
+    price: float
+
+
+class WeatherNow(Strict):
+    week_start: dt.date
+    tmax_c: float | None
+    tmin_c: float | None
+    precip_mm_wk: float | None
+    rh_pct: float | None
+    precip_mm_4w: float | None
+    hot_days_wk: int | None
+    cached: bool
+    source: str                     # "open-meteo" (live) or "offline file"
+    fetched_at: dt.datetime
+    attribution: str
+
+
+class ForecastResponse(Labelled):
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    prices_as_of: dt.date
+    current_price: float
+    predicted_price: float
+    range: PriceRange               # q10 to q90
+    horizon_weeks: int
+    trend: Trend
+    volatility: Volatility
+    confidence: Confidence
+    model: str
+    is_stale: bool
+    price_unchanged_since: dt.date | None
+    history: list[PricePoint]       # weekly, at most 52 weeks, never after prices_as_of
+
+
+class Reason(Strict):
+    text_ur: str
+    text_en: str
+    direction: Direction
+
+
+class ExplainResponse(Labelled):
+    crop: CropId
+    mandi: MandiId
+    prices_as_of: dt.date
+    source: Literal["shap", "facts"]   # "facts" until Owner B's SHAP explanations exist
+    reasons: list[Reason]
+
+
+class SeasonalPoint(Strict):
+    month: int
+    index_median: float | None      # % of the 12-month moving average
+    index_min: float | None
+    index_max: float | None
+    n_years: int
+
+
+class HistoryResponse(Labelled):
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    prices_as_of: dt.date
+    weekly: list[PricePoint]
+    seasonal: list[SeasonalPoint]
+    sowing_months: tuple[int, int]
+    harvest_months: tuple[int, int]
+
+
+# ---------------------------------------------------------------- advice, compare, offer, margin
 
 class AdviceResponse(Labelled):
-    as_of: dt.date
-    verdict: Verdict
-    verdict_text: str
-    rupee_difference: float  # for the farmer's whole quantity, vs selling here today
-    best_week: int
-    reasons: list[str]
-    risk_line: str
-    alternative_mandi: AlternativeMandi | None
-    alerts: list[EventRef]
-    alarm_tier: Tier | None  # null = no alarm computed for this date, never a guessed "normal"
-    assumptions: list[AssumptionUsed]
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    quantity_maund: float
+    signal: Signal
+    signal_ur: str
+    confidence: Confidence
+    trend: Trend
+    current_price: float
+    predicted_price: float
+    range: PriceRange
+    gross_gain: int                 # quantity x (forecast - today)
+    interest_cost: int              # quantity x today x interest for 4 weeks
+    rupee_impact: int               # gross_gain - interest_cost
+    prices_as_of: dt.date
+    is_stale: bool
+    price_unchanged_since: dt.date | None
+    model: str
 
 
-class AlertsResponse(Labelled):
-    crop: Id
-    as_of: dt.date
-    alarms: list[Alarm]
-    events: list[Event]
+class CompareRow(Strict):
+    mandi: MandiId
+    has_data: bool
+    price: float | None = None
+    transport_cost: float | None = None
+    net_price: float | None = None
+    gain_vs_preferred: int | None = None
+    prices_as_of: dt.date | None = None
+    is_stale: bool | None = None
 
 
-class ReplayResponse(Labelled):
-    case_id: Id
-    crop: Id
-    mandi: Id
-    title: str
-    summary: str
-    steps: list[ReplayStep]
+class CompareResponse(Labelled):
+    crop: CropId
+    from_mandi: MandiId
+    unit: Unit
+    quantity_maund: float
+    rows: list[CompareRow]          # best net price first; mandis without data last
+    transport_is_estimate: bool
+
+
+class OfferCheckRequest(Strict):
+    crop: CropId
+    mandi: MandiId
+    offer_price: float = Field(gt=0, le=1_000_000)
+    quantity_maund: float = Field(100, gt=0, le=1_000_000)
+
+
+class OfferCheckResponse(Labelled):
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    offer_price: float
+    fair_low: float                 # lowest price AMIS reported at this mandi in the last 14 days
+    fair_high: float                # highest
+    verdict: Literal["below", "fair", "above"]
+    difference_per_maund: float     # offer minus the nearest edge of the fair range; 0 when fair
+    difference_total: int
+    window_days: int
+    prices_as_of: dt.date
+
+
+class MarginResponse(Labelled):
+    crop: CropId
+    unit: Unit
+    price: float
+    production_cost: float
+    cost_confidence: str
+    arhti_pct: float
+    arhti_amount: float
+    profit: float
+    support_price: float | None
+    support_status: str | None
+    support_crop_year: str | None
+
+
+# ---------------------------------------------------------------- crop plan
+
+class CropPlanItem(Strict):
+    crop: CropId
+    rank: int
+    latest_price: float
+    latest_price_date: dt.date
+    harvest_price_estimate: float
+    harvest_price_low: float
+    harvest_price_high: float
+    months_ahead: int
+    yield_maund_per_acre: float     # in the unit the price is quoted in (milled rice for IRRI, Super Basmati)
+    cost_per_acre: float
+    profit_per_acre: float
+    expected_profit: float          # for the farmer's land area
+    risk_level: RiskLevel
+    spread_pct: float | None
+    n_years: int
+    sowing_months: tuple[int, int]
+    harvest_months: tuple[int, int]
+    best_sell_month: int | None
+    best_sell_gain_pct: float | None    # median price gain at that month vs the harvest month, after interest
+    is_stale: bool
+
+
+class CropPlanResponse(Labelled):
+    mandi: MandiId
+    land_area_acres: float
+    items: list[CropPlanItem]       # best expected profit first
+    not_available: list[CropId]     # crop options with no price data at this mandi
+    is_estimate: bool
+
+
+# ---------------------------------------------------------------- weather
+
+class WeatherResponse(Strict):
+    mandi: MandiId
+    weather: WeatherNow
+
+
+# ---------------------------------------------------------------- farmers and auth
+
+class FarmerCropIn(Strict):
+    crop: CropId
+    preferred_mandi: MandiId
+    harvest_quantity_maund: float = Field(gt=0, le=1_000_000)
+
+
+class FarmerIn(Strict):
+    name: str = Field(min_length=1, max_length=100)
+    phone: str = Field(min_length=7, max_length=20, pattern=r"^\+?[0-9 -]+$")
+    language: Lang = "ur"
+    district: MandiId
+    land_area_acres: float | None = Field(None, gt=0, le=100_000)
+    arhti_commission_pct: float | None = Field(None, ge=0, le=50)
+    alerts_enabled: bool = True
+    crops: list[FarmerCropIn] = Field(default_factory=list, max_length=4)
+
+
+class FarmerUpdate(Strict):
+    name: str | None = Field(None, min_length=1, max_length=100)
+    language: Lang | None = None
+    district: MandiId | None = None
+    land_area_acres: float | None = Field(None, gt=0, le=100_000)
+    arhti_commission_pct: float | None = Field(None, ge=0, le=50)
+    alerts_enabled: bool | None = None
+    crops: list[FarmerCropIn] | None = Field(None, max_length=4)
+
+
+class Farmer(Strict):
+    id: str
+    name: str
+    phone: str
+    language: Lang
+    district: MandiId
+    land_area_acres: float | None
+    arhti_commission_pct: float | None
+    alerts_enabled: bool
+    crops: list[FarmerCropIn]
+    created_at: dt.datetime
+
+
+class LoginRequest(Strict):
+    phone: str = Field(min_length=7, max_length=20, pattern=r"^\+?[0-9 -]+$")
+
+
+class TokenResponse(Strict):
+    token: str
+    farmer: Farmer
+
+
+# ---------------------------------------------------------------- chat
+
+class ChatRequest(Strict):
+    question: str = Field(min_length=1, max_length=500)
+    crop: CropId | None = None
+    mandi: MandiId | None = None
+    quantity_maund: float | None = Field(None, gt=0, le=1_000_000)
+
+
+class ChatResponse(Strict):
+    answer: str
+    used_fallback: bool
+    fallback_reason: Literal["need_crop_and_mandi", "no_data", "service_not_ready", "rate_limited",
+                             "llm_unavailable", "unverified_numbers", "wrong_script"] | None
+    crop: CropId | None
+    mandi: MandiId | None
+    data_source: str
+    is_synthetic: bool

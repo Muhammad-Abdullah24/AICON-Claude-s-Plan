@@ -54,11 +54,12 @@ def test_explanation_is_facts_and_says_it_is_a_baseline():
     assert "سادہ اندازہ" in reasons[-1]["text_ur"]
 
 
-def test_alerts_toggle():
-    services.set_alerts("92300", False)
-    assert services.alerts_enabled("92300") is False
-    services.set_alerts("92300", True)
-    assert services.alerts_enabled("92300") is True
+def test_alerts_toggle_for_a_registered_phone():
+    phone = "+92 000 0000001"   # the seeded demo farmer, written differently
+    services.set_alerts(phone, False)
+    assert services.alerts_enabled("920000000001") is False
+    services.set_alerts(phone, True)
+    assert services.alerts_enabled(phone) is True
 
 
 def test_owner_b_model_is_used_when_it_exists(monkeypatch):
@@ -70,4 +71,5 @@ def test_owner_b_model_is_used_when_it_exists(monkeypatch):
     monkeypatch.setitem(sys.modules, "ml.forecast.predict", fake)
     a = services.get_advice("Wheat", "BahawalPur", 10)
     assert (a["model"], a["signal"], a["trend"]) == ("xgb-test", "WAIT", "UP")
-    assert services.get_explanation("Wheat", "BahawalPur") == [{"text_ur": "ماڈل کی وجہ", "direction": "UP"}]
+    assert services.get_explanation("Wheat", "BahawalPur") == [
+        {"text_ur": "ماڈل کی وجہ", "text_en": "ماڈل کی وجہ", "direction": "UP"}]

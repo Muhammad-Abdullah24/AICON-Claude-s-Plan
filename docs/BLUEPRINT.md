@@ -1109,75 +1109,80 @@ Column names match `features.csv`, so the same aggregation code serves training 
 
 ## 12. 🔌 API Design
 
+> Updated 10 Oct (task C1) to match what was built. The source of truth is `backend/app/schemas.py`; the front-end
+> types are generated from it (`/docs` on the backend lists every endpoint). Two deliberate changes from v0.2.0:
+> **lowercase ids** and **plain response objects** (no `success`/`data` envelope; errors use FastAPI's
+> `{"detail": ...}` with 404 for a crop with no price at a mandi, 422 for bad input, 401 for a bad token).
+
+**Ids.** Crops: `wheat`, `cotton`, `irri`, `super_basmati`. Mandis: `bahawalpur`, `vehari`, `rahim_yar_khan` (no
+`irri` at `rahim_yar_khan`). `backend/app/ids.py` maps them to the data names (`Wheat`, `SuperBasmati`, `BahawalPur`, ...).
+
+**Time machine.** Every price endpoint takes an optional `as_of=YYYY-MM-DD` and uses no price after that date, so the
+backup demo weeks (section 14, `docs/DEMO.md`) give the answer the app would have given then.
+
 ### REST Endpoints
 
 | Method | Endpoint | Auth | Description | Use Case |
 |--------|----------|------|-------------|----------|
-| `GET` | `/api/meta` | Public | Crops, varieties, mandis, "prices as of" date | All |
-| `POST` | `/api/auth/login` | Public | Log in by phone number (demo: pre-seeded profile), return JWT. OTP post-MVP | UC-11 |
-| `POST` | `/api/farmers` | Farmer (new) | Create profile | UC-11 |
-| `GET` | `/api/farmers/me` | Farmer | Get own profile | UC-11 |
+| `GET` | `/api/meta` | Public | Crops (with season months), mandis, every series with its own `prices_as_of` and `is_stale`, data sources, forecast horizon, interest rate, model in use | All |
+| `POST` | `/api/auth/login` | Public | `{phone}` → JWT (demo: pre-seeded invented profile). 404 if the phone is not registered. OTP post-MVP | UC-11 |
+| `POST` | `/api/farmers` | Public | Register; returns profile and JWT. 409 if the phone exists | UC-11 |
+| `GET` | `/api/farmers/me` | Farmer | Own profile with crops (crop, preferred mandi, harvest quantity) | UC-11 |
 | `PUT` | `/api/farmers/me` | Farmer | Update profile, alerts on/off | UC-11, UC-10 |
-| `GET` | `/api/forecast?crop_id=&mandi_id=` | Public | Forecast with range, trend, volatility | UC-01, UC-13 |
-| `GET` | `/api/explain?forecast_id=` | Public | SHAP reasons in plain Urdu | UC-02 |
-| `GET` | `/api/advice?crop_id=&mandi_id=&quantity_maund=` | Farmer | Signal, confidence, expected price, net rupee impact, interest cost, fair range | UC-03 |
-| `GET` | `/api/compare-mandis?crop_id=&district=` | Public | Net price per mandi after estimated transport; mandis without data flagged | UC-04 |
-| `GET` | `/api/crop-plan` | Farmer | Ranked crops with harvest estimate, profit per acre, risk and best selling window | UC-05, UC-06 |
-| `POST` | `/api/offer-check` | Public | Compare a buyer's offer with the fair range | UC-07 |
-| `GET` | `/api/margin?crop_id=&price=` | Public | Cost, own arhti commission (if set), profit, wheat support price | UC-08 |
-| `GET` | `/api/history?crop_id=&mandi_id=` | Public | 52-week history and seasonal pattern | UC-12 |
-| `GET` | `/api/weather?mandi_id=` | Public | Current weather (live or cached) | UC-13 |
-| `POST` | `/api/chat` | Farmer | Text question → text answer | UC-09 |
-| `POST` | `/api/chat/voice` | Farmer | Audio upload → transcript for confirmation | UC-09 |
+| `GET` | `/api/forecast?crop=&mandi=&as_of=` | Public | Today and 4-week price with range, change %, trend, volatility, confidence, stale/frozen flags, 52-week history, weather | UC-01, UC-13 |
+| `GET` | `/api/explain?crop=&mandi=&as_of=` | Public | 3–5 reasons in Urdu and English (`source`: `shap` from the model, or `facts` until it exists) | UC-02 |
+| `GET` | `/api/advice?crop=&mandi=&quantity_maund=&as_of=` | Public (profile quantity used when logged in) | SELL/WAIT, confidence, expected price, gross gain, interest cost, net rupee impact. Logged in the `recommendations` table | UC-03 |
+| `GET` | `/api/compare-mandis?crop=&mandi=&quantity_maund=&as_of=` | Public | Net price per mandi after estimated transport from the farmer's mandi, best first; mandis without data or with stale data flagged | UC-04 |
+| `GET` | `/api/crop-plan?mandi=&land_area_acres=&as_of=` | Public (profile used when logged in) | Ranked crops: harvest price estimate and range, profit per acre and for the land, risk, season months, best selling month after interest | UC-05, UC-06 |
+| `POST` | `/api/offer-check` | Public | `{crop, mandi, offer_price, quantity_maund}` → below / fair / above. Fair range = lowest to highest mandi price in the last 14 days | UC-07 |
+| `GET` | `/api/margin?crop=&price=&arhti_pct=` | Public | Cost of production, own arhti commission, profit; latest wheat support price with its status | UC-08 |
+| `GET` | `/api/history?crop=&mandi=&as_of=` | Public | 52 weekly prices and the monthly seasonal pattern (% of trend) | UC-12 |
+| `GET` | `/api/weather?mandi=` | Public | Current weather (live, or cached/offline with `cached: true`), with the Open-Meteo attribution | UC-13 |
+| `POST` | `/api/chat` | Public (profile used when logged in) | `{question, crop?, mandi?}` → text answer from the farmer's own advice; `used_fallback` when the template was used | UC-09 |
+| `POST` | `/api/chat/voice` | Farmer | *Not built (A10).* Audio upload → transcript for confirmation | UC-09 |
 | `GET` | `/webhooks/whatsapp` | Verify token | Meta webhook verification handshake | – |
-| `POST` | `/webhooks/whatsapp` | Meta signature | Incoming WhatsApp text/voice, replies and delivery status | UC-09, UC-10 |
-| `POST` | `/webhooks/sms` | Shared secret | Incoming SMS and number-menu replies from the SMS gateway phone | UC-09, UC-10 |
+| `POST` | `/webhooks/whatsapp` | Meta signature | Incoming WhatsApp text, replies and delivery status | UC-09, UC-10 |
+| `POST` | `/webhooks/sms` | Shared secret | *Not built (A11).* Incoming SMS and number-menu replies | UC-09, UC-10 |
 
-### API Response Format
+### Response conventions
 
-```json
-{
-  "success": true,
-  "data": { },
-  "message": "OK",
-  "error": null,
-  "meta": { "prices_as_of": "2026-10-09", "data_source": "amis", "unit": "40kg", "is_synthetic": false, "weather_cached": false }
-}
-```
+Every response that contains prices carries `data_source` (`amis`, or `placeholder` for anything invented) and
+`is_synthetic`, and every price is Rs per 40 kg with `unit: "40kg"` (the data is converted from AMIS's per-100 kg unit,
+× 0.4). `prices_as_of` is per crop and mandi, never global; `is_stale` is true when the latest price is over 56 days
+old; `price_unchanged_since` is set when the latest price sits in a frozen AMIS stretch (both lower confidence to LOW).
 
-Every price in every response is Rs per 40 kg with `unit: "40kg"`; the backend converts from the stored per-100 kg AMIS unit (× 0.4). `prices_as_of` is per crop and mandi, not global.
+### Example: `GET /api/advice?crop=wheat&mandi=bahawalpur&quantity_maund=100`
 
-### Example: `GET /api/advice`
+Real output on 10 Oct 2026, before Usman's model (the baseline keeps today's price and takes the range from past
+4-week swings):
 
 ```json
 {
-  "success": true,
-  "data": {
-    "crop": { "name": "WHEAT", "variety": "NONE" },
-    "mandi": "Bahawalpur",
-    "unit": "40kg",
-    "current_price": 3820,
-    "predicted_price": 4050,
-    "range": { "low": 3700, "high": 4300 },
-    "trend": "UP",
-    "volatility": "STABLE",
-    "signal": "WAIT",
-    "signal_ur": "رکیں",
-    "confidence": "MEDIUM",
-    "quantity_maund": 100,
-    "gross_gain": 23000,
-    "interest_cost": 5253,
-    "rupee_impact": 17747,
-    "fair_price_range": { "low": 3850, "high": 4100 },
-    "forecast_id": "…"
-  },
-  "message": "OK",
-  "error": null,
-  "meta": { "prices_as_of": "2026-10-09", "data_source": "amis", "unit": "40kg", "is_synthetic": false, "weather_cached": false }
+  "data_source": "amis",
+  "is_synthetic": false,
+  "crop": "wheat",
+  "mandi": "bahawalpur",
+  "unit": "40kg",
+  "quantity_maund": 100.0,
+  "signal": "SELL",
+  "signal_ur": "بیچ دیں",
+  "confidence": "MEDIUM",
+  "trend": "STABLE",
+  "current_price": 3820.0,
+  "predicted_price": 3820.0,
+  "range": { "low": 3606.53, "high": 4071.04 },
+  "gross_gain": 0,
+  "interest_cost": 5253,
+  "rupee_impact": -5253,
+  "prices_as_of": "2026-10-09",
+  "is_stale": false,
+  "price_unchanged_since": null,
+  "model": "baseline_persistence_band"
 }
 ```
 
-> Forecast figures above are placeholders for the contract only. `current_price` 3,820 is the real AMIS level for Bahawalpur wheat in early October 2026. `interest_cost` = 100 × 3,820 × 1.375%.
+> `interest_cost` = 100 × 3,820 × 1.375% (16.5% a year, charged as one month for the 4-week wait). WAIT only when the
+> expected price is at least 5% above today; `rupee_impact` = gross gain − interest.
 
 ---
 

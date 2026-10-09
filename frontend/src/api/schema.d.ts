@@ -38,7 +38,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Explain */
+        get: operations["explain_api_explain_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History */
+        get: operations["history_api_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current Weather */
+        get: operations["current_weather_api_weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/advice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Advice */
+        get: operations["advice_api_advice_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compare-mandis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare Mandis */
+        get: operations["compare_mandis_api_compare_mandis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/offer-check": {
         parameters: {
             query?: never;
             header?: never;
@@ -47,23 +132,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Advice */
-        post: operations["advice_api_advice_post"];
+        /** Offer Check */
+        post: operations["offer_check_api_offer_check_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/alerts": {
+    "/api/margin": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Alerts */
-        get: operations["alerts_api_alerts_get"];
+        /** Margin */
+        get: operations["margin_api_margin_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -72,15 +157,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/replay/{case_id}": {
+    "/api/crop-plan": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Replay */
-        get: operations["replay_api_replay__case_id__get"];
+        /** Crop Plan */
+        get: operations["crop_plan_api_crop_plan_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -89,16 +174,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/backtest": {
+    "/api/auth/login": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Backtest */
-        get: operations["backtest_api_backtest_get"];
+        get?: never;
         put?: never;
+        /** Login */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/farmers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_farmers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/farmers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_farmers_me_get"];
+        /** Update Me */
+        put: operations["update_me_api_farmers_me_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -162,34 +282,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AdviceRequest */
-        AdviceRequest: {
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
-            /** Quantity Maund */
-            quantity_maund: number;
-            /**
-             * Storage
-             * @enum {string}
-             */
-            storage: "none" | "home" | "cold_store" | "warehouse";
-            /** Storage Cost Per Maund Week */
-            storage_cost_per_maund_week?: number | null;
-            /** Spoilage Pct Week */
-            spoilage_pct_week?: number | null;
-            /** Finance Cost Pct Month */
-            finance_cost_pct_month?: number | null;
-            /** As Of */
-            as_of?: string | null;
-            /**
-             * Lang
-             * @default ur
-             * @enum {string}
-             */
-            lang: "ur" | "en";
-        };
         /** AdviceResponse */
         AdviceResponse: {
             /** Data Source */
@@ -197,146 +289,70 @@ export interface components {
             /** Is Synthetic */
             is_synthetic: boolean;
             /**
-             * As Of
-             * Format: date
-             */
-            as_of: string;
-            /**
-             * Verdict
+             * Crop
              * @enum {string}
              */
-            verdict: "sell_now" | "sell_elsewhere" | "store" | "split";
-            /** Verdict Text */
-            verdict_text: string;
-            /** Rupee Difference */
-            rupee_difference: number;
-            /** Best Week */
-            best_week: number;
-            /** Reasons */
-            reasons: string[];
-            /** Risk Line */
-            risk_line: string;
-            alternative_mandi: components["schemas"]["AlternativeMandi"] | null;
-            /** Alerts */
-            alerts: components["schemas"]["EventRef"][];
-            /** Alarm Tier */
-            alarm_tier: ("normal" | "stress" | "alert" | "crisis") | null;
-            /** Assumptions */
-            assumptions: components["schemas"]["AssumptionUsed"][];
-        };
-        /** Alarm */
-        Alarm: {
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
             /**
-             * Date
-             * Format: date
-             */
-            date: string;
-            /** Indicator */
-            indicator: number;
-            /**
-             * Tier
+             * Mandi
              * @enum {string}
              */
-            tier: "normal" | "stress" | "alert" | "crisis";
-            /** Flags */
-            flags: ("below_3yr_harvest_avg" | "yoy_drop_over_50pct")[];
-        };
-        /** AlertsResponse */
-        AlertsResponse: {
-            /** Data Source */
-            data_source: string;
-            /** Is Synthetic */
-            is_synthetic: boolean;
-            /** Crop */
-            crop: string;
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
             /**
-             * As Of
-             * Format: date
-             */
-            as_of: string;
-            /** Alarms */
-            alarms: components["schemas"]["Alarm"][];
-            /** Events */
-            events: components["schemas"]["Event"][];
-        };
-        /** AlternativeMandi */
-        AlternativeMandi: {
-            /** Mandi */
-            mandi: string;
-            /** Net Price */
-            net_price: number;
-        };
-        /** AssumptionUsed */
-        AssumptionUsed: {
-            /** Name */
-            name: string;
-            /** Value */
-            value: number;
-            /**
-             * Source
-             * @enum {string}
-             */
-            source: "farmer" | "default";
-        };
-        /** AssumptionValue */
-        AssumptionValue: {
-            /** Value */
-            value: number;
-            /** Source */
-            source: string;
-        };
-        /** Assumptions */
-        Assumptions: {
-            finance_cost_pct_month: components["schemas"]["AssumptionValue"];
-            /** Storage Defaults */
-            storage_defaults: components["schemas"]["StorageDefault"][];
-            /** Transport */
-            transport: components["schemas"]["TransportCost"][];
-        };
-        /** BacktestArtifact */
-        BacktestArtifact: {
-            /** Data Source */
-            data_source: string;
-            /** Is Synthetic */
-            is_synthetic: boolean;
-            /**
-             * Schema Version
+             * Unit
              * @constant
              */
-            schema_version: 1;
-            /** Horizon Weeks */
-            horizon_weeks: number;
-            /** Cutoffs */
-            cutoffs: string[];
-            /** Metrics */
-            metrics: components["schemas"]["MetricRow"][];
-            rupee_backtest: components["schemas"]["RupeeBacktest"] | null;
-            /** Limitations */
-            limitations: string[];
-        };
-        /** BandPoint */
-        BandPoint: {
-            /** Weeks Ahead */
-            weeks_ahead: number;
-            /** Q10 */
-            q10: number;
-            /** Q50 */
-            q50: number;
-            /** Q90 */
-            q90: number;
+            unit: "40kg";
+            /** Quantity Maund */
+            quantity_maund: number;
+            /**
+             * Signal
+             * @enum {string}
+             */
+            signal: "SELL" | "WAIT";
+            /** Signal Ur */
+            signal_ur: string;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "HIGH" | "MEDIUM" | "LOW";
+            /**
+             * Trend
+             * @enum {string}
+             */
+            trend: "UP" | "DOWN" | "STABLE";
+            /** Current Price */
+            current_price: number;
+            /** Predicted Price */
+            predicted_price: number;
+            range: components["schemas"]["PriceRange"];
+            /** Gross Gain */
+            gross_gain: number;
+            /** Interest Cost */
+            interest_cost: number;
+            /** Rupee Impact */
+            rupee_impact: number;
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Price Unchanged Since */
+            price_unchanged_since: string | null;
+            /** Model */
+            model: string;
         };
         /** ChatRequest */
         ChatRequest: {
             /** Question */
             question: string;
-            /** Crop Option */
-            crop_option?: ("Wheat" | "Cotton" | "IRRI" | "SuperBasmati") | null;
+            /** Crop */
+            crop?: ("wheat" | "cotton" | "irri" | "super_basmati") | null;
             /** Mandi */
-            mandi?: ("BahawalPur" | "Vehari" | "RahimYarKhan") | null;
+            mandi?: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
             /** Quantity Maund */
             quantity_maund?: number | null;
         };
@@ -348,77 +364,297 @@ export interface components {
             used_fallback: boolean;
             /** Fallback Reason */
             fallback_reason: ("need_crop_and_mandi" | "no_data" | "service_not_ready" | "rate_limited" | "llm_unavailable" | "unverified_numbers" | "wrong_script") | null;
-            /** Crop Option */
-            crop_option: string | null;
+            /** Crop */
+            crop: ("wheat" | "cotton" | "irri" | "super_basmati") | null;
             /** Mandi */
-            mandi: string | null;
+            mandi: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
             /** Data Source */
             data_source: string;
             /** Is Synthetic */
             is_synthetic: boolean;
         };
-        /** DateRange */
-        DateRange: {
-            /**
-             * Start
-             * Format: date
-             */
-            start: string;
-            /**
-             * End
-             * Format: date
-             */
-            end: string;
-        };
-        /** Event */
-        Event: {
-            /**
-             * Date
-             * Format: date
-             */
-            date: string;
-            /**
-             * Active Until
-             * Format: date
-             */
-            active_until: string;
-            /**
-             * Event Type
-             * @enum {string}
-             */
-            event_type: "border_closure" | "export_ban" | "import_permission" | "procurement_policy" | "flood" | "drought" | "bumper_crop" | "transport_disruption" | "other";
-            /** Crops */
-            crops: string[];
-            /**
-             * Direction
-             * @enum {string}
-             */
-            direction: "up" | "down" | "unclear";
-            /** Region */
-            region: string;
-            /** Headline */
-            headline: string;
-            /** Source Url */
-            source_url: string | null;
-            /**
-             * Confidence
-             * @enum {string}
-             */
-            confidence: "high" | "medium" | "low";
+        /** CompareResponse */
+        CompareResponse: {
+            /** Data Source */
+            data_source: string;
             /** Is Synthetic */
             is_synthetic: boolean;
-        };
-        /** EventRef */
-        EventRef: {
             /**
-             * Event Type
+             * Crop
              * @enum {string}
              */
-            event_type: "border_closure" | "export_ban" | "import_permission" | "procurement_policy" | "flood" | "drought" | "bumper_crop" | "transport_disruption" | "other";
-            /** Headline */
-            headline: string;
-            /** Source Url */
-            source_url: string | null;
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * From Mandi
+             * @enum {string}
+             */
+            from_mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "40kg";
+            /** Quantity Maund */
+            quantity_maund: number;
+            /** Rows */
+            rows: components["schemas"]["CompareRow"][];
+            /** Transport Is Estimate */
+            transport_is_estimate: boolean;
+        };
+        /** CompareRow */
+        CompareRow: {
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Has Data */
+            has_data: boolean;
+            /** Price */
+            price?: number | null;
+            /** Transport Cost */
+            transport_cost?: number | null;
+            /** Net Price */
+            net_price?: number | null;
+            /** Gain Vs Preferred */
+            gain_vs_preferred?: number | null;
+            /** Prices As Of */
+            prices_as_of?: string | null;
+            /** Is Stale */
+            is_stale?: boolean | null;
+        };
+        /** CropInfo */
+        CropInfo: {
+            /** Id */
+            id: string;
+            /** Name Ur */
+            name_ur: string;
+            /** Name En */
+            name_en: string;
+            /**
+             * Season
+             * @enum {string}
+             */
+            season: "RABI" | "KHARIF";
+            /** Sowing Months */
+            sowing_months: [
+                number,
+                number
+            ];
+            /** Harvest Months */
+            harvest_months: [
+                number,
+                number
+            ];
+        };
+        /** CropPlanItem */
+        CropPlanItem: {
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /** Rank */
+            rank: number;
+            /** Latest Price */
+            latest_price: number;
+            /**
+             * Latest Price Date
+             * Format: date
+             */
+            latest_price_date: string;
+            /** Harvest Price Estimate */
+            harvest_price_estimate: number;
+            /** Harvest Price Low */
+            harvest_price_low: number;
+            /** Harvest Price High */
+            harvest_price_high: number;
+            /** Months Ahead */
+            months_ahead: number;
+            /** Yield Maund Per Acre */
+            yield_maund_per_acre: number;
+            /** Cost Per Acre */
+            cost_per_acre: number;
+            /** Profit Per Acre */
+            profit_per_acre: number;
+            /** Expected Profit */
+            expected_profit: number;
+            /**
+             * Risk Level
+             * @enum {string}
+             */
+            risk_level: "LOW" | "MEDIUM" | "HIGH";
+            /** Spread Pct */
+            spread_pct: number | null;
+            /** N Years */
+            n_years: number;
+            /** Sowing Months */
+            sowing_months: [
+                number,
+                number
+            ];
+            /** Harvest Months */
+            harvest_months: [
+                number,
+                number
+            ];
+            /** Best Sell Month */
+            best_sell_month: number | null;
+            /** Best Sell Gain Pct */
+            best_sell_gain_pct: number | null;
+            /** Is Stale */
+            is_stale: boolean;
+        };
+        /** CropPlanResponse */
+        CropPlanResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Land Area Acres */
+            land_area_acres: number;
+            /** Items */
+            items: components["schemas"]["CropPlanItem"][];
+            /** Not Available */
+            not_available: ("wheat" | "cotton" | "irri" | "super_basmati")[];
+            /** Is Estimate */
+            is_estimate: boolean;
+        };
+        /** DataSourceInfo */
+        DataSourceInfo: {
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Covers */
+            covers: string;
+        };
+        /** ExplainResponse */
+        ExplainResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "shap" | "facts";
+            /** Reasons */
+            reasons: components["schemas"]["Reason"][];
+        };
+        /** Farmer */
+        Farmer: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "ur" | "en";
+            /**
+             * District
+             * @enum {string}
+             */
+            district: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Land Area Acres */
+            land_area_acres: number | null;
+            /** Arhti Commission Pct */
+            arhti_commission_pct: number | null;
+            /** Alerts Enabled */
+            alerts_enabled: boolean;
+            /** Crops */
+            crops: components["schemas"]["FarmerCropIn"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** FarmerCropIn */
+        FarmerCropIn: {
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Preferred Mandi
+             * @enum {string}
+             */
+            preferred_mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Harvest Quantity Maund */
+            harvest_quantity_maund: number;
+        };
+        /** FarmerIn */
+        FarmerIn: {
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /**
+             * Language
+             * @default ur
+             * @enum {string}
+             */
+            language: "ur" | "en";
+            /**
+             * District
+             * @enum {string}
+             */
+            district: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Land Area Acres */
+            land_area_acres?: number | null;
+            /** Arhti Commission Pct */
+            arhti_commission_pct?: number | null;
+            /**
+             * Alerts Enabled
+             * @default true
+             */
+            alerts_enabled: boolean;
+            /** Crops */
+            crops?: components["schemas"]["FarmerCropIn"][];
+        };
+        /** FarmerUpdate */
+        FarmerUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Language */
+            language?: ("ur" | "en") | null;
+            /** District */
+            district?: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
+            /** Land Area Acres */
+            land_area_acres?: number | null;
+            /** Arhti Commission Pct */
+            arhti_commission_pct?: number | null;
+            /** Alerts Enabled */
+            alerts_enabled?: boolean | null;
+            /** Crops */
+            crops?: components["schemas"]["FarmerCropIn"][] | null;
         };
         /** ForecastResponse */
         ForecastResponse: {
@@ -426,37 +662,56 @@ export interface components {
             data_source: string;
             /** Is Synthetic */
             is_synthetic: boolean;
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
             /**
-             * As Of
-             * Format: date
+             * Crop
+             * @enum {string}
              */
-            as_of: string;
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
             /**
              * Unit
              * @constant
              */
             unit: "40kg";
-            /** Price Now */
-            price_now: number;
-            /** History */
-            history: components["schemas"]["PricePoint"][];
-            /** Forecast */
-            forecast: components["schemas"]["BandPoint"][];
-            /** Naive */
-            naive: components["schemas"]["NaivePoint"][];
-            /** Model */
-            model: string;
-            /** Mase Vs Naive */
-            mase_vs_naive: number | null;
             /**
-             * Price Type
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+            /** Current Price */
+            current_price: number;
+            /** Predicted Price */
+            predicted_price: number;
+            range: components["schemas"]["PriceRange"];
+            /** Horizon Weeks */
+            horizon_weeks: number;
+            /**
+             * Trend
              * @enum {string}
              */
-            price_type: "wholesale" | "retail";
+            trend: "UP" | "DOWN" | "STABLE";
+            /**
+             * Volatility
+             * @enum {string}
+             */
+            volatility: "STABLE" | "MODERATE" | "VOLATILE";
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "HIGH" | "MEDIUM" | "LOW";
+            /** Model */
+            model: string;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Price Unchanged Since */
+            price_unchanged_since: string | null;
+            /** History */
+            history: components["schemas"]["PricePoint"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -471,6 +726,87 @@ export interface components {
              */
             status: "ok";
         };
+        /** HistoryResponse */
+        HistoryResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "40kg";
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+            /** Weekly */
+            weekly: components["schemas"]["PricePoint"][];
+            /** Seasonal */
+            seasonal: components["schemas"]["SeasonalPoint"][];
+            /** Sowing Months */
+            sowing_months: [
+                number,
+                number
+            ];
+            /** Harvest Months */
+            harvest_months: [
+                number,
+                number
+            ];
+        };
+        /** LoginRequest */
+        LoginRequest: {
+            /** Phone */
+            phone: string;
+        };
+        /** MarginResponse */
+        MarginResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "40kg";
+            /** Price */
+            price: number;
+            /** Production Cost */
+            production_cost: number;
+            /** Cost Confidence */
+            cost_confidence: string;
+            /** Arhti Pct */
+            arhti_pct: number;
+            /** Arhti Amount */
+            arhti_amount: number;
+            /** Profit */
+            profit: number;
+            /** Support Price */
+            support_price: number | null;
+            /** Support Status */
+            support_status: string | null;
+            /** Support Crop Year */
+            support_crop_year: string | null;
+        };
         /** Meta */
         Meta: {
             /** Data Source */
@@ -478,87 +814,34 @@ export interface components {
             /** Is Synthetic */
             is_synthetic: boolean;
             /**
-             * Schema Version
-             * @constant
-             */
-            schema_version: 1;
-            /**
-             * Generated At
-             * Format: date
-             */
-            generated_at: string;
-            /** Crops */
-            crops: components["schemas"]["NamedItem"][];
-            /** Mandis */
-            mandis: components["schemas"]["NamedItem"][];
-            /** Series */
-            series: components["schemas"]["SeriesKey"][];
-            /** Replay Cases */
-            replay_cases: components["schemas"]["ReplayCaseRef"][];
-            date_range: components["schemas"]["DateRange"];
-            /**
-             * Latest As Of
-             * Format: date
-             */
-            latest_as_of: string;
-            /**
              * Unit
              * @constant
              */
             unit: "40kg";
             /**
              * Price Type
-             * @enum {string}
+             * @constant
              */
-            price_type: "wholesale" | "retail";
-            /** Models */
-            models: components["schemas"]["ModelInfo"][];
-            assumptions: components["schemas"]["Assumptions"];
-        };
-        /** MetricRow */
-        MetricRow: {
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
-            /** Model */
-            model: string;
-            /** Mase */
-            mase: number | null;
-            /** Quantile Loss */
-            quantile_loss: number | null;
-            /** Coverage 80 */
-            coverage_80: number | null;
-            /** N Forecasts */
-            n_forecasts: number;
-        };
-        /** ModelInfo */
-        ModelInfo: {
-            /** Name */
-            name: string;
-            /** Version */
-            version: string;
+            price_type: "wholesale";
+            /** Crops */
+            crops: components["schemas"]["CropInfo"][];
+            /** Mandis */
+            mandis: components["schemas"]["NamedItem"][];
+            /** Series */
+            series: components["schemas"]["SeriesInfo"][];
             /**
-             * Role
-             * @enum {string}
+             * Prices As Of
+             * Format: date
              */
-            role: "primary" | "challenger" | "baseline" | "placeholder";
-        };
-        /** NaivePoint */
-        NaivePoint: {
-            /** Weeks Ahead */
-            weeks_ahead: number;
-            /** Price */
-            price: number;
-        };
-        /** NamedAssumption */
-        NamedAssumption: {
-            /** Name */
-            name: string;
-            /** Value */
-            value: number;
-            /** Source */
-            source: string;
+            prices_as_of: string;
+            /** Horizon Weeks */
+            horizon_weeks: number;
+            /** Wait Threshold Pct */
+            wait_threshold_pct: number;
+            /** Interest Pct Per Month */
+            interest_pct_per_month: number;
+            /** Sources */
+            sources: components["schemas"]["DataSourceInfo"][];
         };
         /** NamedItem */
         NamedItem: {
@@ -568,6 +851,70 @@ export interface components {
             name_ur: string;
             /** Name En */
             name_en: string;
+        };
+        /** OfferCheckRequest */
+        OfferCheckRequest: {
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Offer Price */
+            offer_price: number;
+            /**
+             * Quantity Maund
+             * @default 100
+             */
+            quantity_maund: number;
+        };
+        /** OfferCheckResponse */
+        OfferCheckResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "40kg";
+            /** Offer Price */
+            offer_price: number;
+            /** Fair Low */
+            fair_low: number;
+            /** Fair High */
+            fair_high: number;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "below" | "fair" | "above";
+            /** Difference Per Maund */
+            difference_per_maund: number;
+            /** Difference Total */
+            difference_total: number;
+            /** Window Days */
+            window_days: number;
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
         };
         /** PricePoint */
         PricePoint: {
@@ -579,118 +926,65 @@ export interface components {
             /** Price */
             price: number;
         };
-        /** ReplayCaseRef */
-        ReplayCaseRef: {
-            /** Case Id */
-            case_id: string;
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
-            /** Title Ur */
-            title_ur: string;
-            /** Title En */
-            title_en: string;
+        /** PriceRange */
+        PriceRange: {
+            /** Low */
+            low: number;
+            /** High */
+            high: number;
         };
-        /** ReplayResponse */
-        ReplayResponse: {
-            /** Data Source */
-            data_source: string;
-            /** Is Synthetic */
-            is_synthetic: boolean;
-            /** Case Id */
-            case_id: string;
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
-            /** Title */
-            title: string;
-            /** Summary */
-            summary: string;
-            /** Steps */
-            steps: components["schemas"]["ReplayStep"][];
-        };
-        /** ReplayStep */
-        ReplayStep: {
+        /** Reason */
+        Reason: {
+            /** Text Ur */
+            text_ur: string;
+            /** Text En */
+            text_en: string;
             /**
-             * As Of
+             * Direction
+             * @enum {string}
+             */
+            direction: "UP" | "DOWN" | "";
+        };
+        /** SeasonalPoint */
+        SeasonalPoint: {
+            /** Month */
+            month: number;
+            /** Index Median */
+            index_median: number | null;
+            /** Index Min */
+            index_min: number | null;
+            /** Index Max */
+            index_max: number | null;
+            /** N Years */
+            n_years: number;
+        };
+        /** SeriesInfo */
+        SeriesInfo: {
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Prices As Of
              * Format: date
              */
-            as_of: string;
-            /** Price Now */
-            price_now: number;
-            /** Forecast Q10 */
-            forecast_q10: number;
-            /** Forecast Q50 */
-            forecast_q50: number;
-            /** Forecast Q90 */
-            forecast_q90: number;
-            /**
-             * Verdict
-             * @enum {string}
-             */
-            verdict: "sell_now" | "sell_elsewhere" | "store" | "split";
-            /**
-             * Alarm Tier
-             * @enum {string}
-             */
-            alarm_tier: "normal" | "stress" | "alert" | "crisis";
-            /** Events Active */
-            events_active: components["schemas"]["EventRef"][];
-            /** Actual Price 4W Later */
-            actual_price_4w_later?: number | null;
+            prices_as_of: string;
+            /** Latest Price */
+            latest_price: number;
+            /** Is Stale */
+            is_stale: boolean;
         };
-        /** RupeeBacktest */
-        RupeeBacktest: {
-            /** Quantity Maund */
-            quantity_maund: number;
-            /** N Cases */
-            n_cases: number;
-            /** Avg Gain Vs Harvest Pkr */
-            avg_gain_vs_harvest_pkr: number;
-            /** Share Better */
-            share_better: number;
-            /** Worst Case Pkr */
-            worst_case_pkr: number;
-            /** Hindsight Avg Gain Pkr */
-            hindsight_avg_gain_pkr: number;
-            /** Assumptions */
-            assumptions: components["schemas"]["NamedAssumption"][];
-        };
-        /** SeriesKey */
-        SeriesKey: {
-            /** Crop */
-            crop: string;
-            /** Mandi */
-            mandi: string;
-        };
-        /** StorageDefault */
-        StorageDefault: {
-            /** Crop */
-            crop: string;
-            /**
-             * Storage
-             * @enum {string}
-             */
-            storage: "home" | "cold_store" | "warehouse";
-            /** Storage Cost Per Maund Week */
-            storage_cost_per_maund_week: number;
-            /** Spoilage Pct Week */
-            spoilage_pct_week: number;
-            /** Source */
-            source: string;
-        };
-        /** TransportCost */
-        TransportCost: {
-            /** From Mandi */
-            from_mandi: string;
-            /** To Mandi */
-            to_mandi: string;
-            /** Cost Per Maund */
-            cost_per_maund: number;
-            /** Source */
-            source: string;
+        /** TokenResponse */
+        TokenResponse: {
+            /** Token */
+            token: string;
+            farmer: components["schemas"]["Farmer"];
         };
         /** ValidationError */
         ValidationError: {
@@ -704,6 +998,46 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WeatherNow */
+        WeatherNow: {
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /** Tmax C */
+            tmax_c: number | null;
+            /** Tmin C */
+            tmin_c: number | null;
+            /** Precip Mm Wk */
+            precip_mm_wk: number | null;
+            /** Rh Pct */
+            rh_pct: number | null;
+            /** Precip Mm 4W */
+            precip_mm_4w: number | null;
+            /** Hot Days Wk */
+            hot_days_wk: number | null;
+            /** Cached */
+            cached: boolean;
+            /** Source */
+            source: string;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Attribution */
+            attribution: string;
+        };
+        /** WeatherResponse */
+        WeatherResponse: {
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            weather: components["schemas"]["WeatherNow"];
         };
     };
     responses: never;
@@ -737,9 +1071,9 @@ export interface operations {
     forecast_api_forecast_get: {
         parameters: {
             query: {
-                crop: string;
-                mandi: string;
-                /** @description Latest data on or before this date. Omit for latest. */
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Use only data on or before this date. Omit for the latest. */
                 as_of?: string | null;
             };
             header?: never;
@@ -768,18 +1102,120 @@ export interface operations {
             };
         };
     };
-    advice_api_advice_post: {
+    explain_api_explain_get: {
         parameters: {
-            query?: never;
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdviceRequest"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExplainResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
+    };
+    history_api_history_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    current_weather_api_weather_get: {
+        parameters: {
+            query: {
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    advice_api_advice_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Maund. Default: profile, else 100. */
+                quantity_maund?: number | null;
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -801,12 +1237,14 @@ export interface operations {
             };
         };
     };
-    alerts_api_alerts_get: {
+    compare_mandis_api_compare_mandis_get: {
         parameters: {
             query: {
-                crop: string;
-                mandi?: string | null;
-                /** @description Latest data on or before this date. Omit for latest. */
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Maund. Default: profile, else 100. */
+                quantity_maund?: number | null;
+                /** @description Use only data on or before this date. Omit for the latest. */
                 as_of?: string | null;
             };
             header?: never;
@@ -821,7 +1259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlertsResponse"];
+                    "application/json": components["schemas"]["CompareResponse"];
                 };
             };
             /** @description Validation Error */
@@ -835,15 +1273,51 @@ export interface operations {
             };
         };
     };
-    replay_api_replay__case_id__get: {
+    offer_check_api_offer_check_post: {
         parameters: {
             query?: {
-                lang?: "ur" | "en";
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
             };
             header?: never;
-            path: {
-                case_id: string;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfferCheckRequest"];
             };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfferCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    margin_api_margin_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                price: number;
+                arhti_pct?: number | null;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -854,7 +1328,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReplayResponse"];
+                    "application/json": components["schemas"]["MarginResponse"];
                 };
             };
             /** @description Validation Error */
@@ -868,7 +1342,107 @@ export interface operations {
             };
         };
     };
-    backtest_api_backtest_get: {
+    crop_plan_api_crop_plan_get: {
+        parameters: {
+            query?: {
+                mandi?: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
+                land_area_acres?: number | null;
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CropPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_farmers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FarmerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_farmers_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -883,7 +1457,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BacktestArtifact"];
+                    "application/json": components["schemas"]["Farmer"];
+                };
+            };
+        };
+    };
+    update_me_api_farmers_me_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FarmerUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Farmer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

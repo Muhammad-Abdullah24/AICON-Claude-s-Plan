@@ -1,14 +1,15 @@
-"""Bad artifacts must be caught by the checker and must stop the server."""
+"""Bad artifacts must be caught by the checker.
+
+artifacts/ belongs to the superseded plan; the API no longer serves it (hand-off H-B12).
+"""
 
 import json
 import shutil
 
 import pytest
-from fastapi.testclient import TestClient
 
 from backend.app.artifacts import ArtifactError, load_store
-from backend.app.config import REPO_ROOT, Settings
-from backend.app.main import create_app
+from backend.app.config import REPO_ROOT
 
 
 @pytest.fixture
@@ -84,11 +85,3 @@ def test_real_event_needs_a_source(artifacts):
 def test_missing_storage_default(artifacts):
     edit(artifacts, "meta.json", lambda d: d["assumptions"]["storage_defaults"].pop())
     assert "no storage default" in problems(artifacts)
-
-
-def test_server_refuses_to_start_on_bad_artifacts(artifacts):
-    (artifacts / "meta.json").unlink()
-    app = create_app(Settings(artifacts_dir=artifacts, cors_origins=[]))
-    with pytest.raises(ArtifactError):
-        with TestClient(app):
-            pass

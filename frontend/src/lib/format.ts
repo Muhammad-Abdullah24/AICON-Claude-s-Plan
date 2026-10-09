@@ -6,9 +6,13 @@ import type { Lang } from '../i18n'
 
 const rupees = new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 })
 
-/** "Rs 4,250". Negative values keep their sign: "Rs -1,200". */
+/**
+ * "Rs 4,250". Negative values keep their sign: "Rs -1,200". Wrapped in invisible left-to-right isolation
+ * marks (U+2066 ... U+2069) so a figure inside an Urdu sentence is never reordered by right-to-left layout, and
+ * with a non-breaking space so "Rs" never wraps away from its number.
+ */
 export function formatRs(value: number): string {
-  return `Rs ${rupees.format(Math.round(value))}`
+  return `\u2066Rs\u00a0${rupees.format(Math.round(value))}\u2069`
 }
 
 export function formatNumber(value: number): string {

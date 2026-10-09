@@ -1,9 +1,10 @@
-"""FarmSight API (PLAN.md section 14.1).
-
-Reads only from artifacts/ and runs the decision engine. Never imports model
-code. Run from the repo root:
+"""FarmSight API (docs/BLUEPRINT.md section 12). Run from the repo root:
 
     python -m uvicorn backend.app.main:app --reload
+
+Every route is a thin layer over backend/app/services.py (interface I6), which WhatsApp and chat also use, so
+every channel gives the same answer. `as_of` on read routes is the time-machine rule: only data on or before
+that date is used (for replaying past weeks in the demo).
 """
 
 from __future__ import annotations
@@ -13,32 +14,42 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from backend.app import phrasing
-from backend.app.artifacts import ArtifactStore, load_store
+from backend.app import db, services, weather
+from backend.app.auth import current_farmer, make_token, optional_farmer
 from backend.app.channels import whatsapp
 from backend.app.chat import router as chat_router
-from backend.app.config import HISTORY_WEEKS, Settings, get_settings
+from backend.app.config import Settings, get_settings
+from backend.app.ids import CROP_FROM_DATA, CROP_NAMES, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_NAMES, MANDI_TO_DATA
 from backend.app.schemas import (
-    AdviceRequest,
     AdviceResponse,
-    AlertsResponse,
-    AlternativeMandi,
-    AssumptionUsed,
-    BacktestArtifact,
-    EventRef,
+    CompareResponse,
+    CropId,
+    CropPlanResponse,
+    ExplainResponse,
+    Farmer,
+    FarmerIn,
+    FarmerUpdate,
     ForecastResponse,
     Health,
-    Lang,
+    HistoryResponse,
+    LoginRequest,
+    MandiId,
+    MarginResponse,
     Meta,
-    ReplayResponse,
+    OfferCheckRequest,
+    OfferCheckResponse,
+    TokenResponse,
+    WeatherResponse,
 )
-from ml.decision.engine import BandPoint, Costs, DecisionInput, OtherMandi, decide
 
-AsOf = Annotated[dt.date | None, Query(description="Latest data on or before this date. Omit for latest.")]
+AsOf = Annotated[dt.date | None, Query(description="Use only data on or before this date. Omit for the latest.")]
+Quantity = Annotated[float | None, Query(gt=0, le=1_000_000, description="Maund. Default: profile, else 100.")]
+DEFAULT_QUANTITY = 100.0
+DEFAULT_LAND_ACRES = 10.0
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -46,16 +57,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        # Fails loudly on invalid artifacts: the server does not start.
-        app.state.store = load_store(settings.artifacts_dir)
+        db.connect()
+        services._data()  # load and check the data files at start-up, not on the first request
         yield
 
-    app = FastAPI(title="FarmSight API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="FarmSight API", version="0.2.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PUT"],
+        allow_headers=["Content-Type", "Authorization"],
     )
     app.include_router(router)
     app.include_router(whatsapp.router)      # GET/POST /webhooks/whatsapp (Meta Cloud API)
@@ -63,7 +74,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
-        # Anyone opening the backend's address lands on the interactive API docs, not a bare 404.
         return RedirectResponse("/docs")
 
     @app.get("/health", response_model=Health, tags=["ops"])
@@ -74,164 +84,181 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 router = APIRouter(prefix="/api", tags=["api"])
+LABEL = {"data_source": "amis", "is_synthetic": False}
 
 
-def _store(request: Request) -> ArtifactStore:
-    return request.app.state.store
+def _guard(call, *args, **kwargs):
+    """A LookupError from the service layer is a 404 with the reason, never a 500."""
+    try:
+        return call(*args, **kwargs)
+    except LookupError as e:
+        raise HTTPException(404, str(e).strip("'")) from e
 
 
-def _require_series(store: ArtifactStore, crop: str, mandi: str) -> None:
-    if not store.has_series(crop, mandi):
-        raise HTTPException(404, f"No series for crop '{crop}' at mandi '{mandi}'")
+def _quantity(farmer: dict | None, crop: str, quantity: float | None) -> float:
+    if quantity is not None:
+        return quantity
+    for c in (farmer or {}).get("crops", []):
+        if c["crop"] == crop:
+            return c["harvest_quantity_maund"]
+    return DEFAULT_QUANTITY
 
+
+def _farmer_out(f: dict) -> Farmer:
+    return Farmer(**{**f, "phone": "+" + f["phone"]})
+
+
+# ---------------------------------------------------------------- meta
 
 @router.get("/meta", response_model=Meta)
-def meta(request: Request) -> Meta:
-    return _store(request).meta
+def meta() -> Meta:
+    m = services.meta()
+    return Meta(
+        **LABEL, unit="40kg", price_type="wholesale",
+        crops=[{"id": CROP_FROM_DATA[c["crop_option"]], "name_ur": CROP_NAMES[CROP_FROM_DATA[c["crop_option"]]][0],
+                "name_en": CROP_NAMES[CROP_FROM_DATA[c["crop_option"]]][1], "season": c["season"],
+                "sowing_months": c["sowing_months"], "harvest_months": c["harvest_months"]} for c in m["crops"]],
+        mandis=[{"id": k, "name_ur": v[0], "name_en": v[1]} for k, v in MANDI_NAMES.items()],
+        series=[{"crop": CROP_FROM_DATA[s["crop_option"]], "mandi": MANDI_FROM_DATA[s["mandi"]],
+                 "prices_as_of": s["prices_as_of"], "latest_price": s["latest_price"], "is_stale": s["is_stale"]}
+                for s in sorted(m["series"], key=lambda s: (s["crop_option"], s["mandi"]))],
+        prices_as_of=m["prices_as_of"], horizon_weeks=services.HORIZON_WEEKS,
+        wait_threshold_pct=services.WAIT_THRESHOLD_PCT, interest_pct_per_month=m["interest_pct_month"],
+        sources=m["sources"],
+    )
+
+
+# ---------------------------------------------------------------- forecast, explain, history, weather
+
+def _weather_features(mandi: str, as_of: dt.date | None) -> dict | None:
+    """Live weather only matters to a trained model, and never for a past date (it would be today's weather)."""
+    if as_of is not None or not services.model_available():
+        return None
+    return weather.current(mandi)["features"]
 
 
 @router.get("/forecast", response_model=ForecastResponse)
-def forecast(request: Request, crop: str, mandi: str, as_of: AsOf = None) -> ForecastResponse:
-    store = _store(request)
-    _require_series(store, crop, mandi)
-    f = store.forecast_at(crop, mandi, as_of)
-    if f is None:
-        raise HTTPException(404, f"No forecast on or before {as_of}")
+def forecast(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> ForecastResponse:
+    c, m = CROP_TO_DATA[crop], MANDI_TO_DATA[mandi]
+    f = _guard(services.forecast_view, c, m, as_of, _weather_features(m, as_of))
+    h = services.history(c, m, as_of)
     return ForecastResponse(
-        crop=crop,
-        mandi=mandi,
-        as_of=f.as_of,
-        unit=store.meta.unit,
-        price_now=f.price_now,
-        history=store.history_until(crop, mandi, f.as_of, HISTORY_WEEKS),
-        forecast=f.forecast,
-        naive=f.naive,
-        model=f.model,
-        mase_vs_naive=f.mase_vs_naive,
-        price_type=store.meta.price_type,
-        data_source=store.forecasts.data_source,
-        is_synthetic=store.forecasts.is_synthetic,
+        crop=crop, mandi=mandi, unit="40kg", prices_as_of=f["prices_as_of"],
+        current_price=round(f["current_price"], 2), predicted_price=round(f["predicted_price"], 2),
+        range={"low": round(f["q10"], 2), "high": round(f["q90"], 2)}, horizon_weeks=services.HORIZON_WEEKS,
+        trend=f["trend"], volatility=f["volatility"], confidence=f["confidence"],
+        model=f.get("model_version", services.BASELINE_MODEL), is_stale=f["is_stale"],
+        price_unchanged_since=f["price_unchanged_since"],
+        history=[{"date": d, "price": p} for d, p in h["weekly"]],
+        data_source=f.get("data_source", "amis"), is_synthetic=bool(f.get("is_synthetic", False)),
     )
 
 
-@router.post("/advice", response_model=AdviceResponse)
-def advice(request: Request, req: AdviceRequest) -> AdviceResponse:
-    store = _store(request)
-    _require_series(store, req.crop, req.mandi)
-    f = store.forecast_at(req.crop, req.mandi, req.as_of)
+@router.get("/explain", response_model=ExplainResponse)
+def explain(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> ExplainResponse:
+    c, m = CROP_TO_DATA[crop], MANDI_TO_DATA[mandi]
+    f = _guard(services.forecast, c, m, as_of)
+    reasons = services.get_explanation(c, m, as_of)
+    return ExplainResponse(**LABEL, crop=crop, mandi=mandi, prices_as_of=f["prices_as_of"],
+                           source="shap" if f.get("shap") else "facts", reasons=reasons)
+
+
+@router.get("/history", response_model=HistoryResponse)
+def history(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> HistoryResponse:
+    h = _guard(services.history, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], as_of)
+    return HistoryResponse(**LABEL, crop=crop, mandi=mandi, unit="40kg", prices_as_of=h["prices_as_of"],
+                           weekly=[{"date": d, "price": p} for d, p in h["weekly"]], seasonal=h["seasonal"],
+                           sowing_months=h["sowing_months"], harvest_months=h["harvest_months"])
+
+
+@router.get("/weather", response_model=WeatherResponse)
+def current_weather(mandi: MandiId) -> WeatherResponse:
+    w = weather.current(MANDI_TO_DATA[mandi])
+    return WeatherResponse(mandi=mandi, weather={k: v for k, v in w.items() if k != "features"})
+
+
+# ---------------------------------------------------------------- advice, compare, offer, margin, crop plan
+
+@router.get("/advice", response_model=AdviceResponse)
+def advice(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None, as_of: AsOf = None,
+           farmer: dict | None = Depends(optional_farmer)) -> AdviceResponse:  # noqa: B008
+    qty = _quantity(farmer, crop, quantity_maund)
+    a = _guard(services.get_advice, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, None, as_of)
+    if farmer:
+        db.log_recommendation(farmer["id"], crop, mandi, a)
+    keep = AdviceResponse.model_fields.keys() - {"crop", "mandi"}
+    return AdviceResponse(crop=crop, mandi=mandi, **{k: a[k] for k in keep})
+
+
+@router.get("/compare-mandis", response_model=CompareResponse)
+def compare_mandis(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None, as_of: AsOf = None,
+                   farmer: dict | None = Depends(optional_farmer)) -> CompareResponse:  # noqa: B008
+    qty = _quantity(farmer, crop, quantity_maund)
+    rows = _guard(services.compare_mandis, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, as_of)
+    return CompareResponse(**LABEL, crop=crop, from_mandi=mandi, unit="40kg", quantity_maund=qty,
+                           rows=[{**r, "mandi": MANDI_FROM_DATA[r["mandi"]]} for r in rows],
+                           transport_is_estimate=True)
+
+
+@router.post("/offer-check", response_model=OfferCheckResponse)
+def offer_check(body: OfferCheckRequest, as_of: AsOf = None) -> OfferCheckResponse:
+    r = _guard(services.offer_check, CROP_TO_DATA[body.crop], MANDI_TO_DATA[body.mandi], body.offer_price,
+               body.quantity_maund, as_of)
+    return OfferCheckResponse(**LABEL, crop=body.crop, mandi=body.mandi, unit="40kg", offer_price=body.offer_price, **r)
+
+
+@router.get("/margin", response_model=MarginResponse)
+def margin(crop: CropId, price: Annotated[float, Query(gt=0, le=1_000_000)],
+           arhti_pct: Annotated[float | None, Query(ge=0, le=50)] = None,
+           farmer: dict | None = Depends(optional_farmer)) -> MarginResponse:  # noqa: B008
+    pct = arhti_pct if arhti_pct is not None else (farmer or {}).get("arhti_commission_pct")
+    m = services.margin(CROP_TO_DATA[crop], price, pct)
+    return MarginResponse(**LABEL, crop=crop, unit="40kg", price=price, **m)
+
+
+@router.get("/crop-plan", response_model=CropPlanResponse)
+def crop_plan(mandi: MandiId | None = None,
+              land_area_acres: Annotated[float | None, Query(gt=0, le=100_000)] = None, as_of: AsOf = None,
+              farmer: dict | None = Depends(optional_farmer)) -> CropPlanResponse:  # noqa: B008
+    where = mandi or (farmer or {}).get("district") or "bahawalpur"
+    acres = land_area_acres or (farmer or {}).get("land_area_acres") or DEFAULT_LAND_ACRES
+    p = services.crop_plan(MANDI_TO_DATA[where], acres, as_of)
+    items = [{**{k: v for k, v in i.items() if k != "crop_option"}, "crop": CROP_FROM_DATA[i["crop_option"]]}
+             for i in p["items"]]
+    return CropPlanResponse(**LABEL, mandi=where, land_area_acres=acres, items=items,
+                            not_available=[CROP_FROM_DATA[c] for c in p["not_available"]], is_estimate=True)
+
+
+# ---------------------------------------------------------------- farmers and login
+
+@router.post("/auth/login", response_model=TokenResponse, tags=["auth"])
+def login(body: LoginRequest) -> TokenResponse:
+    f = db.get_farmer_by_phone(body.phone)
     if f is None:
-        raise HTTPException(404, f"No forecast on or before {req.as_of}")
-
-    can_store = req.storage != "none"
-    assumptions: list[AssumptionUsed] = []
-
-    def pick(name: str, farmer_value: float | None, default: float) -> float:
-        value = default if farmer_value is None else farmer_value
-        source = "default" if farmer_value is None else "farmer"
-        assumptions.append(AssumptionUsed(name=name, value=value, source=source))
-        return value
-
-    if can_store:
-        d = store.storage_default(req.crop, req.storage)
-        costs = Costs(
-            storage_cost_per_maund_week=pick(
-                "storage_cost_per_maund_week", req.storage_cost_per_maund_week, d.storage_cost_per_maund_week
-            ),
-            spoilage_pct_week=pick("spoilage_pct_week", req.spoilage_pct_week, d.spoilage_pct_week),
-            finance_cost_pct_month=pick(
-                "finance_cost_pct_month",
-                req.finance_cost_pct_month,
-                store.meta.assumptions.finance_cost_pct_month.value,
-            ),
-        )
-    else:
-        costs = Costs(0.0, 0.0, 0.0)  # unused: the engine never stores when can_store is False
-
-    others = []
-    for m in store.mandis_for(req.crop):
-        if m == req.mandi:
-            continue
-        other = store.forecast_at(req.crop, m, f.as_of)
-        transport = store.transport_cost(req.mandi, m)
-        if other is not None and transport is not None:
-            others.append(OtherMandi(mandi=m, price_now=other.price_now, transport_cost_per_maund=transport))
-            assumptions.append(
-                AssumptionUsed(name=f"transport_to_{m}_per_maund", value=transport, source="default")
-            )
-
-    events = store.events_active(req.crop, f.as_of)
-    alarm = store.alarm_at(req.crop, req.mandi, f.as_of)
-
-    decision = decide(DecisionInput(
-        price_now=f.price_now,
-        band=[BandPoint(b.weeks_ahead, b.q10, b.q50, b.q90) for b in f.forecast],
-        can_store=can_store,
-        costs=costs,
-        other_mandis=others,
-        alert_active=bool(events),
-    ))
-
-    lang = req.lang
-    mandi_names = {m.id: getattr(m, f"name_{lang}") for m in store.meta.mandis}
-    best = decision.best_other
-    return AdviceResponse(
-        as_of=f.as_of,
-        verdict=decision.verdict,
-        verdict_text=phrasing.verdict_text(decision.verdict, lang),
-        rupee_difference=round(decision.gain_per_maund * req.quantity_maund),
-        best_week=decision.best_week,
-        reasons=phrasing.reasons_text(decision.reasons, lang, mandi_names),
-        risk_line=phrasing.risk_line(decision.lowest_price, decision.lowest_price_week, lang),
-        alternative_mandi=AlternativeMandi(mandi=best.mandi, net_price=round(best.net_price)) if best else None,
-        alerts=[EventRef(event_type=e.event_type, headline=e.headline, source_url=e.source_url) for e in events],
-        alarm_tier=alarm.tier if alarm else None,
-        assumptions=assumptions,
-        data_source=store.forecasts.data_source,
-        is_synthetic=store.forecasts.is_synthetic,
-    )
+        raise HTTPException(404, "No farmer with this phone number. Register first.")
+    return TokenResponse(token=make_token(f["id"]), farmer=_farmer_out(f))
 
 
-@router.get("/alerts", response_model=AlertsResponse)
-def alerts(request: Request, crop: str, mandi: str | None = None, as_of: AsOf = None) -> AlertsResponse:
-    store = _store(request)
-    if crop not in {c.id for c in store.meta.crops}:
-        raise HTTPException(404, f"Unknown crop '{crop}'")
-    if mandi is not None:
-        _require_series(store, crop, mandi)
-    on = as_of or store.meta.latest_as_of
-    mandis = [mandi] if mandi else store.mandis_for(crop)
-    found = [store.alarm_at(crop, m, on) for m in mandis]
-    return AlertsResponse(
-        crop=crop,
-        as_of=on,
-        alarms=[a for a in found if a is not None],
-        events=store.events_active(crop, on),
-        data_source=store.alarms.data_source,
-        is_synthetic=store.alarms.is_synthetic,
-    )
+@router.post("/farmers", response_model=TokenResponse, status_code=201, tags=["auth"])
+def register(body: FarmerIn) -> TokenResponse:
+    try:
+        f = db.create_farmer(body.model_dump())
+    except ValueError as e:
+        raise HTTPException(409, "This phone number is already registered. Log in instead.") from e
+    return TokenResponse(token=make_token(f["id"]), farmer=_farmer_out(f))
 
 
-@router.get("/replay/{case_id}", response_model=ReplayResponse)
-def replay(request: Request, case_id: str, lang: Lang = "ur") -> ReplayResponse:
-    store = _store(request)
-    case = store.case(case_id)
-    if case is None:
-        raise HTTPException(404, f"Unknown replay case '{case_id}'")
-    return ReplayResponse(
-        case_id=case.case_id,
-        crop=case.crop,
-        mandi=case.mandi,
-        title=getattr(case, f"title_{lang}"),
-        summary=getattr(case, f"summary_{lang}"),
-        steps=case.steps,
-        data_source=store.replay.data_source,
-        is_synthetic=store.replay.is_synthetic,
-    )
+@router.get("/farmers/me", response_model=Farmer, tags=["auth"])
+def me(farmer: dict = Depends(current_farmer)) -> Farmer:  # noqa: B008
+    return _farmer_out(farmer)
 
 
-@router.get("/backtest", response_model=BacktestArtifact)
-def backtest(request: Request) -> BacktestArtifact:
-    return _store(request).backtest
+@router.put("/farmers/me", response_model=Farmer, tags=["auth"])
+def update_me(body: FarmerUpdate, farmer: dict = Depends(current_farmer)) -> Farmer:  # noqa: B008
+    changes = body.model_dump(exclude_unset=True)
+    if "crops" in changes and changes["crops"] is not None:
+        changes["crops"] = [dict(c) for c in changes["crops"]]
+    return _farmer_out(db.update_farmer(farmer["id"], changes))
 
 
 app = create_app()

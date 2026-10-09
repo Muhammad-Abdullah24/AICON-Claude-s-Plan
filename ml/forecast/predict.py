@@ -26,7 +26,7 @@ from ml.explain import reasons
 from ml.features import runtime_features
 from ml.features.build import load_weather, load_weekly
 from ml.features.config import CROP_OPTION, HORIZON_WEEKS
-from ml.features.core import monday_of
+from ml.features.core import WEATHER_COLUMNS, monday_of
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "data" / "processed" / "runtime"
@@ -71,21 +71,21 @@ def _weekly() -> dict[tuple[str, str, str], list[dict]]:
 
 
 @lru_cache(maxsize=1)
-def _daily_dates() -> dict[tuple[str, str, str], list[str]]:
-    """(city, crop, variety) -> sorted dates with a real AMIS daily price, for the exact "prices as of" day."""
-    out: dict[tuple[str, str, str], list[str]] = {}
+def _daily_prices() -> dict[tuple[str, str, str], list[tuple[str, float]]]:
+    """(city, crop, variety) -> sorted (date, Rs per 40 kg) of real AMIS daily prices."""
+    out: dict[tuple[str, str, str], list[tuple[str, float]]] = {}
     with open(ROOT / "data" / "processed" / "farmsight_prices_clean_daily.csv", encoding="utf-8", newline="") as f:
         for r in csv.DictReader(f):
-            out.setdefault((r["city"], r["crop"], r["variety"]), []).append(r["date"])
+            out.setdefault((r["city"], r["crop"], r["variety"]), []).append((r["date"], float(r["price_rs_per_40kg"])))
     return {k: sorted(v) for k, v in out.items()}
 
 
-def _last_price_day(key: tuple[str, str, str], week_start: date, as_of: date | None) -> date:
-    """The last day with a real price in the week of `week_start`, never after `as_of` (H-C3)."""
+def _last_price_day(key: tuple[str, str, str], week_start: date, as_of: date | None) -> tuple[date, float] | None:
+    """The last real AMIS day and price in the week of `week_start`, never after `as_of` (H-C3)."""
     week_end = week_start + timedelta(days=6)
     limit = min(week_end, as_of) if as_of is not None else week_end
-    days = [d for d in _daily_dates().get(key, []) if week_start.isoformat() <= d <= limit.isoformat()]
-    return date.fromisoformat(days[-1]) if days else week_start
+    days = [(d, p) for d, p in _daily_prices().get(key, []) if week_start.isoformat() <= d <= limit.isoformat()]
+    return (date.fromisoformat(days[-1][0]), days[-1][1]) if days else None
 
 
 @lru_cache(maxsize=1)
@@ -133,8 +133,12 @@ def _daily_weather_for(city: str, weather: Iterable[Mapping] | None) -> list[Map
 
 
 def _direction(crop_option: str, city: str, history: list[dict], daily: list[Mapping],
-               week_start: date, current_price: float) -> tuple[dict | None, list[dict]]:
-    """The model's UP / DOWN call and its SHAP reasons, or (None, []) without a model or features."""
+               week_start: date, current_price: float,
+               weather_features: Mapping | None = None) -> tuple[dict | None, list[dict]]:
+    """The model's UP / DOWN call and its SHAP reasons, or (None, []) without a model or features.
+
+    `weather_features`, when given, are already-aggregated weather inputs (backend/app/weather.py) and replace
+    the ones runtime_features would compute from `daily`."""
     loaded = _direction_model()
     if loaded is None:
         return None, []
@@ -145,6 +149,8 @@ def _direction(crop_option: str, city: str, history: list[dict], daily: list[Map
     )
     if row is None:
         return None, []
+    if weather_features is not None:
+        row.update({k: weather_features[k] for k in WEATHER_COLUMNS if k in weather_features})
 
     import xgboost as xgb
 
@@ -167,13 +173,14 @@ def forecast(
     crop_option: str,
     mandi: str,
     as_of: date | None = None,
-    weather: Iterable[Mapping] | None = None,
+    weather: Mapping | Iterable[Mapping] | None = None,
 ) -> dict | None:
     """4-week forecast for one crop option at one mandi, using only data from weeks on or before `as_of`.
 
     `crop_option` is Wheat, Cotton, IRRI or SuperBasmati. `mandi` is the display name ("Rahim Yar Khan") or
-    the AMIS name ("RahimYarKhan"). `as_of` defaults to the latest data. `weather` is a list of daily records
-    ({date, tmax, tmin, precip_mm, rh_mean, et0}) from the live weather service; None uses the stored history.
+    the AMIS name ("RahimYarKhan"). `as_of` defaults to the latest data. `weather` is either the dict from
+    backend/app/weather.current() (aggregated, inputs under "features") or a list of Open-Meteo daily records
+    ({date, tmax, tmin, precip_mm, rh_mean, et0}); None uses the stored history.
 
     Returns None when the series has no observed price on or before `as_of` (e.g. IRRI at Rahim Yar Khan).
     Raises ValueError for an unknown crop option or mandi.
@@ -191,8 +198,9 @@ def forecast(
     if not observed:
         return None
     latest = observed[-1]
-    week_start, current = latest["week_start"], latest["price"]
-    prices_as_of = _last_price_day((city, crop, variety), week_start, as_of)
+    week_start = latest["week_start"]
+    # Today's price is the latest real AMIS day (what the farmer sees, with its date); the model uses weekly inputs.
+    prices_as_of, current = _last_price_day((city, crop, variety), week_start, as_of) or (week_start, latest["price"])
 
     deployed = _deployed()
     band = deployed["band_change_pct"][crop_option]
@@ -200,8 +208,12 @@ def forecast(
 
     direction, shap = None, []
     if crop_option in DIRECTION_CROP_OPTIONS:
-        daily = _daily_weather_for(city, weather)
-        direction, shap = _direction(crop_option, city, history, daily, week_start, current)
+        if isinstance(weather, Mapping):  # weather.current(): aggregated, its inputs under "features"
+            feats = weather.get("features", weather)
+            direction, shap = _direction(crop_option, city, history, [], week_start, current, feats)
+        else:
+            daily = _daily_weather_for(city, weather)
+            direction, shap = _direction(crop_option, city, history, daily, week_start, current)
 
     return {
         "crop_option": crop_option,

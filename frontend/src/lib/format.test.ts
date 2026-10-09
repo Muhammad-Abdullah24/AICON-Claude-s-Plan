@@ -4,9 +4,14 @@ import { addWeeks, formatRs, parseDate, parseTypedNumber } from './format'
 
 describe('format', () => {
   it('formats rupees with Western digits and separators', () => {
-    expect(formatRs(4250)).toBe('Rs 4,250')
-    expect(formatRs(1234567.6)).toBe('Rs 1,234,568')
-    expect(formatRs(-1200)).toBe('Rs -1,200')
+    const visible = (s: string) => s.replace(/[\u2066-\u2069]/g, '').replace(/\u00a0/g, ' ')
+    expect(visible(formatRs(4250))).toBe('Rs 4,250')
+    expect(visible(formatRs(1234567.6))).toBe('Rs 1,234,568')
+    expect(visible(formatRs(-1200))).toBe('Rs -1,200')
+  })
+
+  it('isolates rupee figures so Urdu text never reorders them', () => {
+    expect(formatRs(4250)).toBe('\u2066Rs\u00a04,250\u2069')
   })
 
   it('parses ISO dates as calendar dates without a timezone shift', () => {

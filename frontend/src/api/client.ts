@@ -1,29 +1,45 @@
 /**
- * The only place the front end talks to the backend.
+ * The only place the front end talks to the backend (docs/BLUEPRINT.md section 12).
  *
- * Every type comes from schema.d.ts, which is generated from the backend's
- * Pydantic models (npm run gen:api). Never write an API type by hand: if the
- * backend changes a field, regenerate and TypeScript shows every place to fix.
+ * Every type comes from schema.d.ts, which is generated from the backend's Pydantic models
+ * (npm run gen:api). Never write an API type by hand: if the backend changes a field, regenerate and
+ * TypeScript shows every place to fix.
  */
 import spec from './openapi.json'
 import type { components } from './schema'
 
 type S = components['schemas']
 export type Meta = S['Meta']
-export type ForecastResponse = S['ForecastResponse']
-export type AdviceRequest = S['AdviceRequest']
-export type AdviceResponse = S['AdviceResponse']
-export type AlertsResponse = S['AlertsResponse']
-export type ReplayResponse = S['ReplayResponse']
-export type BacktestArtifact = S['BacktestArtifact']
-export type Verdict = AdviceResponse['verdict']
-export type Storage = AdviceRequest['storage']
 export type NamedItem = S['NamedItem']
+export type CropInfo = S['CropInfo']
+export type SeriesInfo = S['SeriesInfo']
+export type ForecastResponse = S['ForecastResponse']
+export type ExplainResponse = S['ExplainResponse']
+export type Reason = S['Reason']
+export type HistoryResponse = S['HistoryResponse']
+export type AdviceResponse = S['AdviceResponse']
+export type CompareResponse = S['CompareResponse']
+export type CompareRow = S['CompareRow']
+export type OfferCheckResponse = S['OfferCheckResponse']
+export type MarginResponse = S['MarginResponse']
+export type CropPlanResponse = S['CropPlanResponse']
+export type CropPlanItem = S['CropPlanItem']
+export type WeatherResponse = S['WeatherResponse']
+export type Farmer = S['Farmer']
+export type FarmerIn = S['FarmerIn']
+export type FarmerUpdate = S['FarmerUpdate']
+export type TokenResponse = S['TokenResponse']
+export type ChatResponse = S['ChatResponse']
+export type CropId = ForecastResponse['crop']
+export type MandiId = S['ForecastResponse']['mandi']
+export type Signal = AdviceResponse['signal']
 
 /** Input limits, read from the backend's schema so the two can never disagree. */
-export const QUANTITY_MAX: number = spec.components.schemas.AdviceRequest.properties.quantity_maund.maximum
+export const QUANTITY_MAX: number = spec.components.schemas.OfferCheckRequest.properties.quantity_maund.maximum
+export const QUESTION_MAX: number = spec.components.schemas.ChatRequest.properties.question.maxLength
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+const TOKEN_KEY = 'farmsight.token'
 
 export class ApiError extends Error {
   readonly status: number
@@ -33,12 +49,47 @@ export class ApiError extends Error {
   }
 }
 
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null // storage blocked: the farmer simply stays a guest
+  }
+}
+
+export function setToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    // not fatal
+  }
+}
+
+/**
+ * A saved login the server rejects (expired, or signed with a secret from before a restart) is dropped and the
+ * request is sent again as a guest, so an old token never breaks the public screens.
+ */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  try {
+    return await send<T>(path, init, getToken())
+  } catch (e) {
+    if (!(e instanceof ApiError && e.status === 401 && getToken())) throw e
+    setToken(null)
+    return send<T>(path, init, null)
+  }
+}
+
+async function send<T>(path: string, init: RequestInit | undefined, token: string | null): Promise<T> {
   let res: Response
   try {
     res = await fetch(BASE + path, {
       ...init,
-      headers: { Accept: 'application/json', ...(init?.body ? { 'Content-Type': 'application/json' } : {}) },
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     })
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') throw e
@@ -57,27 +108,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T
 }
 
-function query(params: Record<string, string | null | undefined>): string {
+function query(params: Record<string, string | number | null | undefined>): string {
   const q = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) if (v != null && v !== '') q.set(k, v)
+  for (const [k, v] of Object.entries(params)) if (v != null && v !== '') q.set(k, String(v))
   const s = q.toString()
   return s ? `?${s}` : ''
 }
 
+type Pair = { crop: string; mandi: string; as_of?: string | null }
+const post = (body: unknown) => ({ method: 'POST', body: JSON.stringify(body) })
+
 export const api = {
   meta: (signal?: AbortSignal) => request<Meta>('/api/meta', { signal }),
-
-  forecast: (p: { crop: string; mandi: string; as_of?: string | null }, signal?: AbortSignal) =>
-    request<ForecastResponse>(`/api/forecast${query(p)}`, { signal }),
-
-  advice: (body: AdviceRequest, signal?: AbortSignal) =>
-    request<AdviceResponse>('/api/advice', { method: 'POST', body: JSON.stringify(body), signal }),
-
-  alerts: (p: { crop: string; mandi?: string | null; as_of?: string | null }, signal?: AbortSignal) =>
-    request<AlertsResponse>(`/api/alerts${query(p)}`, { signal }),
-
-  replay: (caseId: string, lang: 'ur' | 'en', signal?: AbortSignal) =>
-    request<ReplayResponse>(`/api/replay/${encodeURIComponent(caseId)}${query({ lang })}`, { signal }),
-
-  backtest: (signal?: AbortSignal) => request<BacktestArtifact>('/api/backtest', { signal }),
+  forecast: (p: Pair, signal?: AbortSignal) => request<ForecastResponse>(`/api/forecast${query(p)}`, { signal }),
+  explain: (p: Pair, signal?: AbortSignal) => request<ExplainResponse>(`/api/explain${query(p)}`, { signal }),
+  history: (p: Pair, signal?: AbortSignal) => request<HistoryResponse>(`/api/history${query(p)}`, { signal }),
+  advice: (p: Pair & { quantity_maund?: number }, signal?: AbortSignal) =>
+    request<AdviceResponse>(`/api/advice${query(p)}`, { signal }),
+  compare: (p: Pair & { quantity_maund?: number }, signal?: AbortSignal) =>
+    request<CompareResponse>(`/api/compare-mandis${query(p)}`, { signal }),
+  cropPlan: (p: { mandi?: string; land_area_acres?: number }, signal?: AbortSignal) =>
+    request<CropPlanResponse>(`/api/crop-plan${query(p)}`, { signal }),
+  offerCheck: (body: { crop: string; mandi: string; offer_price: number; quantity_maund: number }) =>
+    request<OfferCheckResponse>('/api/offer-check', post(body)),
+  margin: (p: { crop: string; price: number; arhti_pct?: number | null }, signal?: AbortSignal) =>
+    request<MarginResponse>(`/api/margin${query(p)}`, { signal }),
+  weather: (mandi: string, signal?: AbortSignal) =>
+    request<WeatherResponse>(`/api/weather${query({ mandi })}`, { signal }),
+  chat: (body: { question: string; crop?: string; mandi?: string; quantity_maund?: number }) =>
+    request<ChatResponse>('/api/chat', post(body)),
+  login: (phone: string) => request<TokenResponse>('/api/auth/login', post({ phone })),
+  register: (body: FarmerIn) => request<TokenResponse>('/api/farmers', post(body)),
+  me: (signal?: AbortSignal) => request<Farmer>('/api/farmers/me', { signal }),
+  updateMe: (body: FarmerUpdate) => request<Farmer>('/api/farmers/me', { method: 'PUT', body: JSON.stringify(body) }),
 }

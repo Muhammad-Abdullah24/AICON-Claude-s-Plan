@@ -12,6 +12,11 @@ I2_KEYS = {
 needs_xgboost = pytest.mark.skipif(importlib.util.find_spec("xgboost") is None, reason="needs xgboost")
 
 
+def test_today_is_the_latest_daily_price_not_the_week_average():
+    out = forecast("Cotton", "Bahawalpur")
+    assert (out["prices_as_of"], out["current_price"]) == ("2026-10-09", 9200.0)
+
+
 def _latest_observed(city, crop, variety):
     return [h for h in predict._weekly()[(city, crop, variety)] if h["filled"] == 0][-1]
 
@@ -32,7 +37,8 @@ def test_baseline_price_is_the_latest_observed_amis_price():
     assert out["week_start"] == latest["week_start"].isoformat()
     # the exact last AMIS day in that week, as in series_coverage.csv (H-C3)
     assert out["prices_as_of"] == "2026-10-09"
-    assert out["current_price"] == round(latest["price"], 2)
+    # today's price is the last real AMIS day's price, as in series_coverage.csv
+    assert out["current_price"] == 3820.0
     assert out["predicted_price"] == out["current_price"]
     assert out["trend"] == "STABLE"
 
@@ -108,3 +114,15 @@ def test_prices_as_of_is_a_real_day_and_never_after_as_of():
     out = forecast("Wheat", "Bahawalpur", as_of=date(2025, 3, 26))
     assert out["week_start"] == "2025-03-24"
     assert "2025-03-24" <= out["prices_as_of"] <= "2025-03-26"
+
+
+@needs_xgboost
+def test_accepts_the_weather_services_aggregated_dict():
+    from ml.features import weather_features
+
+    daily = predict._daily_weather_for("BahawalPur", None)
+    feats = weather_features(daily, date(2026, 9, 28))
+    as_dict = forecast("Wheat", "Bahawalpur", weather={"features": feats, "cached": False})
+    as_daily = forecast("Wheat", "Bahawalpur", weather=daily)
+    assert as_dict["direction"]["call"] in {"UP", "DOWN"} and as_daily["direction"]["call"] in {"UP", "DOWN"}
+    assert as_dict["current_price"] == as_daily["current_price"]

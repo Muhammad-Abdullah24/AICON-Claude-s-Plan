@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "FarmSight API",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "paths": {
     "/api/meta": {
@@ -39,6 +39,12 @@
             "in": "query",
             "required": true,
             "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
               "type": "string",
               "title": "Crop"
             }
@@ -48,6 +54,11 @@
             "in": "query",
             "required": true,
             "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
               "type": "string",
               "title": "Mandi"
             }
@@ -66,10 +77,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Latest data on or before this date. Omit for latest.",
+              "description": "Use only data on or before this date. Omit for the latest.",
               "title": "As Of"
             },
-            "description": "Latest data on or before this date. Omit for latest."
+            "description": "Use only data on or before this date. Omit for the latest."
           }
         ],
         "responses": {
@@ -96,23 +107,297 @@
         }
       }
     },
+    "/api/explain": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Explain",
+        "operationId": "explain_api_explain_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "History",
+        "operationId": "history_api_history_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weather": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Current Weather",
+        "operationId": "current_weather_api_weather_get",
+        "parameters": [
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/advice": {
-      "post": {
+      "get": {
         "tags": [
           "api"
         ],
         "summary": "Advice",
-        "operationId": "advice_api_advice_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdviceRequest"
-              }
+        "operationId": "advice_api_advice_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
             }
           },
-          "required": true
-        },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "quantity_maund",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maund. Default: profile, else 100.",
+              "title": "Quantity Maund"
+            },
+            "description": "Maund. Default: profile, else 100."
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -137,19 +422,30 @@
         }
       }
     },
-    "/api/alerts": {
+    "/api/compare-mandis": {
       "get": {
         "tags": [
           "api"
         ],
-        "summary": "Alerts",
-        "operationId": "alerts_api_alerts_get",
+        "summary": "Compare Mandis",
+        "operationId": "compare_mandis_api_compare_mandis_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "crop",
             "in": "query",
             "required": true,
             "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
               "type": "string",
               "title": "Crop"
             }
@@ -157,10 +453,250 @@
           {
             "name": "mandi",
             "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "quantity_maund",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maund. Default: profile, else 100.",
+              "title": "Quantity Maund"
+            },
+            "description": "Maund. Default: profile, else 100."
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offer-check": {
+      "post": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Offer Check",
+        "operationId": "offer_check_api_offer_check_post",
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/margin": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Margin",
+        "operationId": "margin_api_margin_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "price",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 1000000,
+              "exclusiveMinimum": 0,
+              "title": "Price"
+            }
+          },
+          {
+            "name": "arhti_pct",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 50,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Arhti Pct"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/crop-plan": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Crop Plan",
+        "operationId": "crop_plan_api_crop_plan_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "bahawalpur",
+                    "vehari",
+                    "rahim_yar_khan"
+                  ],
                   "type": "string"
                 },
                 {
@@ -168,6 +704,24 @@
                 }
               ],
               "title": "Mandi"
+            }
+          },
+          {
+            "name": "land_area_acres",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 100000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Land Area Acres"
             }
           },
           {
@@ -184,10 +738,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Latest data on or before this date. Omit for latest.",
+              "description": "Use only data on or before this date. Omit for the latest.",
               "title": "As Of"
             },
-            "description": "Latest data on or before this date. Omit for latest."
+            "description": "Use only data on or before this date. Omit for the latest."
           }
         ],
         "responses": {
@@ -196,7 +750,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertsResponse"
+                  "$ref": "#/components/schemas/CropPlanResponse"
                 }
               }
             }
@@ -214,45 +768,31 @@
         }
       }
     },
-    "/api/replay/{case_id}": {
-      "get": {
+    "/api/auth/login": {
+      "post": {
         "tags": [
-          "api"
+          "api",
+          "auth"
         ],
-        "summary": "Replay",
-        "operationId": "replay_api_replay__case_id__get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Case Id"
+        "summary": "Login",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
             }
           },
-          {
-            "name": "lang",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "ur",
-                "en"
-              ],
-              "type": "string",
-              "default": "ur",
-              "title": "Lang"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReplayResponse"
+                  "$ref": "#/components/schemas/TokenResponse"
                 }
               }
             }
@@ -270,25 +810,118 @@
         }
       }
     },
-    "/api/backtest": {
+    "/api/farmers": {
+      "post": {
+        "tags": [
+          "api",
+          "auth"
+        ],
+        "summary": "Register",
+        "operationId": "register_api_farmers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farmers/me": {
       "get": {
         "tags": [
-          "api"
+          "api",
+          "auth"
         ],
-        "summary": "Backtest",
-        "operationId": "backtest_api_backtest_get",
+        "summary": "Me",
+        "operationId": "me_api_farmers_me_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BacktestArtifact"
+                  "$ref": "#/components/schemas/Farmer"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "api",
+          "auth"
+        ],
+        "summary": "Update Me",
+        "operationId": "update_me_api_farmers_me_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FarmerUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Farmer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/webhooks/whatsapp": {
@@ -413,7 +1046,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/health": {
@@ -440,102 +1078,6 @@
   },
   "components": {
     "schemas": {
-      "AdviceRequest": {
-        "properties": {
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "quantity_maund": {
-            "type": "number",
-            "maximum": 1000000.0,
-            "exclusiveMinimum": 0.0,
-            "title": "Quantity Maund"
-          },
-          "storage": {
-            "type": "string",
-            "enum": [
-              "none",
-              "home",
-              "cold_store",
-              "warehouse"
-            ],
-            "title": "Storage"
-          },
-          "storage_cost_per_maund_week": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Cost Per Maund Week"
-          },
-          "spoilage_pct_week": {
-            "anyOf": [
-              {
-                "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Spoilage Pct Week"
-          },
-          "finance_cost_pct_month": {
-            "anyOf": [
-              {
-                "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Finance Cost Pct Month"
-          },
-          "as_of": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "As Of"
-          },
-          "lang": {
-            "type": "string",
-            "enum": [
-              "ur",
-              "en"
-            ],
-            "title": "Lang",
-            "default": "ur"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "crop",
-          "mandi",
-          "quantity_maund",
-          "storage"
-        ],
-        "title": "AdviceRequest"
-      },
       "AdviceResponse": {
         "properties": {
           "data_source": {
@@ -546,84 +1088,111 @@
             "type": "boolean",
             "title": "Is Synthetic"
           },
-          "as_of": {
-            "type": "string",
-            "format": "date",
-            "title": "As Of"
-          },
-          "verdict": {
+          "crop": {
             "type": "string",
             "enum": [
-              "sell_now",
-              "sell_elsewhere",
-              "store",
-              "split"
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
             ],
-            "title": "Verdict"
+            "title": "Crop"
           },
-          "verdict_text": {
+          "mandi": {
             "type": "string",
-            "title": "Verdict Text"
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
           },
-          "rupee_difference": {
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "quantity_maund": {
             "type": "number",
-            "title": "Rupee Difference"
+            "title": "Quantity Maund"
           },
-          "best_week": {
-            "type": "integer",
-            "title": "Best Week"
-          },
-          "reasons": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Reasons"
-          },
-          "risk_line": {
+          "signal": {
             "type": "string",
-            "title": "Risk Line"
+            "enum": [
+              "SELL",
+              "WAIT"
+            ],
+            "title": "Signal"
           },
-          "alternative_mandi": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AlternativeMandi"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "signal_ur": {
+            "type": "string",
+            "title": "Signal Ur"
           },
-          "alerts": {
-            "items": {
-              "$ref": "#/components/schemas/EventRef"
-            },
-            "type": "array",
-            "title": "Alerts"
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "title": "Confidence"
           },
-          "alarm_tier": {
+          "trend": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "STABLE"
+            ],
+            "title": "Trend"
+          },
+          "current_price": {
+            "type": "number",
+            "title": "Current Price"
+          },
+          "predicted_price": {
+            "type": "number",
+            "title": "Predicted Price"
+          },
+          "range": {
+            "$ref": "#/components/schemas/PriceRange"
+          },
+          "gross_gain": {
+            "type": "integer",
+            "title": "Gross Gain"
+          },
+          "interest_cost": {
+            "type": "integer",
+            "title": "Interest Cost"
+          },
+          "rupee_impact": {
+            "type": "integer",
+            "title": "Rupee Impact"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
             "anyOf": [
               {
                 "type": "string",
-                "enum": [
-                  "normal",
-                  "stress",
-                  "alert",
-                  "crisis"
-                ]
+                "format": "date"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Alarm Tier"
+            "title": "Price Unchanged Since"
           },
-          "assumptions": {
-            "items": {
-              "$ref": "#/components/schemas/AssumptionUsed"
-            },
-            "type": "array",
-            "title": "Assumptions"
+          "model": {
+            "type": "string",
+            "title": "Model"
           }
         },
         "additionalProperties": false,
@@ -631,315 +1200,26 @@
         "required": [
           "data_source",
           "is_synthetic",
-          "as_of",
-          "verdict",
-          "verdict_text",
-          "rupee_difference",
-          "best_week",
-          "reasons",
-          "risk_line",
-          "alternative_mandi",
-          "alerts",
-          "alarm_tier",
-          "assumptions"
+          "crop",
+          "mandi",
+          "unit",
+          "quantity_maund",
+          "signal",
+          "signal_ur",
+          "confidence",
+          "trend",
+          "current_price",
+          "predicted_price",
+          "range",
+          "gross_gain",
+          "interest_cost",
+          "rupee_impact",
+          "prices_as_of",
+          "is_stale",
+          "price_unchanged_since",
+          "model"
         ],
         "title": "AdviceResponse"
-      },
-      "Alarm": {
-        "properties": {
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "date": {
-            "type": "string",
-            "format": "date",
-            "title": "Date"
-          },
-          "indicator": {
-            "type": "number",
-            "title": "Indicator"
-          },
-          "tier": {
-            "type": "string",
-            "enum": [
-              "normal",
-              "stress",
-              "alert",
-              "crisis"
-            ],
-            "title": "Tier"
-          },
-          "flags": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "below_3yr_harvest_avg",
-                "yoy_drop_over_50pct"
-              ]
-            },
-            "type": "array",
-            "title": "Flags"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "crop",
-          "mandi",
-          "date",
-          "indicator",
-          "tier",
-          "flags"
-        ],
-        "title": "Alarm"
-      },
-      "AlertsResponse": {
-        "properties": {
-          "data_source": {
-            "type": "string",
-            "title": "Data Source"
-          },
-          "is_synthetic": {
-            "type": "boolean",
-            "title": "Is Synthetic"
-          },
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "as_of": {
-            "type": "string",
-            "format": "date",
-            "title": "As Of"
-          },
-          "alarms": {
-            "items": {
-              "$ref": "#/components/schemas/Alarm"
-            },
-            "type": "array",
-            "title": "Alarms"
-          },
-          "events": {
-            "items": {
-              "$ref": "#/components/schemas/Event"
-            },
-            "type": "array",
-            "title": "Events"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "data_source",
-          "is_synthetic",
-          "crop",
-          "as_of",
-          "alarms",
-          "events"
-        ],
-        "title": "AlertsResponse"
-      },
-      "AlternativeMandi": {
-        "properties": {
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "net_price": {
-            "type": "number",
-            "title": "Net Price"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "mandi",
-          "net_price"
-        ],
-        "title": "AlternativeMandi"
-      },
-      "AssumptionUsed": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "value": {
-            "type": "number",
-            "title": "Value"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "farmer",
-              "default"
-            ],
-            "title": "Source"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "value",
-          "source"
-        ],
-        "title": "AssumptionUsed"
-      },
-      "AssumptionValue": {
-        "properties": {
-          "value": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Value"
-          },
-          "source": {
-            "type": "string",
-            "title": "Source"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "value",
-          "source"
-        ],
-        "title": "AssumptionValue"
-      },
-      "Assumptions": {
-        "properties": {
-          "finance_cost_pct_month": {
-            "$ref": "#/components/schemas/AssumptionValue"
-          },
-          "storage_defaults": {
-            "items": {
-              "$ref": "#/components/schemas/StorageDefault"
-            },
-            "type": "array",
-            "title": "Storage Defaults"
-          },
-          "transport": {
-            "items": {
-              "$ref": "#/components/schemas/TransportCost"
-            },
-            "type": "array",
-            "title": "Transport"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "finance_cost_pct_month",
-          "storage_defaults",
-          "transport"
-        ],
-        "title": "Assumptions"
-      },
-      "BacktestArtifact": {
-        "properties": {
-          "data_source": {
-            "type": "string",
-            "title": "Data Source"
-          },
-          "is_synthetic": {
-            "type": "boolean",
-            "title": "Is Synthetic"
-          },
-          "schema_version": {
-            "type": "integer",
-            "const": 1,
-            "title": "Schema Version"
-          },
-          "horizon_weeks": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Horizon Weeks"
-          },
-          "cutoffs": {
-            "items": {
-              "type": "string",
-              "format": "date"
-            },
-            "type": "array",
-            "title": "Cutoffs"
-          },
-          "metrics": {
-            "items": {
-              "$ref": "#/components/schemas/MetricRow"
-            },
-            "type": "array",
-            "title": "Metrics"
-          },
-          "rupee_backtest": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RupeeBacktest"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "limitations": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Limitations"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "data_source",
-          "is_synthetic",
-          "schema_version",
-          "horizon_weeks",
-          "cutoffs",
-          "metrics",
-          "rupee_backtest",
-          "limitations"
-        ],
-        "title": "BacktestArtifact"
-      },
-      "BandPoint": {
-        "properties": {
-          "weeks_ahead": {
-            "type": "integer",
-            "maximum": 12.0,
-            "minimum": 1.0,
-            "title": "Weeks Ahead"
-          },
-          "q10": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Q10"
-          },
-          "q50": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Q50"
-          },
-          "q90": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Q90"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "weeks_ahead",
-          "q10",
-          "q50",
-          "q90"
-        ],
-        "title": "BandPoint"
       },
       "ChatRequest": {
         "properties": {
@@ -949,31 +1229,31 @@
             "minLength": 1,
             "title": "Question"
           },
-          "crop_option": {
+          "crop": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
-                  "Wheat",
-                  "Cotton",
-                  "IRRI",
-                  "SuperBasmati"
+                  "wheat",
+                  "cotton",
+                  "irri",
+                  "super_basmati"
                 ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Crop Option"
+            "title": "Crop"
           },
           "mandi": {
             "anyOf": [
               {
                 "type": "string",
                 "enum": [
-                  "BahawalPur",
-                  "Vehari",
-                  "RahimYarKhan"
+                  "bahawalpur",
+                  "vehari",
+                  "rahim_yar_khan"
                 ]
               },
               {
@@ -996,6 +1276,7 @@
             "title": "Quantity Maund"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "question"
@@ -1032,21 +1313,32 @@
             ],
             "title": "Fallback Reason"
           },
-          "crop_option": {
+          "crop": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "wheat",
+                  "cotton",
+                  "irri",
+                  "super_basmati"
+                ]
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Crop Option"
+            "title": "Crop"
           },
           "mandi": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "bahawalpur",
+                  "vehari",
+                  "rahim_yar_khan"
+                ]
               },
               {
                 "type": "null"
@@ -1063,180 +1355,854 @@
             "title": "Is Synthetic"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "answer",
           "used_fallback",
           "fallback_reason",
-          "crop_option",
+          "crop",
           "mandi",
           "data_source",
           "is_synthetic"
         ],
         "title": "ChatResponse"
       },
-      "DateRange": {
+      "CompareResponse": {
         "properties": {
-          "start": {
+          "data_source": {
             "type": "string",
-            "format": "date",
-            "title": "Start"
-          },
-          "end": {
-            "type": "string",
-            "format": "date",
-            "title": "End"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "start",
-          "end"
-        ],
-        "title": "DateRange"
-      },
-      "Event": {
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date",
-            "title": "Date"
-          },
-          "active_until": {
-            "type": "string",
-            "format": "date",
-            "title": "Active Until"
-          },
-          "event_type": {
-            "type": "string",
-            "enum": [
-              "border_closure",
-              "export_ban",
-              "import_permission",
-              "procurement_policy",
-              "flood",
-              "drought",
-              "bumper_crop",
-              "transport_disruption",
-              "other"
-            ],
-            "title": "Event Type"
-          },
-          "crops": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Crops"
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "up",
-              "down",
-              "unclear"
-            ],
-            "title": "Direction"
-          },
-          "region": {
-            "type": "string",
-            "title": "Region"
-          },
-          "headline": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Headline"
-          },
-          "source_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Url"
-          },
-          "confidence": {
-            "type": "string",
-            "enum": [
-              "high",
-              "medium",
-              "low"
-            ],
-            "title": "Confidence"
+            "title": "Data Source"
           },
           "is_synthetic": {
             "type": "boolean",
             "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "from_mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "From Mandi"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "quantity_maund": {
+            "type": "number",
+            "title": "Quantity Maund"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/CompareRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "transport_is_estimate": {
+            "type": "boolean",
+            "title": "Transport Is Estimate"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "date",
-          "active_until",
-          "event_type",
-          "crops",
-          "direction",
-          "region",
-          "headline",
-          "source_url",
-          "confidence",
-          "is_synthetic"
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "from_mandi",
+          "unit",
+          "quantity_maund",
+          "rows",
+          "transport_is_estimate"
         ],
-        "title": "Event"
+        "title": "CompareResponse"
       },
-      "EventRef": {
+      "CompareRow": {
         "properties": {
-          "event_type": {
+          "mandi": {
             "type": "string",
             "enum": [
-              "border_closure",
-              "export_ban",
-              "import_permission",
-              "procurement_policy",
-              "flood",
-              "drought",
-              "bumper_crop",
-              "transport_disruption",
-              "other"
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
             ],
-            "title": "Event Type"
+            "title": "Mandi"
           },
-          "headline": {
-            "type": "string",
-            "title": "Headline"
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
           },
-          "source_url": {
+          "price": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
+                "type": "number"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Source Url"
+            "title": "Price"
+          },
+          "transport_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport Cost"
+          },
+          "net_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Price"
+          },
+          "gain_vs_preferred": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gain Vs Preferred"
+          },
+          "prices_as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices As Of"
+          },
+          "is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Stale"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "event_type",
-          "headline",
-          "source_url"
+          "mandi",
+          "has_data"
         ],
-        "title": "EventRef"
+        "title": "CompareRow"
+      },
+      "CropInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name_ur": {
+            "type": "string",
+            "title": "Name Ur"
+          },
+          "name_en": {
+            "type": "string",
+            "title": "Name En"
+          },
+          "season": {
+            "type": "string",
+            "enum": [
+              "RABI",
+              "KHARIF"
+            ],
+            "title": "Season"
+          },
+          "sowing_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Sowing Months"
+          },
+          "harvest_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Harvest Months"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name_ur",
+          "name_en",
+          "season",
+          "sowing_months",
+          "harvest_months"
+        ],
+        "title": "CropInfo"
+      },
+      "CropPlanItem": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "latest_price": {
+            "type": "number",
+            "title": "Latest Price"
+          },
+          "latest_price_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Latest Price Date"
+          },
+          "harvest_price_estimate": {
+            "type": "number",
+            "title": "Harvest Price Estimate"
+          },
+          "harvest_price_low": {
+            "type": "number",
+            "title": "Harvest Price Low"
+          },
+          "harvest_price_high": {
+            "type": "number",
+            "title": "Harvest Price High"
+          },
+          "months_ahead": {
+            "type": "integer",
+            "title": "Months Ahead"
+          },
+          "yield_maund_per_acre": {
+            "type": "number",
+            "title": "Yield Maund Per Acre"
+          },
+          "cost_per_acre": {
+            "type": "number",
+            "title": "Cost Per Acre"
+          },
+          "profit_per_acre": {
+            "type": "number",
+            "title": "Profit Per Acre"
+          },
+          "expected_profit": {
+            "type": "number",
+            "title": "Expected Profit"
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "title": "Risk Level"
+          },
+          "spread_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread Pct"
+          },
+          "n_years": {
+            "type": "integer",
+            "title": "N Years"
+          },
+          "sowing_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Sowing Months"
+          },
+          "harvest_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Harvest Months"
+          },
+          "best_sell_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Sell Month"
+          },
+          "best_sell_gain_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Sell Gain Pct"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "rank",
+          "latest_price",
+          "latest_price_date",
+          "harvest_price_estimate",
+          "harvest_price_low",
+          "harvest_price_high",
+          "months_ahead",
+          "yield_maund_per_acre",
+          "cost_per_acre",
+          "profit_per_acre",
+          "expected_profit",
+          "risk_level",
+          "spread_pct",
+          "n_years",
+          "sowing_months",
+          "harvest_months",
+          "best_sell_month",
+          "best_sell_gain_pct",
+          "is_stale"
+        ],
+        "title": "CropPlanItem"
+      },
+      "CropPlanResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "land_area_acres": {
+            "type": "number",
+            "title": "Land Area Acres"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CropPlanItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "not_available": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ]
+            },
+            "type": "array",
+            "title": "Not Available"
+          },
+          "is_estimate": {
+            "type": "boolean",
+            "title": "Is Estimate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "mandi",
+          "land_area_acres",
+          "items",
+          "not_available",
+          "is_estimate"
+        ],
+        "title": "CropPlanResponse"
+      },
+      "DataSourceInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "covers": {
+            "type": "string",
+            "title": "Covers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "covers"
+        ],
+        "title": "DataSourceInfo"
+      },
+      "ExplainResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "shap",
+              "facts"
+            ],
+            "title": "Source"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/Reason"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "prices_as_of",
+          "source",
+          "reasons"
+        ],
+        "title": "ExplainResponse"
+      },
+      "Farmer": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ur",
+              "en"
+            ],
+            "title": "Language"
+          },
+          "district": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "District"
+          },
+          "land_area_acres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area Acres"
+          },
+          "arhti_commission_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arhti Commission Pct"
+          },
+          "alerts_enabled": {
+            "type": "boolean",
+            "title": "Alerts Enabled"
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/FarmerCropIn"
+            },
+            "type": "array",
+            "title": "Crops"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "language",
+          "district",
+          "land_area_acres",
+          "arhti_commission_pct",
+          "alerts_enabled",
+          "crops",
+          "created_at"
+        ],
+        "title": "Farmer"
+      },
+      "FarmerCropIn": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "preferred_mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Preferred Mandi"
+          },
+          "harvest_quantity_maund": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Harvest Quantity Maund"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "preferred_mandi",
+          "harvest_quantity_maund"
+        ],
+        "title": "FarmerCropIn"
+      },
+      "FarmerIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 7,
+            "pattern": "^\\+?[0-9 -]+$",
+            "title": "Phone"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ur",
+              "en"
+            ],
+            "title": "Language",
+            "default": "ur"
+          },
+          "district": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "District"
+          },
+          "land_area_acres": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area Acres"
+          },
+          "arhti_commission_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arhti Commission Pct"
+          },
+          "alerts_enabled": {
+            "type": "boolean",
+            "title": "Alerts Enabled",
+            "default": true
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/FarmerCropIn"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Crops"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "phone",
+          "district"
+        ],
+        "title": "FarmerIn"
+      },
+      "FarmerUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ur",
+                  "en"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "bahawalpur",
+                  "vehari",
+                  "rahim_yar_khan"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District"
+          },
+          "land_area_acres": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area Acres"
+          },
+          "arhti_commission_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arhti Commission Pct"
+          },
+          "alerts_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alerts Enabled"
+          },
+          "crops": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FarmerCropIn"
+                },
+                "type": "array",
+                "maxItems": 4
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crops"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FarmerUpdate"
       },
       "ForecastResponse": {
         "properties": {
@@ -1250,25 +2216,94 @@
           },
           "crop": {
             "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
             "title": "Crop"
           },
           "mandi": {
             "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
             "title": "Mandi"
-          },
-          "as_of": {
-            "type": "string",
-            "format": "date",
-            "title": "As Of"
           },
           "unit": {
             "type": "string",
             "const": "40kg",
             "title": "Unit"
           },
-          "price_now": {
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "current_price": {
             "type": "number",
-            "title": "Price Now"
+            "title": "Current Price"
+          },
+          "predicted_price": {
+            "type": "number",
+            "title": "Predicted Price"
+          },
+          "range": {
+            "$ref": "#/components/schemas/PriceRange"
+          },
+          "horizon_weeks": {
+            "type": "integer",
+            "title": "Horizon Weeks"
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "STABLE"
+            ],
+            "title": "Trend"
+          },
+          "volatility": {
+            "type": "string",
+            "enum": [
+              "STABLE",
+              "MODERATE",
+              "VOLATILE"
+            ],
+            "title": "Volatility"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "title": "Confidence"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
           },
           "history": {
             "items": {
@@ -1276,43 +2311,6 @@
             },
             "type": "array",
             "title": "History"
-          },
-          "forecast": {
-            "items": {
-              "$ref": "#/components/schemas/BandPoint"
-            },
-            "type": "array",
-            "title": "Forecast"
-          },
-          "naive": {
-            "items": {
-              "$ref": "#/components/schemas/NaivePoint"
-            },
-            "type": "array",
-            "title": "Naive"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "mase_vs_naive": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mase Vs Naive"
-          },
-          "price_type": {
-            "type": "string",
-            "enum": [
-              "wholesale",
-              "retail"
-            ],
-            "title": "Price Type"
           }
         },
         "additionalProperties": false,
@@ -1322,15 +2320,19 @@
           "is_synthetic",
           "crop",
           "mandi",
-          "as_of",
           "unit",
-          "price_now",
-          "history",
-          "forecast",
-          "naive",
+          "prices_as_of",
+          "current_price",
+          "predicted_price",
+          "range",
+          "horizon_weeks",
+          "trend",
+          "volatility",
+          "confidence",
           "model",
-          "mase_vs_naive",
-          "price_type"
+          "is_stale",
+          "price_unchanged_since",
+          "history"
         ],
         "title": "ForecastResponse"
       },
@@ -1362,6 +2364,223 @@
         ],
         "title": "Health"
       },
+      "HistoryResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "weekly": {
+            "items": {
+              "$ref": "#/components/schemas/PricePoint"
+            },
+            "type": "array",
+            "title": "Weekly"
+          },
+          "seasonal": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonalPoint"
+            },
+            "type": "array",
+            "title": "Seasonal"
+          },
+          "sowing_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Sowing Months"
+          },
+          "harvest_months": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Harvest Months"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "unit",
+          "prices_as_of",
+          "weekly",
+          "seasonal",
+          "sowing_months",
+          "harvest_months"
+        ],
+        "title": "HistoryResponse"
+      },
+      "LoginRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 7,
+            "pattern": "^\\+?[0-9 -]+$",
+            "title": "Phone"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "phone"
+        ],
+        "title": "LoginRequest"
+      },
+      "MarginResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "production_cost": {
+            "type": "number",
+            "title": "Production Cost"
+          },
+          "cost_confidence": {
+            "type": "string",
+            "title": "Cost Confidence"
+          },
+          "arhti_pct": {
+            "type": "number",
+            "title": "Arhti Pct"
+          },
+          "arhti_amount": {
+            "type": "number",
+            "title": "Arhti Amount"
+          },
+          "profit": {
+            "type": "number",
+            "title": "Profit"
+          },
+          "support_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Price"
+          },
+          "support_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Status"
+          },
+          "support_crop_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Support Crop Year"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "unit",
+          "price",
+          "production_cost",
+          "cost_confidence",
+          "arhti_pct",
+          "arhti_amount",
+          "profit",
+          "support_price",
+          "support_status",
+          "support_crop_year"
+        ],
+        "title": "MarginResponse"
+      },
       "Meta": {
         "properties": {
           "data_source": {
@@ -1372,55 +2591,6 @@
             "type": "boolean",
             "title": "Is Synthetic"
           },
-          "schema_version": {
-            "type": "integer",
-            "const": 1,
-            "title": "Schema Version"
-          },
-          "generated_at": {
-            "type": "string",
-            "format": "date",
-            "title": "Generated At"
-          },
-          "crops": {
-            "items": {
-              "$ref": "#/components/schemas/NamedItem"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Crops"
-          },
-          "mandis": {
-            "items": {
-              "$ref": "#/components/schemas/NamedItem"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Mandis"
-          },
-          "series": {
-            "items": {
-              "$ref": "#/components/schemas/SeriesKey"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Series"
-          },
-          "replay_cases": {
-            "items": {
-              "$ref": "#/components/schemas/ReplayCaseRef"
-            },
-            "type": "array",
-            "title": "Replay Cases"
-          },
-          "date_range": {
-            "$ref": "#/components/schemas/DateRange"
-          },
-          "latest_as_of": {
-            "type": "string",
-            "format": "date",
-            "title": "Latest As Of"
-          },
           "unit": {
             "type": "string",
             "const": "40kg",
@@ -1428,22 +2598,53 @@
           },
           "price_type": {
             "type": "string",
-            "enum": [
-              "wholesale",
-              "retail"
-            ],
+            "const": "wholesale",
             "title": "Price Type"
           },
-          "models": {
+          "crops": {
             "items": {
-              "$ref": "#/components/schemas/ModelInfo"
+              "$ref": "#/components/schemas/CropInfo"
             },
             "type": "array",
-            "minItems": 1,
-            "title": "Models"
+            "title": "Crops"
           },
-          "assumptions": {
-            "$ref": "#/components/schemas/Assumptions"
+          "mandis": {
+            "items": {
+              "$ref": "#/components/schemas/NamedItem"
+            },
+            "type": "array",
+            "title": "Mandis"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesInfo"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "horizon_weeks": {
+            "type": "integer",
+            "title": "Horizon Weeks"
+          },
+          "wait_threshold_pct": {
+            "type": "number",
+            "title": "Wait Threshold Pct"
+          },
+          "interest_pct_per_month": {
+            "type": "number",
+            "title": "Interest Pct Per Month"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/DataSourceInfo"
+            },
+            "type": "array",
+            "title": "Sources"
           }
         },
         "additionalProperties": false,
@@ -1451,182 +2652,31 @@
         "required": [
           "data_source",
           "is_synthetic",
-          "schema_version",
-          "generated_at",
+          "unit",
+          "price_type",
           "crops",
           "mandis",
           "series",
-          "replay_cases",
-          "date_range",
-          "latest_as_of",
-          "unit",
-          "price_type",
-          "models",
-          "assumptions"
+          "prices_as_of",
+          "horizon_weeks",
+          "wait_threshold_pct",
+          "interest_pct_per_month",
+          "sources"
         ],
         "title": "Meta"
-      },
-      "MetricRow": {
-        "properties": {
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "mase": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mase"
-          },
-          "quantile_loss": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantile Loss"
-          },
-          "coverage_80": {
-            "anyOf": [
-              {
-                "type": "number",
-                "maximum": 1.0,
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage 80"
-          },
-          "n_forecasts": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "N Forecasts"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "crop",
-          "mandi",
-          "model",
-          "mase",
-          "quantile_loss",
-          "coverage_80",
-          "n_forecasts"
-        ],
-        "title": "MetricRow"
-      },
-      "ModelInfo": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "version": {
-            "type": "string",
-            "title": "Version"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "primary",
-              "challenger",
-              "baseline",
-              "placeholder"
-            ],
-            "title": "Role"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "version",
-          "role"
-        ],
-        "title": "ModelInfo"
-      },
-      "NaivePoint": {
-        "properties": {
-          "weeks_ahead": {
-            "type": "integer",
-            "maximum": 12.0,
-            "minimum": 1.0,
-            "title": "Weeks Ahead"
-          },
-          "price": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Price"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "weeks_ahead",
-          "price"
-        ],
-        "title": "NaivePoint"
-      },
-      "NamedAssumption": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "value": {
-            "type": "number",
-            "title": "Value"
-          },
-          "source": {
-            "type": "string",
-            "title": "Source"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "value",
-          "source"
-        ],
-        "title": "NamedAssumption"
       },
       "NamedItem": {
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$",
             "title": "Id"
           },
           "name_ur": {
             "type": "string",
-            "minLength": 1,
             "title": "Name Ur"
           },
           "name_en": {
             "type": "string",
-            "minLength": 1,
             "title": "Name En"
           }
         },
@@ -1639,6 +2689,142 @@
         ],
         "title": "NamedItem"
       },
+      "OfferCheckRequest": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "offer_price": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Offer Price"
+          },
+          "quantity_maund": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity Maund",
+            "default": 100
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi",
+          "offer_price"
+        ],
+        "title": "OfferCheckRequest"
+      },
+      "OfferCheckResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "offer_price": {
+            "type": "number",
+            "title": "Offer Price"
+          },
+          "fair_low": {
+            "type": "number",
+            "title": "Fair Low"
+          },
+          "fair_high": {
+            "type": "number",
+            "title": "Fair High"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "below",
+              "fair",
+              "above"
+            ],
+            "title": "Verdict"
+          },
+          "difference_per_maund": {
+            "type": "number",
+            "title": "Difference Per Maund"
+          },
+          "difference_total": {
+            "type": "integer",
+            "title": "Difference Total"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "unit",
+          "offer_price",
+          "fair_low",
+          "fair_high",
+          "verdict",
+          "difference_per_maund",
+          "difference_total",
+          "window_days",
+          "prices_as_of"
+        ],
+        "title": "OfferCheckResponse"
+      },
       "PricePoint": {
         "properties": {
           "date": {
@@ -1648,7 +2834,6 @@
           },
           "price": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
             "title": "Price"
           }
         },
@@ -1660,315 +2845,172 @@
         ],
         "title": "PricePoint"
       },
-      "ReplayCaseRef": {
+      "PriceRange": {
         "properties": {
-          "case_id": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$",
-            "title": "Case Id"
+          "low": {
+            "type": "number",
+            "title": "Low"
           },
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "title_ur": {
-            "type": "string",
-            "title": "Title Ur"
-          },
-          "title_en": {
-            "type": "string",
-            "title": "Title En"
+          "high": {
+            "type": "number",
+            "title": "High"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "case_id",
-          "crop",
-          "mandi",
-          "title_ur",
-          "title_en"
+          "low",
+          "high"
         ],
-        "title": "ReplayCaseRef"
+        "title": "PriceRange"
       },
-      "ReplayResponse": {
+      "Reason": {
         "properties": {
-          "data_source": {
+          "text_ur": {
             "type": "string",
-            "title": "Data Source"
+            "title": "Text Ur"
           },
-          "is_synthetic": {
-            "type": "boolean",
-            "title": "Is Synthetic"
-          },
-          "case_id": {
+          "text_en": {
             "type": "string",
-            "title": "Case Id"
+            "title": "Text En"
           },
-          "crop": {
+          "direction": {
             "type": "string",
-            "title": "Crop"
-          },
-          "mandi": {
-            "type": "string",
-            "title": "Mandi"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary"
-          },
-          "steps": {
-            "items": {
-              "$ref": "#/components/schemas/ReplayStep"
-            },
-            "type": "array",
-            "title": "Steps"
+            "enum": [
+              "UP",
+              "DOWN",
+              ""
+            ],
+            "title": "Direction"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "data_source",
-          "is_synthetic",
-          "case_id",
-          "crop",
-          "mandi",
-          "title",
-          "summary",
-          "steps"
+          "text_ur",
+          "text_en",
+          "direction"
         ],
-        "title": "ReplayResponse"
+        "title": "Reason"
       },
-      "ReplayStep": {
+      "SeasonalPoint": {
         "properties": {
-          "as_of": {
-            "type": "string",
-            "format": "date",
-            "title": "As Of"
+          "month": {
+            "type": "integer",
+            "title": "Month"
           },
-          "price_now": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Price Now"
-          },
-          "forecast_q10": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Forecast Q10"
-          },
-          "forecast_q50": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Forecast Q50"
-          },
-          "forecast_q90": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Forecast Q90"
-          },
-          "verdict": {
-            "type": "string",
-            "enum": [
-              "sell_now",
-              "sell_elsewhere",
-              "store",
-              "split"
-            ],
-            "title": "Verdict"
-          },
-          "alarm_tier": {
-            "type": "string",
-            "enum": [
-              "normal",
-              "stress",
-              "alert",
-              "crisis"
-            ],
-            "title": "Alarm Tier"
-          },
-          "events_active": {
-            "items": {
-              "$ref": "#/components/schemas/EventRef"
-            },
-            "type": "array",
-            "title": "Events Active"
-          },
-          "actual_price_4w_later": {
+          "index_median": {
             "anyOf": [
               {
-                "type": "number",
-                "exclusiveMinimum": 0.0
+                "type": "number"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Actual Price 4W Later"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "as_of",
-          "price_now",
-          "forecast_q10",
-          "forecast_q50",
-          "forecast_q90",
-          "verdict",
-          "alarm_tier",
-          "events_active"
-        ],
-        "title": "ReplayStep"
-      },
-      "RupeeBacktest": {
-        "properties": {
-          "quantity_maund": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Quantity Maund"
+            "title": "Index Median"
           },
-          "n_cases": {
+          "index_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Min"
+          },
+          "index_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Max"
+          },
+          "n_years": {
             "type": "integer",
-            "minimum": 0.0,
-            "title": "N Cases"
-          },
-          "avg_gain_vs_harvest_pkr": {
-            "type": "number",
-            "title": "Avg Gain Vs Harvest Pkr"
-          },
-          "share_better": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Share Better"
-          },
-          "worst_case_pkr": {
-            "type": "number",
-            "title": "Worst Case Pkr"
-          },
-          "hindsight_avg_gain_pkr": {
-            "type": "number",
-            "title": "Hindsight Avg Gain Pkr"
-          },
-          "assumptions": {
-            "items": {
-              "$ref": "#/components/schemas/NamedAssumption"
-            },
-            "type": "array",
-            "title": "Assumptions"
+            "title": "N Years"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "quantity_maund",
-          "n_cases",
-          "avg_gain_vs_harvest_pkr",
-          "share_better",
-          "worst_case_pkr",
-          "hindsight_avg_gain_pkr",
-          "assumptions"
+          "month",
+          "index_median",
+          "index_min",
+          "index_max",
+          "n_years"
         ],
-        "title": "RupeeBacktest"
+        "title": "SeasonalPoint"
       },
-      "SeriesKey": {
+      "SeriesInfo": {
         "properties": {
           "crop": {
             "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
             "title": "Crop"
           },
           "mandi": {
             "type": "string",
-            "title": "Mandi"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "crop",
-          "mandi"
-        ],
-        "title": "SeriesKey"
-      },
-      "StorageDefault": {
-        "properties": {
-          "crop": {
-            "type": "string",
-            "title": "Crop"
-          },
-          "storage": {
-            "type": "string",
             "enum": [
-              "home",
-              "cold_store",
-              "warehouse"
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
             ],
-            "title": "Storage"
+            "title": "Mandi"
           },
-          "storage_cost_per_maund_week": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Storage Cost Per Maund Week"
-          },
-          "spoilage_pct_week": {
-            "type": "number",
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Spoilage Pct Week"
-          },
-          "source": {
+          "prices_as_of": {
             "type": "string",
-            "title": "Source"
+            "format": "date",
+            "title": "Prices As Of"
+          },
+          "latest_price": {
+            "type": "number",
+            "title": "Latest Price"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "crop",
-          "storage",
-          "storage_cost_per_maund_week",
-          "spoilage_pct_week",
-          "source"
+          "mandi",
+          "prices_as_of",
+          "latest_price",
+          "is_stale"
         ],
-        "title": "StorageDefault"
+        "title": "SeriesInfo"
       },
-      "TransportCost": {
+      "TokenResponse": {
         "properties": {
-          "from_mandi": {
+          "token": {
             "type": "string",
-            "title": "From Mandi"
+            "title": "Token"
           },
-          "to_mandi": {
-            "type": "string",
-            "title": "To Mandi"
-          },
-          "cost_per_maund": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Cost Per Maund"
-          },
-          "source": {
-            "type": "string",
-            "title": "Source"
+          "farmer": {
+            "$ref": "#/components/schemas/Farmer"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "from_mandi",
-          "to_mandi",
-          "cost_per_maund",
-          "source"
+          "token",
+          "farmer"
         ],
-        "title": "TransportCost"
+        "title": "TokenResponse"
       },
       "ValidationError": {
         "properties": {
@@ -2009,6 +3051,143 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WeatherNow": {
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "tmax_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tmax C"
+          },
+          "tmin_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tmin C"
+          },
+          "precip_mm_wk": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precip Mm Wk"
+          },
+          "rh_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rh Pct"
+          },
+          "precip_mm_4w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Precip Mm 4W"
+          },
+          "hot_days_wk": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hot Days Wk"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "week_start",
+          "tmax_c",
+          "tmin_c",
+          "precip_mm_wk",
+          "rh_pct",
+          "precip_mm_4w",
+          "hot_days_wk",
+          "cached",
+          "source",
+          "fetched_at",
+          "attribution"
+        ],
+        "title": "WeatherNow"
+      },
+      "WeatherResponse": {
+        "properties": {
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "weather": {
+            "$ref": "#/components/schemas/WeatherNow"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandi",
+          "weather"
+        ],
+        "title": "WeatherResponse"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

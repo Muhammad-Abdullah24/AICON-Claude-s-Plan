@@ -48,3 +48,6 @@ desktop.ini
 # --- Claude Code: per-machine run config (paths differ on Windows and Mac) ---
 .claude/launch.json
 .claude/settings.local.json
+
+# --- Runtime database (backend/app/db.py): farmer profiles, never in git ---
+var/

@@ -191,10 +191,10 @@ def client():
 
 
 def test_chat_route(client):
-    r = client.post("/api/chat", json={"question": "kitna rate hoga?", "crop_option": "Wheat", "mandi": "Vehari"})
+    r = client.post("/api/chat", json={"question": "kitna rate hoga?", "crop": "wheat", "mandi": "vehari"})
     assert r.status_code == 200
     body = r.json()
-    assert body["used_fallback"] is False and body["mandi"] == "Vehari" and body["data_source"] == "amis"
+    assert body["used_fallback"] is False and body["mandi"] == "vehari" and body["data_source"] == "amis"
 
 
 def test_chat_route_validates_and_rate_limits(client):

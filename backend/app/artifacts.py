@@ -2,7 +2,7 @@
 
 Two layers of checks run on startup:
 
-1. Each file against its schema in schemas.py (types, ranges, quantile order).
+1. Each file against its schema in artifact_schemas.py (types, ranges, quantile order).
 2. The files against each other: every crop, mandi and series must be declared
    in meta.json, dates must be sorted, and each forecast's price_now must match
    the history. A failure lists every problem at once and stops the server, so
@@ -22,7 +22,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
-from backend.app.schemas import (
+from backend.app.artifact_schemas import (
     Alarm,
     AlarmsArtifact,
     BacktestArtifact,
