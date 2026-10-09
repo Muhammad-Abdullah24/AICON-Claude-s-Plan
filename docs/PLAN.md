@@ -59,7 +59,7 @@ Rules that shape the build (from the rulebook):
 | Owner | Person | Role | Owns (folders) |
 |---|---|---|---|
 | **A** | **Hamza** (git `muhammadhamza6002`; GitHub user to confirm) | **Data, Proof and Channels** | `data/`, `ml/features/`, `ml/ingest/`, `ml/seasonal/`, `ml/eval/`, `backend/app/channels/` (WhatsApp, SMS), `backend/app/chat/` (Gemini chat and voice), `docs/FACTS.md`, `docs/PROMPTS.md`, `docs/DATA_NOTES.md`, the slides |
-| **B** | **________** (fill in name and GitHub user) | **Models and Advisory Engine** | `ml/forecast/`, `ml/explain/`, `ml/decision/`, `artifacts/` (model files and model metadata), `docs/MODEL_CARD.md` |
+| **B** | **Usman** (GitHub user to confirm) | **Models and Advisory Engine** | `ml/forecast/`, `ml/explain/`, `ml/decision/`, `artifacts/` (model files and model metadata), `docs/MODEL_CARD.md` |
 | **C** | **Abd** (git "Abd"; GitHub user to confirm, likely the repo owner `Muhammad-Abdullah24`) | **Product: API, Web App, Deployment** | `backend/` (except `channels/` and `chat/`), `frontend/`, `README.md`, `CLAUDE.md`, `docs/DEMO.md`, `.github/`, deployment |
 
 **Shared files.** `docs/BLUEPRINT.md`, `docs/PLAN.md` and `backend/app/schemas.py` change only by agreement at a check-in. When the API shape changes, C changes `schemas.py` and blueprint section 12 in the same commit and regenerates the front-end types.
@@ -119,7 +119,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 
 ### Phase 0 — Agree (Fri 21:00 to 22:00) · all three
 
-- [ ] **P0.1** Everyone reads `docs/BLUEPRINT.md` and this file. Fill in Owner B's name in section 2 and in `CLAUDE.md`.
+- [ ] **P0.1** Everyone reads `docs/BLUEPRINT.md` and this file. Fill in Owner B's name in section 2 and in `CLAUDE.md` (done: Usman).
 - [ ] **P0.2** Walk through interfaces I1 to I6 together. Agree the function signatures and freeze them.
 - [ ] **P0.3** Each person: Python 3.11, Node 20.19+, repo cloned, `README.md` setup done, `git config user.name/email` set to your own account, Claude Code started from the repo root.
 - [ ] **P0.4** Merge this plan's PR.
@@ -132,7 +132,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [ ] **A3** (S) Create the Meta WhatsApp Cloud API app and test number; register all three demo phones; get the Gemini key (as `FS_LLM_API_KEY` in `.env`); check free-tier limits (blueprint decision 14).
 - [ ] **A4** (S) README data acknowledgements and AMIS terms of use (blueprint decision 22). Send the lines to C.
 
-**B · Owner B**
+**B · Usman**
 - [ ] **B1** (M) `ml/forecast/predict.py` stub returning placeholder values in the I2 shape, `is_synthetic: true`. *Done when* C can import it. **First task: by 23:30.**
 - [ ] **B2** (M) Rewrite `ml/decision/engine.py` to the blueprint (I3): SELL / WAIT at the 5% threshold (in config), confidence from the q10 to q90 width, net rupee impact = quantity × (forecast − today) − interest (16.5% a year), optional arhti commission, fair price range, offer check, margin, mandi comparison net of transport. *Done when* unit tests cover each function, including IRRI with no Rahim Yar Khan price.
 - [ ] **B3** (M) Training scaffold `ml/forecast/train.py`: XGBoost on real `features.csv` rows, target `price_change_4w_pct` (not price level, since prices rose about 3×), fixed seed, train/val split as given.
@@ -151,7 +151,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [ ] **A6** (M) Seasonal tables in `ml/seasonal/` → `data/processed/runtime/seasonal.csv`: monthly index (% of each year's average) and harvest-month ratios (median, min, max, number of years) per crop option and mandi. Feeds What to Grow, the selling window and the history chart.
 - [ ] **A7** (S) Check the headline demo case in the data: Wheat at Bahawalpur now (AMIS about Rs 3,820 vs about Rs 5,300 reported), and prepare a backup historical date (spring 2024 harvest).
 
-**B · Owner B**
+**B · Usman**
 - [ ] **B4** (M) Train the point model and the q10 and q90 quantile models. Run A's gate. If the model does not beat persistence on validation, ship the fallback: persistence as the point forecast and the range from the empirical 4-week change distribution, labelled "baseline" (blueprint NFR-01). Write the result in `docs/MODEL_CARD.md` either way.
 - [ ] **B5** (M) SHAP TreeExplainer and a feature-to-sentence map in Urdu and English (top 3 to 5 factors with rupee effects). No LLM writes these reasons.
 - [ ] **B6** (M) Real `predict.py`: load `artifacts/models/`, build features with I1, return the I2 shape with `is_synthetic: false`.
@@ -172,7 +172,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [ ] **A10** (C) Voice notes: Gemini transcription, "Did you mean …?" confirmation, audio deleted after (web and WhatsApp).
 - [ ] **A11** (C) SMS gateway webhook `backend/app/channels/sms.py` with the 160-character format and number menu.
 
-**B · Owner B**
+**B · Usman**
 - [ ] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
 - [ ] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
 - [ ] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
@@ -276,7 +276,7 @@ The repo is the shared context: `CLAUDE.md`, `docs/BLUEPRINT.md`, this plan and 
 
 > **Owner A (Hamza):** I am Owner A (Data, Proof and Channels) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (A*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named hamza/<task-id>. Only edit my folders.
 
-> **Owner B:** I am Owner B (Models and Advisory Engine) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (B*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named <myname>/<task-id>. Only edit my folders.
+> **Owner B (Usman):** I am Owner B (Models and Advisory Engine) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (B*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named usman/<task-id>. Only edit my folders.
 
 > **Owner C (Abd):** I am Owner C (Product: API, Web App, Deployment) on FarmSight. Read CLAUDE.md, docs/BLUEPRINT.md and docs/PLAN.md. Then show me my open tasks (C*) in docs/PLAN.md section 5, the interfaces I own in section 4, and start the next unticked task on a branch named abd/<task-id>. Only edit my folders.
 
@@ -287,5 +287,5 @@ Five minutes, standing up: **Fri 23:30; Sat 10:00, 13:00, 16:00, 19:00, 22:00; S
 ### 9.4 Demo roles
 
 - **Hamza:** problem and data (real AMIS data, honest baseline), then WhatsApp live.
-- **Owner B:** how the AI works (model, range, SHAP, the advisory rule) and the accuracy vs baseline.
+- **Usman:** how the AI works (model, range, SHAP, the advisory rule) and the accuracy vs baseline.
 - **Abd:** the app walk-through (Home → Why → Compare → What to Grow) and the close.

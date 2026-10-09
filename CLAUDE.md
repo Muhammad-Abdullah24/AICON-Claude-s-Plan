@@ -11,7 +11,7 @@ Ask which owner the human is at the start of the session, then show their open t
 
 ## Ownership (do not edit outside your owner's folders)
 - Owner A (Hamza): data/, ml/features/, ml/ingest/, ml/seasonal/, ml/eval/, backend/app/channels/, backend/app/chat/, docs/FACTS.md, docs/PROMPTS.md, docs/DATA_NOTES.md
-- Owner B (________): ml/forecast/, ml/explain/, ml/decision/, artifacts/, docs/MODEL_CARD.md
+- Owner B (Usman): ml/forecast/, ml/explain/, ml/decision/, artifacts/, docs/MODEL_CARD.md
 - Owner C (Abd): backend/ (except channels/ and chat/), frontend/, README.md, CLAUDE.md, docs/DEMO.md, .github/
 - Shared, change only by team agreement: docs/BLUEPRINT.md, docs/PLAN.md (owners may tick their own task boxes), backend/app/schemas.py
 Ask the human before touching any other path.
