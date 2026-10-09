@@ -120,10 +120,26 @@ def test_no_price_data_is_said_plainly():
     assert "رحیم یار خان" in body and "موجود نہیں" in body
 
 
-def test_until_services_exist_the_reply_is_honest():
+def test_if_services_are_missing_the_reply_is_honest(monkeypatch):
+    import backend.app
+
+    monkeypatch.setitem(__import__("sys").modules, "backend.app.services", None)   # import now fails
+    monkeypatch.delattr(backend.app, "services", raising=False)                    # even if loaded earlier
     provider = advice_provider.ServicesProvider()
     body = body_of(whatsapp.respond(text_msg("gandum bahawalpur 100"), provider, whatsapp.Memory()))
     assert body == reply.NOT_READY
+
+
+def test_end_to_end_with_the_real_service_layer():
+    from backend.app import services
+
+    price, as_of = services.latest_price("Wheat", "BahawalPur")
+    body = body_of(whatsapp.respond(text_msg("گندم بہاولپور 100 من"), advice_provider.ServicesProvider(),
+                                    whatsapp.Memory()))
+    assert reply.rs(price) in body and as_of in body
+    no_irri = body_of(whatsapp.respond(text_msg("chawal irri ryk"), advice_provider.ServicesProvider(),
+                                       whatsapp.Memory()))
+    assert "موجود نہیں" in no_irri
 
 
 def test_stop_turns_alerts_off_and_voice_is_deferred():

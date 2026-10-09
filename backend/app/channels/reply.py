@@ -86,7 +86,8 @@ def compare_text(crop_option: str, rows: Sequence[Mapping]) -> str:
         mark = "✅ " if i == 0 else "• "
         gain = r.get("gain_vs_preferred")
         extra = f" ({signed_rs(gain)})" if gain else ""
-        lines.append(f"{mark}{name}: {rs(r['net_price'])}{extra}, کرایہ تقریباً {rs(r['transport_cost'])}")
+        as_of = f" ({r['prices_as_of']} کا ریٹ)" if r.get("prices_as_of") else ""
+        lines.append(f"{mark}{name}: {rs(r['net_price'])}{extra}, کرایہ تقریباً {rs(r['transport_cost'])}{as_of}")
     lines.append("کرایہ اندازہ ہے۔")
     return "\n".join(lines)
 

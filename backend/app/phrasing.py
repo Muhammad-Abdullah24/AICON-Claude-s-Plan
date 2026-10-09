@@ -60,12 +60,6 @@ RISK_LINE = {
     "en": "The price could fall as low as Rs {low} within {weeks_en}",
 }
 
-WHATSAPP_PLACEHOLDER_REPLY = (
-    "السلام علیکم! فارم سائٹ ابھی تیاری میں ہے۔ "
-    "جلد آپ فصل، منڈی اور مقدار بھیج کر مشورہ لے سکیں گے۔"
-)
-
-
 def _fmt(value: float | int | str) -> str:
     """Western digits with thousands separators, as on receipts (PLAN.md 13)."""
     if isinstance(value, int | float):

@@ -23,13 +23,15 @@ def test_returns_the_i2_shape_on_real_data():
     assert out["is_synthetic"] is False
     assert out["data_source"] == "amis"
     assert out["forecast_type"] == "baseline"
-    assert out["model_version"].startswith("persistence_band@")
+    assert out["model_version"] == "baseline_persistence_band"
 
 
 def test_baseline_price_is_the_latest_observed_amis_price():
     out = forecast("Wheat", "BahawalPur")
     latest = _latest_observed("BahawalPur", "Wheat", "none")
-    assert out["prices_as_of"] == latest["week_start"].isoformat()
+    assert out["week_start"] == latest["week_start"].isoformat()
+    # the exact last AMIS day in that week, as in series_coverage.csv (H-C3)
+    assert out["prices_as_of"] == "2026-10-09"
     assert out["current_price"] == round(latest["price"], 2)
     assert out["predicted_price"] == out["current_price"]
     assert out["trend"] == "STABLE"
@@ -100,3 +102,9 @@ def test_no_data_before_the_series_starts():
 def test_unknown_inputs_raise(crop_option, mandi):
     with pytest.raises(ValueError):
         forecast(crop_option, mandi)
+
+
+def test_prices_as_of_is_a_real_day_and_never_after_as_of():
+    out = forecast("Wheat", "Bahawalpur", as_of=date(2025, 3, 26))
+    assert out["week_start"] == "2025-03-24"
+    assert "2025-03-24" <= out["prices_as_of"] <= "2025-03-26"

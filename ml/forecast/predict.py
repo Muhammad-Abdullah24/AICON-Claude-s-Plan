@@ -38,6 +38,8 @@ DIRECTION_META_PATH = MODELS_DIR / "price_meta.json"
 # Crop options whose direction call is shown (team proposal in docs/MODEL_CARD.md). Empty tuple = off.
 DIRECTION_CROP_OPTIONS = ("Wheat",)
 
+# The team-wide name of the deployed baseline (backend/app/services.py uses the same one).
+BASELINE_MODEL = "baseline_persistence_band"
 DATA_SOURCE = "amis"
 UNIT = "40kg"
 # Volatility bands on the half-width of the q10-q90 range, in % of today's price (blueprint glossary).
@@ -66,6 +68,24 @@ def _crop_options() -> frozenset[str]:
 @lru_cache(maxsize=1)
 def _weekly() -> dict[tuple[str, str, str], list[dict]]:
     return load_weekly()
+
+
+@lru_cache(maxsize=1)
+def _daily_dates() -> dict[tuple[str, str, str], list[str]]:
+    """(city, crop, variety) -> sorted dates with a real AMIS daily price, for the exact "prices as of" day."""
+    out: dict[tuple[str, str, str], list[str]] = {}
+    with open(ROOT / "data" / "processed" / "farmsight_prices_clean_daily.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            out.setdefault((r["city"], r["crop"], r["variety"]), []).append(r["date"])
+    return {k: sorted(v) for k, v in out.items()}
+
+
+def _last_price_day(key: tuple[str, str, str], week_start: date, as_of: date | None) -> date:
+    """The last day with a real price in the week of `week_start`, never after `as_of` (H-C3)."""
+    week_end = week_start + timedelta(days=6)
+    limit = min(week_end, as_of) if as_of is not None else week_end
+    days = [d for d in _daily_dates().get(key, []) if week_start.isoformat() <= d <= limit.isoformat()]
+    return date.fromisoformat(days[-1]) if days else week_start
 
 
 @lru_cache(maxsize=1)
@@ -171,7 +191,8 @@ def forecast(
     if not observed:
         return None
     latest = observed[-1]
-    prices_as_of, current = latest["week_start"], latest["price"]
+    week_start, current = latest["week_start"], latest["price"]
+    prices_as_of = _last_price_day((city, crop, variety), week_start, as_of)
 
     deployed = _deployed()
     band = deployed["band_change_pct"][crop_option]
@@ -180,7 +201,7 @@ def forecast(
     direction, shap = None, []
     if crop_option in DIRECTION_CROP_OPTIONS:
         daily = _daily_weather_for(city, weather)
-        direction, shap = _direction(crop_option, city, history, daily, prices_as_of, current)
+        direction, shap = _direction(crop_option, city, history, daily, week_start, current)
 
     return {
         "crop_option": crop_option,
@@ -193,9 +214,11 @@ def forecast(
         "trend": "STABLE",
         "volatility": _volatility((q90 - q10) / 2 / current * 100),
         "prices_as_of": prices_as_of.isoformat(),
+        "week_start": week_start.isoformat(),
         "target_date": (prices_as_of + timedelta(weeks=HORIZON_WEEKS)).isoformat(),
         "forecast_type": "baseline",
-        "model_version": f"{deployed['deployed']}@{deployed['written_at'][:10]}",
+        "model_version": BASELINE_MODEL,
+        "deployed_at": deployed["written_at"][:10],
         "direction": direction,
         "shap": shap,
         "data_source": DATA_SOURCE,

@@ -12,14 +12,15 @@ import datetime as dt
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
-from xml.sax.saxutils import escape
 
-from fastapi import APIRouter, FastAPI, Form, HTTPException, Query, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import RedirectResponse
 
 from backend.app import phrasing
 from backend.app.artifacts import ArtifactStore, load_store
+from backend.app.channels import whatsapp
+from backend.app.chat import router as chat_router
 from backend.app.config import HISTORY_WEEKS, Settings, get_settings
 from backend.app.schemas import (
     AdviceRequest,
@@ -57,6 +58,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.include_router(router)
+    app.include_router(whatsapp.router)      # GET/POST /webhooks/whatsapp (Meta Cloud API)
+    app.include_router(chat_router.router)   # POST /api/chat
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
@@ -66,15 +69,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health", response_model=Health, tags=["ops"])
     def health() -> Health:
         return Health(status="ok")
-
-    @app.post("/whatsapp", tags=["channels"], response_class=Response)
-    def whatsapp(Body: Annotated[str, Form()] = "") -> Response:  # noqa: N803 (Twilio's field name)
-        # Walking skeleton: fixed Urdu reply. Twilio expects TwiML (XML), not JSON.
-        twiml = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            f"<Response><Message>{escape(phrasing.WHATSAPP_PLACEHOLDER_REPLY)}</Message></Response>"
-        )
-        return Response(content=twiml, media_type="application/xml")
 
     return app
 
