@@ -25,6 +25,11 @@ def numbers(text: str) -> set[str]:
     return out
 
 
+def has_devanagari(text: str) -> bool:
+    """Hindi script slipped into an Urdu answer (seen in a live test: "ممکنہ طور पर")."""
+    return any("ऀ" <= ch <= "ॿ" for ch in text)
+
+
 def unexpected_numbers(answer: str, *allowed_texts: str) -> set[str]:
     allowed: set[str] = set()
     for t in allowed_texts:

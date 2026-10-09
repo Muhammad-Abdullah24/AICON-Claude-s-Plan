@@ -72,6 +72,9 @@ def answer(question: str, crop_option: str | None, mandi: str | None, quantity_m
         log.warning("chat: LLM unavailable (%s); template used", e)
         return _template(a, "llm_unavailable", crop, mandi)
 
+    if guard.has_devanagari(text):
+        log.warning("chat: answer used Hindi script; template used")
+        return _template(a, "wrong_script", crop, mandi)
     bad = guard.unexpected_numbers(text, context, question)
     if bad:
         log.warning("chat: answer had numbers not in the advice (%s); template used", sorted(bad))

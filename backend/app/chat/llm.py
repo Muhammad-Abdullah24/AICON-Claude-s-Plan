@@ -33,11 +33,13 @@ class LLMSettings:
     api_key: str
     model: str = MODEL_DEFAULT
     timeout_s: float = 12.0
+    thinking_level: str = ""   # e.g. "low" for gemini-3.x flash; empty = model default (fine for flash-lite)
 
 
 def get_llm_settings() -> LLMSettings:
     return LLMSettings(api_key=os.environ.get("FS_LLM_API_KEY", ""),
-                       model=os.environ.get("FS_LLM_MODEL", MODEL_DEFAULT))
+                       model=os.environ.get("FS_LLM_MODEL", MODEL_DEFAULT),
+                       thinking_level=os.environ.get("FS_LLM_THINKING_LEVEL", ""))
 
 
 class GeminiClient:
@@ -45,10 +47,14 @@ class GeminiClient:
         self.s = settings
 
     def request_body(self, system: str, user: str) -> dict:
+        config: dict = {"temperature": TEMPERATURE, "maxOutputTokens": MAX_OUTPUT_TOKENS}
+        if self.s.thinking_level:
+            # "Thinking" tokens count against maxOutputTokens: unlimited thinking cut answers off mid-sentence.
+            config["thinkingConfig"] = {"thinkingLevel": self.s.thinking_level}
         return {
             "system_instruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": user}]}],
-            "generationConfig": {"temperature": TEMPERATURE, "maxOutputTokens": MAX_OUTPUT_TOKENS},
+            "generationConfig": config,
         }
 
     def generate(self, system: str, user: str) -> str:
@@ -66,7 +72,13 @@ class GeminiClient:
         except (urllib.error.URLError, TimeoutError, ValueError) as e:
             raise LLMUnavailable(type(e).__name__) from e
         candidates = data.get("candidates") or []
-        parts = (candidates[0].get("content") or {}).get("parts", []) if candidates else []
+        if not candidates:
+            raise LLMUnavailable("empty or blocked answer")
+        finish = candidates[0].get("finishReason", "STOP")
+        if finish != "STOP":
+            # MAX_TOKENS, SAFETY, ...: a half answer could still pass the number guard, so never show it.
+            raise LLMUnavailable(f"incomplete answer ({finish})")
+        parts = (candidates[0].get("content") or {}).get("parts", [])
         text = "".join(p.get("text", "") for p in parts).strip()
         if not text:
             raise LLMUnavailable("empty or blocked answer")

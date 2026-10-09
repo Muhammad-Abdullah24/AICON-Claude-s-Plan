@@ -7,14 +7,14 @@ from collections.abc import Mapping, Sequence
 
 from backend.app.channels.reply import CONFIDENCE_UR, CROP_UR, MANDI_UR, SIGNAL, rs, signed_rs
 
-MODEL_DEFAULT = "gemini-2.5-flash"
+MODEL_DEFAULT = "gemini-3.5-flash-lite"   # gemini-2.5-flash is closed to new keys; lite answers in ~1.3 s
 TEMPERATURE = 0.2
-MAX_OUTPUT_TOKENS = 300
+MAX_OUTPUT_TOKENS = 400
 
 SYSTEM_PROMPT = """You are FarmSight's assistant for farmers in South Punjab, Pakistan. You answer one question about selling one crop, using only the CONTEXT, which comes from FarmSight's price forecast and advisory engine.
 
 Rules:
-1. Reply in the farmer's language: Urdu script if the question is in Urdu script, Roman Urdu if it is in Roman Urdu, English if it is in English.
+1. Reply in the farmer's language: Urdu script if the question is in Urdu script, Roman Urdu if it is in Roman Urdu, English if it is in English. Never use Hindi (Devanagari) script.
 2. Use only numbers that appear in the CONTEXT or in the question. Never calculate, estimate, round or invent a number, price, percentage or date. Write every number with digits, exactly as it appears in the CONTEXT.
 3. If the answer is not in the CONTEXT, say you do not know, and suggest asking about today's price, the 4-week forecast, the best mandi, or why.
 4. Never change the advice. If the signal is SELL, do not tell the farmer to wait; if it is WAIT, do not tell them to sell now.
@@ -41,8 +41,8 @@ def build_context(a: Mapping, reasons: Sequence[Mapping] = ()) -> str:
         f"forecast in 4 weeks: {rs(a['predicted_price'])} per 40 kg, likely between {rs(a['range']['low'])} "
         f"and {rs(a['range']['high'])}",
         f"expected change in 4 weeks: {change:+.1f}%",
-        f"gain from waiting 4 weeks on {a['quantity_maund']:g} maund: {signed_rs(a['rupee_impact'])}, "
-        f"after {rs(a['interest_cost'])} interest",
+        f"net gain from waiting 4 weeks on {a['quantity_maund']:g} maund: {signed_rs(a['rupee_impact'])} "
+        f"(the interest cost of waiting, {rs(a['interest_cost'])}, has already been subtracted)",
         f"confidence: {a['confidence']} ({CONFIDENCE_UR.get(a['confidence'], a['confidence'])})",
     ]
     if a.get("is_synthetic"):

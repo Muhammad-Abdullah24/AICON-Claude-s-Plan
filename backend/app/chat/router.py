@@ -36,7 +36,7 @@ class ChatResponse(BaseModel):
     answer: str
     used_fallback: bool
     fallback_reason: Literal["need_crop_and_mandi", "no_data", "service_not_ready", "rate_limited",
-                             "llm_unavailable", "unverified_numbers"] | None
+                             "llm_unavailable", "unverified_numbers", "wrong_script"] | None
     crop_option: str | None
     mandi: str | None
     data_source: str

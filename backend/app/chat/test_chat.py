@@ -78,6 +78,11 @@ def test_invented_number_falls_back_to_the_template():
     assert a.answer == reply.advice_text(dict(ADVICE, quantity_maund=100))
 
 
+def test_hindi_script_falls_back():
+    a = ask("گندم بہاولپور؟", FakeLLM("ریٹ ممکنہ طور पर Rs 4,050 ہوگا"))
+    assert a.used_fallback and a.fallback_reason == "wrong_script"
+
+
 def test_llm_down_or_over_quota_falls_back():
     down = ask("gandum bahawalpur?", FakeLLM(error=LLMUnavailable("timeout")))
     assert down.used_fallback and down.fallback_reason == "llm_unavailable"
@@ -141,6 +146,20 @@ def test_gemini_request_and_response(monkeypatch):
     assert out == "Rs 4,050"
     assert seen["url"].endswith("/models/gemini-test:generateContent") and seen["key"] == "k"
     assert seen["body"]["system_instruction"]["parts"][0]["text"] == "SYS"
+
+
+def test_gemini_cut_off_answer_is_unavailable(monkeypatch):
+    payload = {"candidates": [{"finishReason": "MAX_TOKENS", "content": {"parts": [{"text": "Nahi, abhi na"}]}}]}
+    monkeypatch.setattr(llm.urllib.request, "urlopen", lambda req, timeout: io.BytesIO(json.dumps(payload).encode()))
+    with pytest.raises(LLMUnavailable, match="MAX_TOKENS"):
+        llm.GeminiClient(llm.LLMSettings(api_key="k")).generate("s", "u")
+
+
+def test_thinking_level_is_sent_only_when_set():
+    plain = llm.GeminiClient(llm.LLMSettings(api_key="k")).request_body("s", "u")
+    low = llm.GeminiClient(llm.LLMSettings(api_key="k", thinking_level="low")).request_body("s", "u")
+    assert "thinkingConfig" not in plain["generationConfig"]
+    assert low["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "low"}
 
 
 def test_gemini_blocked_answer_is_unavailable(monkeypatch):
