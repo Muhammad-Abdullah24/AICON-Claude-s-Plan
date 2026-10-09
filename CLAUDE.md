@@ -63,6 +63,7 @@ Ask the human before touching any other path.
 - Model search on the training years (Owner B): .venv/Scripts/python -m ml.forecast.tune
 - Record the baseline fallback after a failed gate run (Owner B): .venv/Scripts/python -m ml.forecast.train --record-fallback
 - Save the direction model to artifacts/models/ (Owner B): .venv/Scripts/python -m ml.forecast.train --save
+- Evaluate the selling action plan and refresh the hold gate's evidence (Owner B): .venv/Scripts/python -m ml.forecast.policy_eval
 (Owners add new commands here as their tasks land, e.g. training and evaluation.)
 
 ## Style

@@ -250,3 +250,12 @@ def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: 
         "is_frozen": any(_in_frozen_stretch(crop_option, target, week) for week in (latest, earlier)),
         "is_stale": is_stale(crop_option, mandi, as_of),
     }
+
+
+def hold_gate_evidence() -> dict | None:
+    """The hold gate's evidence from the policy evaluation (artifacts/models/policy_eval.json), or None."""
+    path = MODELS / "policy_eval.json"
+    if not path.exists():
+        return None
+    report = json.loads(path.read_text(encoding="utf-8"))
+    return report.get("hold_gate_evidence")

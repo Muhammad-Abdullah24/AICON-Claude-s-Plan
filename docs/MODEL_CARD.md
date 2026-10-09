@@ -51,13 +51,28 @@ AMIS price. But the model **does** call the direction of real wheat moves: 72% i
   cost of waiting (16.5% a year). With the baseline forecast the answer is SELL, which is the honest answer:
   a 5% rise in 4 weeks happens in only 14–19% of real weeks.
 
+## A market signal is not advice to wait
+
+> **An upward signal identifies the direction of large moves, but did not reliably show that holding beats four weeks of carrying cost. FarmSight therefore does not recommend waiting based on this signal alone.**
+
+We checked it directly (out of sample, 2026 test not used): in wheat weeks with an UP call on a non-frozen price,
+holding four weeks beat the interest cost (1.27% for 4 weeks) in only **44.4%** of weeks in
+2021–2024 (275 weeks) and **42.6%** in 2025 (68 weeks), with a negative median
+(-0.60% and -0.90%). The UP call also fires in most wheat weeks, so it
+does not single out good times to wait. So the recommendation is **sell now**. For fresh wheat data where the farmer
+has storage, the app adds an optional **upside watch**: the signal, the break-even price that waiting would have to
+beat, and monitoring the farmer can switch on. It never suggests how much to keep; if the farmer chooses to keep
+some, the app tracks that amount against the break-even price. "Hold" is never recommended unless holding beats the
+carrying cost in at least 60% of out-of-sample weeks, which the evidence does not show.
+
 ## How "Why?" works
 
 The model's prediction is split exactly into each input's contribution with **SHAP** (TreeSHAP, computed by
 XGBoost itself). Related inputs are summed into 8 reasons a farmer can follow (recent trend, time of year, rain,
 heat...), each with its rupee effect per 40 kg, written in Urdu and English from fixed templates. No LLM writes
 these. On the two backup demo weeks the wheat call was right: 24 March 2025 "likely down" (it fell 19.7%) and
-4 August 2025 "likely up" (it rose 48.6%).
+4 August 2025 "likely up" (it rose 48.6%). Two weeks are examples, not a reason to wait: across all UP weeks, waiting
+beat its interest cost less than half the time (see above).
 
 ## Limits
 
@@ -208,6 +223,29 @@ Direction on 2026 moves > 3% (same definition as for validation):
 
 The wheat-only direction call is confirmed on data the model never saw. IRRI (64%, p = 0.27) is still not enough
 evidence to add it.
+
+### Action plan evaluation (`artifacts/models/policy_eval.json`)
+
+Reproduce with `python -m ml.forecast.policy_eval` (out-of-sample predictions only: rolling CV on 2021–2024 and the
+2025 validation split; the 2026 test split is not used). The plan logic is `ml/decision/policy.py`.
+
+| Period | Weeks | Frozen weeks | Recommended action | Upside watch (storage available) | Upside watch (no storage) |
+|---|---|---|---|---|---|
+| CV 2021–2024 | 1053 | 146 | SELL_NOW in all | 275 (wheat only) | 0 |
+| Validation 2025 | 328 | 108 | SELL_NOW in all | 68 (wheat only) | 0 |
+
+What holding 4 weeks would have done in wheat weeks with an UP call (non-frozen), per 40 kg after interest:
+
+| Period | Weeks | Beat the carrying cost | Mean | Median | Worst | Best |
+|---|---|---|---|---|---|---|
+| CV 2021–2024 | 275 | 44.4% | -0.21% | -0.60% | -23.1% | +30.0% |
+| Validation 2025 | 68 | 42.6% | +3.18% | -0.90% | -6.9% | +47.3% |
+
+The 2025 mean is positive only because of a few large rallies (best +47.3%); the typical week
+lost money after interest. The hold gate needs at least 60% in every period (a policy threshold for the team to
+confirm); the lowest observed is 42.6%, so HOLD_AND_MONITOR stays off.
+
+Limits: A backtest on historical AMIS weekly prices, not a field trial. Only the interest cost of holding is counted; storage loss, godown fees and transport are not, so real holding results are worse than shown. Historical weeks always have an observed price, so the stale-data rule (price older than 8 weeks) does not occur here; frozen AMIS stretches are excluded from the hold evidence and flagged in the action counts. The 2026 test split is not used. The direction model gives only a sign, no probability, so no confidence threshold is applied.
 
 ### Proposal for the team (B4 → B5/B6), agreed and built
 

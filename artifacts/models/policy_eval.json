@@ -1,0 +1,95 @@
+{
+  "written_at": "2026-10-09T22:26:33+00:00",
+  "carry_pct_4w": 1.269,
+  "interest_pct_per_year": 16.5,
+  "periods": {
+    "cv_2021_2024": {
+      "weeks": 1053,
+      "frozen_weeks": 146,
+      "scenarios": {
+        "no_storage": {
+          "actions": {
+            "SELL_NOW": 1053
+          },
+          "modes": {
+            "SELL_NOW": 1053
+          },
+          "upside_watch_by_crop": {}
+        },
+        "storage": {
+          "actions": {
+            "SELL_NOW": 1053
+          },
+          "modes": {
+            "SELL_NOW": 778,
+            "SELL_NOW_UPSIDE_WATCH": 275
+          },
+          "upside_watch_by_crop": {
+            "Wheat": 275
+          }
+        }
+      },
+      "hold_if_wheat_up": {
+        "weeks": 275,
+        "beat_carry_weeks": 122,
+        "beat_carry_pct": 44.4,
+        "mean_net_pct": -0.21,
+        "median_net_pct": -0.6,
+        "worst_net_pct": -23.1,
+        "best_net_pct": 29.96
+      }
+    },
+    "validation_2025": {
+      "weeks": 328,
+      "frozen_weeks": 108,
+      "scenarios": {
+        "no_storage": {
+          "actions": {
+            "SELL_NOW": 328
+          },
+          "modes": {
+            "SELL_NOW": 328
+          },
+          "upside_watch_by_crop": {}
+        },
+        "storage": {
+          "actions": {
+            "SELL_NOW": 328
+          },
+          "modes": {
+            "SELL_NOW": 260,
+            "SELL_NOW_UPSIDE_WATCH": 68
+          },
+          "upside_watch_by_crop": {
+            "Wheat": 68
+          }
+        }
+      },
+      "hold_if_wheat_up": {
+        "weeks": 68,
+        "beat_carry_weeks": 29,
+        "beat_carry_pct": 42.6,
+        "mean_net_pct": 3.18,
+        "median_net_pct": -0.9,
+        "worst_net_pct": -6.92,
+        "best_net_pct": 47.33
+      }
+    }
+  },
+  "hold_gate_evidence": {
+    "beat_carry_pct_min": 42.6,
+    "beat_carry_pct_by_period": {
+      "cv_2021_2024": 44.4,
+      "validation_2025": 42.6
+    },
+    "required_beat_carry_pct": 60.0,
+    "source": "artifacts/models/policy_eval.json (ml.forecast.policy_eval; CV 2021-2024 and validation 2025)"
+  },
+  "limits": [
+    "A backtest on historical AMIS weekly prices, not a field trial.",
+    "Only the interest cost of holding is counted; storage loss, godown fees and transport are not, so real holding results are worse than shown.",
+    "Historical weeks always have an observed price, so the stale-data rule (price older than 8 weeks) does not occur here; frozen AMIS stretches are excluded from the hold evidence and flagged in the action counts.",
+    "The 2026 test split is not used.",
+    "The direction model gives only a sign, no probability, so no confidence threshold is applied."
+  ]
+}

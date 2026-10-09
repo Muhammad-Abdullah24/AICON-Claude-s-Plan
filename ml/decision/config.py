@@ -29,3 +29,8 @@ SELLING_WINDOW_TOLERANCE_PCT = 1.0
 
 # Alerts (B8). At most one alert per farmer in this many days, across all their crops.
 ALERT_MIN_DAYS_BETWEEN = 7
+
+# Action plan (ml/decision/policy.py). HOLD_AND_MONITOR may be recommended only if, out of sample, holding beat
+# the carrying cost in at least this share of weeks with an UP call (lowest of the evaluation periods). A policy
+# threshold for the team to confirm; the evidence (artifacts/models/policy_eval.json) shows 42-46%, so it is off.
+HOLD_GATE_MIN_BEAT_CARRY_PCT = 60.0
