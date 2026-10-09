@@ -54,7 +54,6 @@ To put it online (Render for the API, Vercel for the web app), follow [`docs/DEP
 
 ```bash
 .venv/Scripts/python -m ruff check .
-.venv/Scripts/python -m backend.app.check_artifacts
 .venv/Scripts/python -m pytest
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck

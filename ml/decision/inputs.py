@@ -2,14 +2,19 @@
 
 Standard library only (csv, json), so ml/decision/ keeps its no-third-party-imports rule.
 Mandis are accepted by display name ("Rahim Yar Khan") or AMIS name ("RahimYarKhan").
+Functions that take `as_of` read only data on or before that date, so the demo's replay mode can use them;
+without it they use the latest snapshot (series_coverage.csv).
 """
 
 from __future__ import annotations
 
 import csv
 import json
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
+
+from ml.ingest.runtime_tables import STALE_AFTER_WEEKS
 
 ROOT = Path(__file__).resolve().parents[2]
 PROCESSED = ROOT / "data" / "processed"
@@ -78,22 +83,47 @@ def support_price(crop_option: str, crop_year: int | None = None) -> dict | None
     return {"price_per_40kg": float(row["price_per_40kg"]), "status": row["status"], "crop_year": row["crop_year"]}
 
 
-def is_stale(crop_option: str, mandi: str) -> bool:
-    """True when the series' latest price is old (series_coverage.csv); unknown series count as stale."""
-    target = amis_name(mandi)
-    for row in _rows("series_coverage.csv"):
-        if row["crop_option"] == crop_option and row["mandi"] == target:
-            return row["is_stale"] == "1"
-    return True
+@lru_cache(maxsize=1)
+def _daily_observed() -> dict[tuple[str, str], list[tuple[str, float]]]:
+    """(crop_option, AMIS mandi) -> sorted (date, Rs per 40 kg) of real AMIS daily prices."""
+    options = {(r["amis_crop"], r["amis_variety"]): r["crop_option"] for r in _rows("crops.csv")}
+    out: dict[tuple[str, str], list[tuple[str, float]]] = {}
+    with open(PROCESSED / "farmsight_prices_clean_daily.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            option = options.get((r["crop"], r["variety"]))
+            if option:
+                out.setdefault((option, r["city"]), []).append((r["date"], float(r["price_rs_per_40kg"])))
+    return {k: sorted(v) for k, v in out.items()}
 
 
-def latest_price(crop_option: str, mandi: str) -> tuple[float, str] | None:
-    """(latest AMIS price Rs per 40 kg, its date) from series_coverage.csv, or None if there is no series."""
+def latest_price(crop_option: str, mandi: str, as_of: date | None = None) -> tuple[float, str] | None:
+    """(latest AMIS price Rs per 40 kg, its date) on or before `as_of`, or None if there is none.
+
+    Without `as_of`, the snapshot in series_coverage.csv; with it, the real daily prices up to that day.
+    """
     target = amis_name(mandi)
-    for row in _rows("series_coverage.csv"):
-        if row["crop_option"] == crop_option and row["mandi"] == target and row["latest_price_per_40kg"]:
-            return float(row["latest_price_per_40kg"]), row["prices_as_of"]
-    return None
+    if as_of is None:
+        for row in _rows("series_coverage.csv"):
+            if row["crop_option"] == crop_option and row["mandi"] == target and row["latest_price_per_40kg"]:
+                return float(row["latest_price_per_40kg"]), row["prices_as_of"]
+        return None
+    days = [d for d in _daily_observed().get((crop_option, target), []) if d[0] <= as_of.isoformat()]
+    return (days[-1][1], days[-1][0]) if days else None
+
+
+def is_stale(crop_option: str, mandi: str, as_of: date | None = None) -> bool:
+    """True when the latest price is more than STALE_AFTER_WEEKS old (A2's rule); no price counts as stale.
+
+    Without `as_of`, the flag in series_coverage.csv; with it, the age of the latest price on that day.
+    """
+    if as_of is None:
+        target = amis_name(mandi)
+        for row in _rows("series_coverage.csv"):
+            if row["crop_option"] == crop_option and row["mandi"] == target:
+                return row["is_stale"] == "1"
+        return True
+    latest = latest_price(crop_option, mandi, as_of)
+    return latest is None or (as_of - date.fromisoformat(latest[1])).days // 7 > STALE_AFTER_WEEKS
 
 
 def crop_economics(crop_option: str) -> dict:
@@ -151,17 +181,17 @@ def post_harvest_ratios(crop_option: str, mandi: str) -> list[dict]:
     return sorted(rows, key=lambda r: r["offset_months"])
 
 
-def crop_plan_inputs(mandi: str) -> list[dict]:
-    """Everything crop_plan() needs for every crop option at one mandi, read from the runtime tables."""
+def crop_plan_inputs(mandi: str, as_of: date | None = None) -> list[dict]:
+    """Everything crop_plan() needs for every crop option at one mandi, using prices on or before `as_of`."""
     out = []
     for crop_option in sorted({r["crop_option"] for r in _rows("crops.csv")}):
-        latest = latest_price(crop_option, mandi)
+        latest = latest_price(crop_option, mandi, as_of)
         ratio = harvest_ratio(crop_option, mandi, int(latest[1][5:7])) if latest else None
         out.append({
             "crop_option": crop_option,
             "latest_price": latest[0] if latest else None,
             "prices_as_of": latest[1] if latest else None,
-            "is_stale": is_stale(crop_option, mandi),
+            "is_stale": is_stale(crop_option, mandi, as_of),
             "harvest_ratio": ratio,
             **crop_economics(crop_option),
         })
@@ -191,16 +221,18 @@ def _in_frozen_stretch(crop_option: str, mandi: str, week_start: str) -> bool:
     return False
 
 
-def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: str | None) -> dict | None:
-    """Inputs for alert_check() for one crop at one mandi, or None without prices.
+def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: str | None,
+                    as_of: date | None = None) -> dict | None:
+    """Inputs for alert_check() for one crop at one mandi, from weeks on or before `as_of`; None without prices.
 
     change_4w_pct compares the latest observed weekly price with the observed price exactly 4 weeks earlier
-    (None if that week has no price). The band is the deployed forecast band (artifacts/models/deployed.json).
+    (None if that week has no price). The week containing `as_of` counts, as in ml.features (I1).
+    The band is the deployed forecast band (artifacts/models/deployed.json).
     """
-    from datetime import date, timedelta
-
     target = amis_name(mandi)
-    prices = _weekly_observed().get((crop_option, target))
+    prices = _weekly_observed().get((crop_option, target), {})
+    if as_of is not None:
+        prices = {w: p for w, p in prices.items() if w <= as_of.isoformat()}
     if not prices:
         return None
     latest = max(prices)
@@ -216,5 +248,5 @@ def alert_candidate(crop_option: str, mandi: str, signal: str, previous_signal: 
         "band_q10_pct": band["q10"],
         "band_q90_pct": band["q90"],
         "is_frozen": any(_in_frozen_stretch(crop_option, target, week) for week in (latest, earlier)),
-        "is_stale": is_stale(crop_option, mandi),
+        "is_stale": is_stale(crop_option, mandi, as_of),
     }

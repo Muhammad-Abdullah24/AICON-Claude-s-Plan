@@ -381,9 +381,7 @@ def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None
         given = by_option[option]
         window = decision.selling_window(engine_inputs.post_harvest_ratios(option, mandi),
                                          engine_inputs.interest_pct_per_year())
-        risk = c["risk"]
-        if c["is_stale"]:   # an old starting price makes the estimate shakier, whatever the history says
-            risk = {"LOW": "MEDIUM", "MEDIUM": "HIGH"}.get(risk, risk)
+        risk = c["risk"]   # already one level higher for a stale starting price (ml.decision.risk_badge, H-B15)
         items.append({
             "crop_option": option, "rank": c["rank"], "latest_price": given["latest_price"],
             "latest_price_date": given["prices_as_of"], "harvest_price_estimate": c["harvest_price_estimate"],
