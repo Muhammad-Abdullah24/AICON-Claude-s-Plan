@@ -5,7 +5,7 @@ import { useAppState } from '../appState'
 
 export function Header() {
   const { t, i18n } = useTranslation()
-  const { meta } = useAppState()
+  const { meta, farmer } = useAppState()
   const other = i18n.language === 'ur' ? 'en' : 'ur'
 
   return (
@@ -30,17 +30,24 @@ export function Header() {
           {t('lang.switchTo')}
         </button>
       </div>
-      <nav className="mx-auto flex max-w-xl gap-1 px-4 pt-2" aria-label={t('app.name')}>
+      {/* Eight screens: the row scrolls sideways on a phone rather than wrapping. */}
+      <nav className="mx-auto flex max-w-xl gap-1 overflow-x-auto px-4 pt-2 whitespace-nowrap [scrollbar-width:none]" aria-label={t('app.name')}>
         {[
-          { to: '/', label: t('nav.ask') },
-          { to: '/forecast', label: t('nav.forecast') },
+          { to: '/', label: t('nav.home') },
+          { to: '/why', label: t('nav.why') },
+          { to: '/compare', label: t('nav.compare') },
+          { to: '/grow', label: t('nav.grow') },
+          { to: '/history', label: t('nav.history') },
+          { to: '/margin', label: t('nav.margin') },
+          { to: '/chat', label: t('nav.chat') },
+          { to: '/profile', label: farmer ? farmer.name : t('nav.profile') },
         ].map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end
             className={({ isActive }) =>
-              `rounded-t-lg px-4 py-2 text-base ${
+              `shrink-0 rounded-t-lg px-3 py-2 text-base ${
                 isActive ? 'bg-cotton font-bold text-ink' : 'text-cotton/80 hover:text-cotton'
               }`
             }

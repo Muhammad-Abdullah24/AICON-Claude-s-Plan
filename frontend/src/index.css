@@ -17,6 +17,7 @@
   --color-paper: #ffffff; /* cards, the parchi */
   --color-wheat: #d4a017; /* forecast band, highlights */
   --color-wheat-soft: #f3e3ad;
+  --color-wheat-deep: #7a5800; /* amber text: old or repeated prices (readable on white) */
   --color-madder: #a3302e; /* risk, the synthetic tape */
   --color-field: #3e6b3a; /* gains */
   --color-slate: #5b6178; /* secondary text */

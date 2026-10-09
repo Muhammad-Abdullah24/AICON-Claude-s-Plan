@@ -1,11 +1,17 @@
 {
   "app": {
     "name": "FarmSight",
-    "tagline": "When to sell, where to sell"
+    "tagline": "When to sell, where to sell, what to grow"
   },
   "nav": {
-    "ask": "Advice",
-    "forecast": "Price forecast"
+    "home": "Advice",
+    "why": "Why",
+    "compare": "Mandis",
+    "grow": "What to grow",
+    "history": "History",
+    "margin": "Margin",
+    "chat": "Ask",
+    "profile": "Profile"
   },
   "lang": {
     "switchTo": "اردو",
@@ -15,69 +21,168 @@
     "synthetic": "Synthetic data",
     "syntheticNote": "These numbers are not real. They are for testing only.",
     "real": "Real data",
-    "wholesale": "Wholesale",
-    "retail": "Retail (proxy)",
-    "per40kg": "per 40 kg",
-    "basedOn": "Based on data up to {{date}}"
+    "source": "Source: AMIS Punjab mandi prices",
+    "per40kg": "per 40 kg (one maund)",
+    "asOf": "Prices as of {{date}}",
+    "stale": "Old price: last reported on {{date}}",
+    "unchanged": "AMIS has shown the same price since {{date}}, so treat it with care",
+    "estimate": "Estimate",
+    "weatherCredit": "Weather data by Open-Meteo.com",
+    "weatherLine": "Weather this week: {{tmax}}°C high, {{rain}} mm rain",
+    "weatherCached": "(saved reading)"
   },
-  "ask": {
+  "select": {
     "crop": "Crop",
     "mandi": "Mandi",
-    "quantity": "Quantity",
+    "quantity": "Your harvest",
     "maund": "maund",
-    "storage": "Can you store your crop?",
-    "storageOptions": {
-      "none": "No",
-      "home": "At home",
-      "cold_store": "Cold store",
-      "warehouse": "Warehouse"
-    },
-    "submit": "Get advice",
-    "submitting": "Working it out…",
     "quantityInvalid": "Enter a quantity above 0",
     "quantityTooLarge": "Quantity can be at most {{max}} maund"
   },
-  "verdict": {
-    "advice": "Advice",
-    "gainFor": "Extra on your {{qty}} maund",
-    "gainSplit": "Extra on the stored share",
-    "why": "Why",
-    "risk": "Risk",
-    "alert": "Alert",
-    "altMandi": "{{mandi}}, after transport",
-    "disclaimer": "This is an estimate, not a guarantee.",
-    "assumptions": "Costs used",
-    "assumptionDefault": "default",
-    "assumptionFarmer": "yours",
-    "bestWeek_one": "Sell in 1 week",
-    "bestWeek_other": "Sell in {{count}} weeks",
-    "costNames": {
-      "storage_cost_per_maund_week": "Storage cost (per maund, per week)",
-      "spoilage_pct_week": "Spoilage (% per week)",
-      "finance_cost_pct_month": "Loan or interest cost (% per month)",
-      "transport": "Transport to {{mandi}} (per maund)"
-    }
+  "signal": {
+    "SELL": "Sell",
+    "WAIT": "Wait",
+    "today": "Today at the mandi",
+    "inWeeks": "In {{weeks}} weeks (estimate)",
+    "range": "Likely between {{low}} and {{high}}",
+    "impactFor": "If you wait {{weeks}} weeks, on your {{qty}} maund",
+    "afterInterest": "after {{interest}} interest for waiting",
+    "confidence": "How sure are we?",
+    "confidenceLevels": {
+      "HIGH": "Fairly sure",
+      "MEDIUM": "Somewhat sure",
+      "LOW": "Not sure"
+    },
+    "baseline": "Simple estimate for now: the price stays the same, with the range of past 4-week swings.",
+    "disclaimer": "This is an estimate, not a guarantee."
   },
-  "forecast": {
-    "today": "Today's price",
-    "range": "Likely range",
-    "legendHistory": "Past price",
-    "legendBand": "Likely range (10% to 90%)",
-    "legendMedian": "Middle estimate",
-    "legendNaive": "No change (baseline)",
-    "model": "Model",
-    "accuracy": "Accuracy vs no-change baseline",
-    "notMeasured": "not measured yet",
-    "chartLabel": "{{crop}}, {{mandi}}: past price and forecast for the coming weeks",
-    "weeksAhead_one": "In 1 week",
-    "weeksAhead_other": "In {{count}} weeks"
+  "actions": {
+    "why": "Why?",
+    "compare": "Compare mandis",
+    "grow": "What to grow",
+    "ask": "Ask a question"
+  },
+  "offer": {
+    "title": "A buyer offered you",
+    "placeholder": "Price per maund",
+    "check": "Check the offer",
+    "below": "{{diff}} per maund below the fair range",
+    "above": "{{diff}} per maund above the fair range",
+    "fair": "Within the fair range",
+    "fairRange": "Fair range (what this mandi paid in the last {{days}} days): {{low}} to {{high}}",
+    "total": "On {{qty}} maund: {{total}}"
+  },
+  "why": {
+    "title": "Why this advice",
+    "sourceFacts": "Reasons from the data. Model explanations will replace these when the model is ready.",
+    "sourceShap": "Reasons from the forecast model (SHAP)",
+    "chart": "Price history and the 4-week range",
+    "legendHistory": "Past weekly price",
+    "legendRange": "Likely range in 4 weeks"
+  },
+  "compare": {
+    "title": "Where to sell: net price after transport",
+    "best": "Best",
+    "net": "Net price",
+    "price": "Mandi price",
+    "transport": "Transport (estimate)",
+    "gainFor": "vs your mandi, on {{qty}} maund",
+    "noData": "No price data",
+    "priceOf": "price of {{date}}"
+  },
+  "grow": {
+    "title": "What to grow: expected profit at harvest",
+    "land": "Your land",
+    "acres": "acres",
+    "profitTotal": "Expected profit on your land",
+    "profitAcre": "{{amount}} per acre",
+    "harvestPrice": "Harvest price estimate: {{price}} ({{low}} to {{high}})",
+    "risk": "Price risk",
+    "riskLevels": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High"
+    },
+    "years": "Based on {{n}} years of AMIS prices",
+    "bestSell": "Best month to sell: {{month}} (usually {{gain}}% after interest)",
+    "noBestSell": "Not enough years of prices to pick a selling month",
+    "sow": "Sow",
+    "harvest": "Harvest",
+    "sell": "Best sell",
+    "notAvailable": "No price data at this mandi for: {{crops}}",
+    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee."
+  },
+  "history": {
+    "title": "Price history",
+    "weekly": "Weekly price, last 12 months",
+    "seasonal": "Usual price by month",
+    "seasonalNote": "Each month as a % of the yearly trend (median across years). Above 100 is usually a better month to sell.",
+    "sowing": "Sowing",
+    "harvest": "Harvest"
+  },
+  "margin": {
+    "title": "What you keep from the price",
+    "price": "Price per maund",
+    "arhti": "Your arhti commission",
+    "cost": "Cost of production",
+    "arhtiAmount": "Arhti commission",
+    "profit": "You keep",
+    "support": "Government support price: {{price}} ({{year}}, {{status}})",
+    "supportStatus": {
+      "PROCURED": "government bought at this price",
+      "ANNOUNCED_NOT_PROCURED": "announced, not bought"
+    },
+    "costNote": "Cost of production: Punjab official tables, updated for inflation ({{confidence}})."
+  },
+  "chat": {
+    "title": "Ask about your crop",
+    "placeholder": "For example: will the wheat price go up next month?",
+    "send": "Ask",
+    "sending": "Thinking…",
+    "fallback": "This answer comes from our template, not the AI.",
+    "tooLong": "Please keep the question under {{max}} characters"
+  },
+  "profile": {
+    "title": "Your profile",
+    "guest": "You are using FarmSight as a guest.",
+    "loggedInAs": "Logged in as {{name}}",
+    "login": "Log in with your phone number",
+    "phone": "Phone number",
+    "loginButton": "Log in",
+    "demoHint": "Demo farmer: +920000000001",
+    "register": "New here? Create a profile",
+    "name": "Name",
+    "district": "Your district",
+    "land": "Land (acres)",
+    "arhti": "Arhti commission (%)",
+    "alerts": "Send me alerts on WhatsApp",
+    "save": "Save",
+    "saved": "Saved",
+    "create": "Create profile",
+    "logout": "Log out",
+    "notFound": "No profile with this number. Create one below.",
+    "exists": "This number already has a profile. Log in instead."
+  },
+  "months": {
+    "1": "January",
+    "2": "February",
+    "3": "March",
+    "4": "April",
+    "5": "May",
+    "6": "June",
+    "7": "July",
+    "8": "August",
+    "9": "September",
+    "10": "October",
+    "11": "November",
+    "12": "December"
   },
   "status": {
     "loading": "Loading…",
     "error": "Could not reach the server.",
     "errorHint": "Check your connection and try again.",
     "retry": "Try again",
-    "notFound": "No data for this date.",
+    "notFound": "No price data for this crop at this mandi.",
     "invalid": "Some of the details you entered are not valid. Please check them."
   }
 }
