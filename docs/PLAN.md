@@ -152,6 +152,7 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 - [ ] **H-C17** (from B2) The blueprint engine is `ml.decision` (`advise`, `compare_mandis`, `offer_check`, `margin`, `fair_price_range`, `confidence`); read its inputs with `ml.decision.inputs` (`interest_pct_per_year`, `transport_cost`, `production_cost_per_40kg`, `support_price`, `is_stale`). Prices Rs per 40 kg, quantities in maund. Switch `/advice` and the service layer to it, and tell Usman once `backend/` and `ml/precompute.py` no longer import `ml.decision.engine`, so B can delete the old engine (part of C3). Interest is for 4 weeks (weeks / 52), so it is about 7.7% lower than the blueprint section 12 example, which used one month.
 - [ ] **H-C18** (from B7) What to Grow: `ml.decision.crop_plan(ml.decision.inputs.crop_plan_inputs(mandi), land_area_acres)` ranks the crop options by profit per acre at the next harvest, with a price range, a profit range, a risk badge and `is_estimate: true`; crops without data come last (`has_data: false`, e.g. IRRI at Rahim Yar Khan). Show `prices_as_of` and amber when `is_stale` (Super Basmati ranks first everywhere on months-old prices; say so). Selling window: `ml.decision.selling_window(ml.decision.inputs.post_harvest_ratios(crop, mandi), ml.decision.inputs.interest_pct_per_year())` gives `best_month`, `window_months` and per-month `net_pct` after interest; `sell_at_harvest: true` means holding does not pay. Sowing months: `ml.decision.inputs.crop_calendar(crop)`.
 - [ ] **H-C19** (from B8) Alert job (C9): for each farmer, build one candidate per crop they follow with `ml.decision.inputs.alert_candidate(crop_option, mandi, signal, previous_signal)` (`signal` from `advise()`, `previous_signal` = the last signal that farmer was sent, None at first), then call `ml.decision.alert_check(candidates, last_alert_on, today)`. Send `alert` only when `send` is true, store `status` (CREATED or SUPPRESSED) in the alerts table, and store the new signal and `last_alert_on` per farmer. With the baseline forecast the signal is always SELL, so expect PRICE_SPIKE alerts only.
+- [ ] **H-C20** (from B9) `/api/history`: `ml.forecast.history.history(crop_option, mandi, as_of=None)` returns `weeks` (52 points, `price` None for a week without an AMIS price: draw a gap, never join across it; `filled` and `frozen` flags, frozen = "price unchanged" per H-C7), `seasonal` (12 months of `index_median` with `index_min`/`index_max`, None where data is thin; this covers H-C6), `calendar` (sowing and harvest months to shade), plus `prices_as_of`, `is_stale`, `low`, `high`. Returns None for IRRI at Rahim Yar Khan.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
@@ -231,7 +232,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 
 **B · Usman**
 - [x] **B8** (S) `alert_check()`: signal change or unusual price, at most one alert per farmer per week.
-- [ ] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
+- [x] **B9** (S) History function: 52-week series and the seasonal pattern for the history chart.
 - [ ] **B10** (S) `docs/MODEL_CARD.md` for judges: data, features, model, gate result vs baseline, SHAP, limits. One page.
 
 **C · Abd**
