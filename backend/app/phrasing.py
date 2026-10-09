@@ -42,13 +42,13 @@ REASONS = {
         "alert_active": "اس فصل کے لیے الرٹ جاری ہے",
     },
     "en": {
-        "trend_up": "Price expected to rise about {pct}% over the next {weeks} weeks",
-        "trend_down": "Price expected to fall about {pct}% over the next {weeks} weeks",
-        "trend_flat": "No big price change expected over the next {weeks} weeks",
+        "trend_up": "Price expected to rise about {pct}% over the next {weeks_en}",
+        "trend_down": "Price expected to fall about {pct}% over the next {weeks_en}",
+        "trend_flat": "No big price change expected over the next {weeks_en}",
         "elsewhere_better": "{mandi} pays Rs {net_price} per maund after transport, Rs {gain} more",
-        "wait_gain": "Holding {weeks} weeks could earn about Rs {gain} more per maund after costs",
+        "wait_gain": "Holding {weeks_en} could earn about Rs {gain} more per maund after costs",
         "downside_large": "Holding is risky: the price could fall to Rs {low}",
-        "band_wide": "In {weeks} weeks the price could be anywhere from Rs {low} to Rs {high}",
+        "band_wide": "In {weeks_en} the price could be anywhere from Rs {low} to Rs {high}",
         "no_clear_gain": "Holding gives no clear gain after costs",
         "cannot_store": "You have no storage",
         "alert_active": "There is an active alert for this crop",
@@ -57,7 +57,7 @@ REASONS = {
 
 RISK_LINE = {
     "ur": "ریٹ {weeks} ہفتے میں Rs {low} تک بھی گر سکتا ہے",
-    "en": "The price could fall as low as Rs {low} within {weeks} weeks",
+    "en": "The price could fall as low as Rs {low} within {weeks_en}",
 }
 
 WHATSAPP_PLACEHOLDER_REPLY = (
@@ -73,6 +73,10 @@ def _fmt(value: float | int | str) -> str:
     return value
 
 
+def _weeks_en(n: int) -> str:
+    return "1 week" if n == 1 else f"{n} weeks"
+
+
 def verdict_text(verdict: str, lang: str) -> str:
     return VERDICT_TEXT[lang][verdict]
 
@@ -81,6 +85,8 @@ def reasons_text(reasons: list[Reason], lang: str, mandi_names: dict[str, str]) 
     out = []
     for r in reasons[:MAX_REASONS]:
         params = {k: _fmt(v) for k, v in r.params.items()}
+        if "weeks" in r.params:
+            params["weeks_en"] = _weeks_en(int(r.params["weeks"]))
         if "mandi" in params:
             params["mandi"] = mandi_names.get(str(r.params["mandi"]), str(r.params["mandi"]))
         out.append(REASONS[lang][r.code].format(**params))
@@ -88,4 +94,4 @@ def reasons_text(reasons: list[Reason], lang: str, mandi_names: dict[str, str]) 
 
 
 def risk_line(low: float, weeks: int, lang: str) -> str:
-    return RISK_LINE[lang].format(low=_fmt(low), weeks=weeks)
+    return RISK_LINE[lang].format(low=_fmt(low), weeks=weeks, weeks_en=_weeks_en(weeks))

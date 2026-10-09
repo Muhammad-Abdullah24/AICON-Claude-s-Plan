@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { api, type AdviceRequest, type AdviceResponse, type Storage } from '../api/client'
+import { api, QUANTITY_MAX, type AdviceRequest, type AdviceResponse, type Storage } from '../api/client'
 import { ChipGroup } from '../components/ChipGroup'
 import { ErrorBox } from '../components/Status'
 import { VerdictParchi } from '../components/VerdictParchi'
-import type { Lang } from '../i18n'
+import i18next, { type Lang } from '../i18n'
+import { formatNumber, parseTypedNumber } from '../lib/format'
 import { useAppState } from '../appState'
 
 const STORAGE: Storage[] = ['none', 'home', 'cold_store', 'warehouse']
@@ -26,8 +27,9 @@ export function Ask() {
   const lastRequest = useRef<AdviceRequest | null>(null)
   const inflight = useRef<AbortController | null>(null)
 
-  const qty = Number(quantity)
-  const qtyValid = quantity.trim() !== '' && Number.isFinite(qty) && qty > 0
+  const qty = parseTypedNumber(quantity)
+  const qtyProblem = qty === null || qty <= 0 ? 'empty' : qty > QUANTITY_MAX ? 'tooLarge' : null
+  const qtyValid = qtyProblem === null
 
   // Stable: uses only refs and a state setter.
   const run = useCallback((req: AdviceRequest) => {
@@ -55,21 +57,23 @@ export function Ask() {
   }
 
   // The advice text is written by the server in one language: refetch it when the language changes.
+  // This effect only manages the listener. It must not cancel requests: its cleanup also runs when
+  // React re-subscribes, and cancelling there killed the refetch it had just started.
   useEffect(() => {
     const onChange = (next: string) => {
       const last = lastRequest.current
       if (last && last.lang !== next) run({ ...last, lang: next as Lang })
     }
-    i18n.on('languageChanged', onChange)
-    return () => {
-      i18n.off('languageChanged', onChange)
-      inflight.current?.abort()
-    }
-  }, [i18n, run])
+    i18next.on('languageChanged', onChange)
+    return () => i18next.off('languageChanged', onChange)
+  }, [run])
+
+  // Cancel any request still in flight when the screen closes.
+  useEffect(() => () => inflight.current?.abort(), [])
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    if (!qtyValid) return
+    if (qty === null || !qtyValid) return
     run({ crop: selection.crop, mandi: selection.mandi, quantity_maund: qty, storage, lang })
   }
 
@@ -104,9 +108,11 @@ export function Ask() {
             />
             <span className="text-base">{t('ask.maund')}</span>
           </div>
-          {!qtyValid && (
+          {qtyProblem && (
             <p id="qty-error" className="mt-1 text-sm text-madder">
-              {t('ask.quantityInvalid')}
+              {qtyProblem === 'tooLarge'
+                ? t('ask.quantityTooLarge', { max: formatNumber(QUANTITY_MAX) })
+                : t('ask.quantityInvalid')}
             </p>
           )}
         </div>

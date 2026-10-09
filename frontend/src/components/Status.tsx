@@ -14,12 +14,14 @@ export function Loading() {
 /** Says what went wrong and offers the one action that can fix it. */
 export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { t } = useTranslation()
-  const notFound = error instanceof ApiError && error.status === 404
+  const status = error instanceof ApiError ? error.status : 0
+  // Only a network or server failure is worth retrying; 404 and 422 will fail the same way again.
+  const kind = status === 404 ? 'notFound' : status === 422 ? 'invalid' : 'error'
   return (
     <div className="rounded-xl border-2 border-madder/40 bg-paper p-4" role="alert">
-      <p className="font-bold text-madder">{notFound ? t('status.notFound') : t('status.error')}</p>
-      {!notFound && <p className="text-sm text-slate">{t('status.errorHint')}</p>}
-      {onRetry && !notFound && (
+      <p className="font-bold text-madder">{t(`status.${kind}`)}</p>
+      {kind === 'error' && <p className="text-sm text-slate">{t('status.errorHint')}</p>}
+      {onRetry && kind === 'error' && (
         <button
           type="button"
           onClick={onRetry}

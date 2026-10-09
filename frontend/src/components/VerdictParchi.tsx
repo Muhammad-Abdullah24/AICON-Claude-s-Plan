@@ -21,6 +21,13 @@ export function VerdictParchi({ advice, quantity }: { advice: AdviceResponse; qu
   const { t } = useTranslation()
   const { mandiName } = useAppState()
   const gain = advice.rupee_difference
+
+  // Assumption names come from the backend as ids; show the farmer words, never code names.
+  const costName = (id: string) => {
+    const transport = /^transport_to_(.+)_per_maund$/.exec(id)
+    if (transport) return t('verdict.costNames.transport', { mandi: mandiName(transport[1]) })
+    return t(`verdict.costNames.${id}`, { defaultValue: id })
+  }
   const alt = advice.alternative_mandi
 
   return (
@@ -33,11 +40,11 @@ export function VerdictParchi({ advice, quantity }: { advice: AdviceResponse; qu
       )}
 
       {gain > 0 && (
-        <div className="tear mt-3 flex items-baseline justify-between gap-3 pt-3">
+        <div className="tear mt-3 flex flex-wrap items-baseline justify-between gap-x-3 pt-3">
           <span className="text-sm text-slate">
             {advice.verdict === 'split' ? t('verdict.gainSplit') : t('verdict.gainFor', { qty: quantity })}
           </span>
-          <span className="figures text-3xl font-medium text-field">+{formatRs(gain)}</span>
+          <span className="figures text-3xl font-medium whitespace-nowrap text-field">+{formatRs(gain)}</span>
         </div>
       )}
 
@@ -75,9 +82,9 @@ export function VerdictParchi({ advice, quantity }: { advice: AdviceResponse; qu
       </p>
 
       {alt && (
-        <p className="mt-1 flex justify-between gap-3 text-sm text-slate">
+        <p className="mt-1 flex flex-wrap justify-between gap-x-3 text-sm text-slate">
           <span>{t('verdict.altMandi', { mandi: mandiName(alt.mandi) })}</span>
-          <span className="figures">{formatRs(alt.net_price)}</span>
+          <span className="figures whitespace-nowrap">{formatRs(alt.net_price)}</span>
         </p>
       )}
 
@@ -86,8 +93,8 @@ export function VerdictParchi({ advice, quantity }: { advice: AdviceResponse; qu
           <summary className="cursor-pointer">{t('verdict.assumptions')}</summary>
           <ul className="mt-1">
             {advice.assumptions.map((a) => (
-              <li key={a.name} className="flex justify-between gap-3">
-                <span lang="en" dir="ltr">{a.name}</span>
+              <li key={a.name} className="flex flex-wrap justify-between gap-x-3">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{costName(a.name)}</span>
                 <span>
                   <span className="figures">{a.value}</span>{' '}
                   ({a.source === 'farmer' ? t('verdict.assumptionFarmer') : t('verdict.assumptionDefault')})

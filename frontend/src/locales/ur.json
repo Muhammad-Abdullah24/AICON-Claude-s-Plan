@@ -34,13 +34,13 @@
     },
     "submit": "مشورہ دیکھیں",
     "submitting": "حساب ہو رہا ہے…",
-    "quantityInvalid": "مقدار 1 سے زیادہ لکھیں"
+    "quantityInvalid": "مقدار صفر سے زیادہ لکھیں",
+    "quantityTooLarge": "مقدار {{max}} من سے زیادہ نہیں ہو سکتی"
   },
   "verdict": {
     "advice": "مشورہ",
     "gainFor": "آپ کے {{qty}} من پر اضافی فائدہ",
     "gainSplit": "رکھے گئے حصے پر اضافی فائدہ",
-    "bestWeek": "{{count}} ہفتے بعد بیچیں",
     "why": "وجہ",
     "risk": "خطرہ",
     "alert": "الرٹ",
@@ -48,11 +48,18 @@
     "disclaimer": "یہ اندازہ ہے، ضمانت نہیں۔",
     "assumptions": "حساب میں لیے گئے خرچ",
     "assumptionDefault": "عام اندازہ",
-    "assumptionFarmer": "آپ کا"
+    "assumptionFarmer": "آپ کا",
+    "bestWeek_one": "1 ہفتے بعد بیچیں",
+    "bestWeek_other": "{{count}} ہفتے بعد بیچیں",
+    "costNames": {
+      "storage_cost_per_maund_week": "ذخیرہ کا خرچ (فی من، فی ہفتہ)",
+      "spoilage_pct_week": "ہفتہ وار نقصان (%)",
+      "finance_cost_pct_month": "قرض یا سود کا خرچ (% ماہانہ)",
+      "transport": "{{mandi}} تک کرایہ (فی من)"
+    }
   },
   "forecast": {
     "today": "آج کا ریٹ",
-    "weeksAhead": "{{count}} ہفتے بعد",
     "range": "اندازے کی حد",
     "legendHistory": "پچھلا ریٹ",
     "legendBand": "اندازے کی حد (10% سے 90%)",
@@ -61,13 +68,16 @@
     "model": "ماڈل",
     "accuracy": "سادہ اندازے سے موازنہ",
     "notMeasured": "ابھی ناپا نہیں گیا",
-    "chartLabel": "{{crop}}، {{mandi}}: پچھلا ریٹ اور اگلے ہفتوں کا اندازہ"
+    "chartLabel": "{{crop}}، {{mandi}}: پچھلا ریٹ اور اگلے ہفتوں کا اندازہ",
+    "weeksAhead_one": "1 ہفتے بعد",
+    "weeksAhead_other": "{{count}} ہفتے بعد"
   },
   "status": {
     "loading": "لوڈ ہو رہا ہے…",
     "error": "سرور سے رابطہ نہیں ہو سکا۔",
     "errorHint": "انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔",
     "retry": "دوبارہ کوشش کریں",
-    "notFound": "اس تاریخ کا ڈیٹا موجود نہیں۔"
+    "notFound": "اس تاریخ کا ڈیٹا موجود نہیں۔",
+    "invalid": "آپ کی دی گئی معلومات درست نہیں۔ دوبارہ دیکھیں۔"
   }
 }

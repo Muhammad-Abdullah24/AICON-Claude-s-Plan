@@ -16,7 +16,7 @@ from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, FastAPI, Form, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 
 from backend.app import phrasing
 from backend.app.artifacts import ArtifactStore, load_store
@@ -57,6 +57,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type"],
     )
     app.include_router(router)
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        # Anyone opening the backend's address lands on the interactive API docs, not a bare 404.
+        return RedirectResponse("/docs")
 
     @app.get("/health", response_model=Health, tags=["ops"])
     def health() -> Health:

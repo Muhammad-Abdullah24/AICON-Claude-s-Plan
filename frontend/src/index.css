@@ -35,10 +35,22 @@
     -webkit-text-size-adjust: 100%;
   }
 
-  /* Nastaliq is tall and slanted: it needs roughly double line height or lines collide (PLAN.md 13). */
+  /*
+   * Nastaliq is tall and slanted: it needs roughly double line height or lines
+   * collide and letters get clipped (PLAN.md 13). Tailwind's text-* size
+   * utilities each set their own tight line height, so in Urdu we widen those
+   * too; otherwise every text-sm or text-xs would clip.
+   */
   html:lang(ur) {
     font-size: 17px;
     line-height: 2.1;
+    --text-xs--line-height: 2.2;
+    --text-sm--line-height: 2.1;
+    --text-base--line-height: 2.1;
+    --text-lg--line-height: 2;
+    --text-xl--line-height: 2;
+    --text-2xl--line-height: 1.9;
+    --text-3xl--line-height: 1.9;
   }
   html:lang(en) {
     font-size: 16px;

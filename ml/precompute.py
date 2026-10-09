@@ -127,12 +127,15 @@ def synthetic_prices(crop: str, mandi: str, dates: list[date]) -> list[float]:
 
 
 def band_for(prices: list[float], i: int) -> list[dict]:
+    # Placeholder "model": the last 4 weeks' trend continues, with a band that
+    # widens with the horizon. Tuned so every verdict shows up in the UI;
+    # it says nothing about real prices.
     p = prices[i]
-    momentum = (p / prices[i - 4] - 1) * 0.25
+    momentum = p / prices[i - 4] - 1
     band = []
     for h in HORIZONS:
         q50 = p * (1 + momentum * h / 4)
-        spread = p * 0.03 * math.sqrt(h)
+        spread = p * 0.02 * math.sqrt(h)
         band.append({
             "weeks_ahead": h,
             "q10": round(q50 - 1.2816 * spread),

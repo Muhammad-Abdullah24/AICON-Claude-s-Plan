@@ -29,9 +29,13 @@ interface Point {
   naive?: number
 }
 
-/** History, then the forecast fan. The last history point joins both so the lines connect. */
+// Weeks of history drawn before the forecast. Two years would squeeze the 4-week fan into a
+// sliver; six months keeps the forecast, the point of this screen, clearly visible.
+const CHART_HISTORY_WEEKS = 26
+
+/** Recent history, then the forecast fan. The last history point joins both so the lines connect. */
 function toPoints(f: ForecastResponse): Point[] {
-  const points: Point[] = f.history.map((h) => ({ date: h.date, price: h.price }))
+  const points: Point[] = f.history.slice(-CHART_HISTORY_WEEKS).map((h) => ({ date: h.date, price: h.price }))
   const last = points[points.length - 1]
   if (last) Object.assign(last, { q50: f.price_now, band: [f.price_now, f.price_now], naive: f.price_now })
   const naive = new Map(f.naive.map((n) => [n.weeks_ahead, n.price]))

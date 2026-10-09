@@ -34,13 +34,13 @@
     },
     "submit": "Get advice",
     "submitting": "Working it out…",
-    "quantityInvalid": "Enter a quantity above 0"
+    "quantityInvalid": "Enter a quantity above 0",
+    "quantityTooLarge": "Quantity can be at most {{max}} maund"
   },
   "verdict": {
     "advice": "Advice",
     "gainFor": "Extra on your {{qty}} maund",
     "gainSplit": "Extra on the stored share",
-    "bestWeek": "Sell in {{count}} weeks",
     "why": "Why",
     "risk": "Risk",
     "alert": "Alert",
@@ -48,11 +48,18 @@
     "disclaimer": "This is an estimate, not a guarantee.",
     "assumptions": "Costs used",
     "assumptionDefault": "default",
-    "assumptionFarmer": "yours"
+    "assumptionFarmer": "yours",
+    "bestWeek_one": "Sell in 1 week",
+    "bestWeek_other": "Sell in {{count}} weeks",
+    "costNames": {
+      "storage_cost_per_maund_week": "Storage cost (per maund, per week)",
+      "spoilage_pct_week": "Spoilage (% per week)",
+      "finance_cost_pct_month": "Loan or interest cost (% per month)",
+      "transport": "Transport to {{mandi}} (per maund)"
+    }
   },
   "forecast": {
     "today": "Today's price",
-    "weeksAhead": "In {{count}} weeks",
     "range": "Likely range",
     "legendHistory": "Past price",
     "legendBand": "Likely range (10% to 90%)",
@@ -61,13 +68,16 @@
     "model": "Model",
     "accuracy": "Accuracy vs no-change baseline",
     "notMeasured": "not measured yet",
-    "chartLabel": "{{crop}}, {{mandi}}: past price and forecast for the coming weeks"
+    "chartLabel": "{{crop}}, {{mandi}}: past price and forecast for the coming weeks",
+    "weeksAhead_one": "In 1 week",
+    "weeksAhead_other": "In {{count}} weeks"
   },
   "status": {
     "loading": "Loading…",
     "error": "Could not reach the server.",
     "errorHint": "Check your connection and try again.",
     "retry": "Try again",
-    "notFound": "No data for this date."
+    "notFound": "No data for this date.",
+    "invalid": "Some of the details you entered are not valid. Please check them."
   }
 }

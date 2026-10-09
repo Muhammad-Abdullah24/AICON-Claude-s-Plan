@@ -12,6 +12,11 @@ def test_health(client):
     assert client.get("/health").json() == {"status": "ok"}
 
 
+def test_root_redirects_to_docs(client):
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code in (302, 307) and r.headers["location"] == "/docs"
+
+
 def test_meta_is_labelled_and_complete(meta):
     assert meta["is_synthetic"] is True
     assert meta["unit"] == "40kg"

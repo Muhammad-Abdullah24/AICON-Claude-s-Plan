@@ -5,6 +5,7 @@
  * Pydantic models (npm run gen:api). Never write an API type by hand: if the
  * backend changes a field, regenerate and TypeScript shows every place to fix.
  */
+import spec from './openapi.json'
 import type { components } from './schema'
 
 type S = components['schemas']
@@ -18,6 +19,9 @@ export type BacktestArtifact = S['BacktestArtifact']
 export type Verdict = AdviceResponse['verdict']
 export type Storage = AdviceRequest['storage']
 export type NamedItem = S['NamedItem']
+
+/** Input limits, read from the backend's schema so the two can never disagree. */
+export const QUANTITY_MAX: number = spec.components.schemas.AdviceRequest.properties.quantity_maund.maximum
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 

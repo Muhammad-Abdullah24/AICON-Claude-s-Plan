@@ -35,6 +35,21 @@ export function formatMonth(iso: string, lang: Lang): string {
   return new Intl.DateTimeFormat(locale(lang), { month: 'short', year: '2-digit' }).format(parseDate(iso))
 }
 
+/**
+ * Reads a number typed by a farmer. Urdu keyboards type Urdu digits (۱۰۰) or
+ * Arabic-Indic digits (١٠٠), so those become Western digits first; thousands
+ * separators and spaces are ignored. Returns null when it is not a number.
+ */
+export function parseTypedNumber(text: string): number | null {
+  const western = text
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/٫/g, '.') // Arabic decimal separator
+    .replace(/[,٬\s]/g, '') // thousands separators and spaces
+  if (!/^\d+(\.\d+)?$/.test(western)) return null
+  return Number(western)
+}
+
 /** ISO date `weeks` weeks after `iso`. */
 export function addWeeks(iso: string, weeks: number): string {
   const d = parseDate(iso)
