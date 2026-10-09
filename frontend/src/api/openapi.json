@@ -768,6 +768,86 @@
         }
       }
     },
+    "/api/alerts/run": {
+      "post": {
+        "tags": [
+          "api",
+          "ops"
+        ],
+        "summary": "Run Alerts",
+        "description": "Runs one alert check now (the schedule runs it too when FS_ALERTS_EVERY_HOURS is set). For the team only:\nneeds the X-Admin-Token header to equal FS_ADMIN_TOKEN. `dry_run` shows the messages without sending.",
+        "operationId": "run_alerts_api_alerts_run_post",
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Dry Run"
+            }
+          },
+          {
+            "name": "x-admin-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -1220,6 +1300,183 @@
           "model"
         ],
         "title": "AdviceResponse"
+      },
+      "AlertItem": {
+        "properties": {
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FIRST",
+              "SIGNAL_CHANGE",
+              "PRICE_MOVE"
+            ],
+            "title": "Kind"
+          },
+          "signal": {
+            "type": "string",
+            "enum": [
+              "SELL",
+              "WAIT"
+            ],
+            "title": "Signal"
+          },
+          "current_price": {
+            "type": "number",
+            "title": "Current Price"
+          },
+          "prices_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Prices As Of"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "crop",
+          "mandi",
+          "kind",
+          "signal",
+          "current_price",
+          "prices_as_of"
+        ],
+        "title": "AlertItem"
+      },
+      "AlertResult": {
+        "properties": {
+          "farmer_id": {
+            "type": "string",
+            "title": "Farmer Id"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AlertItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "weekly_limit",
+                  "no_change"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SENT",
+                  "FAILED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "whatsapp",
+                  "sms"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "farmer_id",
+          "items",
+          "skipped"
+        ],
+        "title": "AlertResult"
+      },
+      "AlertRunResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "farmers_checked": {
+            "type": "integer",
+            "title": "Farmers Checked"
+          },
+          "sent": {
+            "type": "integer",
+            "title": "Sent"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/AlertResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "as_of",
+          "dry_run",
+          "farmers_checked",
+          "sent",
+          "results"
+        ],
+        "title": "AlertRunResponse"
       },
       "ChatRequest": {
         "properties": {

@@ -1139,6 +1139,7 @@ backup demo weeks (section 14, `docs/DEMO.md`) give the answer the app would hav
 | `GET` | `/api/history?crop=&mandi=&as_of=` | Public | 52 weekly prices and the monthly seasonal pattern (% of trend) | UC-12 |
 | `GET` | `/api/weather?mandi=` | Public | Current weather (live, or cached/offline with `cached: true`), with the Open-Meteo attribution | UC-13 |
 | `POST` | `/api/chat` | Public (profile used when logged in) | `{question, crop?, mandi?}` → text answer from the farmer's own advice; `used_fallback` when the template was used | UC-09 |
+| `POST` | `/api/alerts/run?as_of=&dry_run=` | `X-Admin-Token` (team only) | Run one price-alert check now (also scheduled by `FS_ALERTS_EVERY_HOURS`); `dry_run` returns the messages without sending | UC-10 |
 | `POST` | `/api/chat/voice` | Farmer | *Not built (A10).* Audio upload → transcript for confirmation | UC-09 |
 | `GET` | `/webhooks/whatsapp` | Verify token | Meta webhook verification handshake | – |
 | `POST` | `/webhooks/whatsapp` | Meta signature | Incoming WhatsApp text, replies and delivery status | UC-09, UC-10 |
