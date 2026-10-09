@@ -78,8 +78,9 @@ What it says (real output):
 ```
 
 To send it for real, Ahmed's invented phone (+920000000001) will not work: register a team member's phone (verified on
-the Meta test number, and it has messaged the bot in the last 24 hours) with wheat at Bahawalpur, turn alerts off
-for Ahmed in Profile, then run the same command without `dry_run=true`. Once sent, the one-a-week limit applies to
+the Meta test number, and it has messaged the bot in the last 24 hours) with wheat at Bahawalpur, **turn its alerts
+on** (Profile, or send `0` then `4` on WhatsApp: new farmers start with alerts off), turn alerts off for Ahmed in
+Profile, then run the same command without `dry_run=true`. Once sent, the one-a-week limit applies to
 that farmer: to repeat it, delete `var/farmsight.sqlite` and restart. Other replay dates that alert: 2025-09-01
 (wheat +49%), 2026-04-13 (−22%, test split).
 

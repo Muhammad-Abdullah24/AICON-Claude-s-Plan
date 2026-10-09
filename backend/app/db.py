@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS farmers (
     district TEXT NOT NULL,
     land_area_acres REAL,
     arhti_commission_pct REAL,
-    alerts_enabled INTEGER NOT NULL DEFAULT 1,
+    alerts_enabled INTEGER NOT NULL DEFAULT 0,   -- opt-in: off until the farmer turns alerts on
     created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS farmer_crops (
@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS seen_messages (
 );
 """
 
-# The demo profile from the blueprint's demo script. Invented, not a real person.
+# The demo profile from the blueprint's demo script. Invented, not a real person. Alerts are opt-in for every
+# farmer; Ahmed is seeded with them on, explicitly, so the alert demo (docs/DEMO.md section 3) works.
 DEMO_FARMER = {
     "name": "Ahmed", "phone": "+920000000001", "language": "ur", "district": "bahawalpur",
     "land_area_acres": 12.5, "arhti_commission_pct": None, "alerts_enabled": True,
@@ -202,7 +203,7 @@ def create_farmer(f: dict, conn: sqlite3.Connection | None = None) -> dict:
                 "INSERT INTO farmers (id, name, phone, language, district, land_area_acres, arhti_commission_pct,"
                 " alerts_enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (farmer_id, f["name"], digits(f["phone"]), f.get("language", "ur"), f["district"],
-                 f.get("land_area_acres"), f.get("arhti_commission_pct"), int(f.get("alerts_enabled", True)), now()))
+                 f.get("land_area_acres"), f.get("arhti_commission_pct"), int(f.get("alerts_enabled", False)), now()))
             _write_crops(conn, farmer_id, f.get("crops", []))
     except sqlite3.IntegrityError as e:
         raise ValueError("phone already registered") from e
@@ -233,8 +234,9 @@ def set_alerts_by_phone(phone: str, enabled: bool) -> bool:
 
 
 def alerts_enabled_by_phone(phone: str) -> bool:
+    """False for a number that is not registered: nobody gets alerts without turning them on."""
     f = get_farmer_by_phone(phone)
-    return True if f is None else f["alerts_enabled"]
+    return False if f is None else f["alerts_enabled"]
 
 
 def list_alert_farmers() -> list[dict]:

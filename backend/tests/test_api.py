@@ -188,6 +188,16 @@ def test_register_then_duplicate_is_409(client):
     assert client.post("/api/farmers", json=body).status_code == 409
 
 
+def test_alerts_are_opt_in_for_new_farmers_but_on_for_the_demo_farmer(client):
+    body = {"name": "New", "phone": "+920000000778", "district": "bahawalpur"}
+    farmer = client.post("/api/farmers", json=body).json()["farmer"]
+    assert farmer["alerts_enabled"] is False
+    t = client.post("/api/auth/login", json={"phone": "+920000000001"}).json()
+    assert client.get("/api/farmers/me", headers={"Authorization": f"Bearer {t['token']}"}).json()["alerts_enabled"]
+    opted = client.post("/api/farmers", json={**body, "phone": "+920000000779", "alerts_enabled": True}).json()
+    assert opted["farmer"]["alerts_enabled"] is True
+
+
 def test_auth_failures(client):
     assert client.get("/api/farmers/me").status_code == 401
     assert client.get("/api/farmers/me", headers={"Authorization": "Bearer nope"}).status_code == 401

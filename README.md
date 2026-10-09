@@ -154,7 +154,9 @@ the menu.
 - **Kept:** the farmer's place in the menu (step, crop, mandi, quantity and the last query), keyed by channel and
   phone number (digits only), for **30 minutes** (`FS_CHANNEL_SESSION_MINUTES`); expired sessions are deleted.
   Incoming message ids are kept for 24 hours so a retried delivery is not answered twice. Alert on/off is stored on
-  the farmer's profile and changed only when the farmer asks (menu 4/5, "بند", "شروع", or the button).
+  the farmer's profile and changed only when the farmer asks (menu 4/5, "بند", "شروع", the button, or Profile).
+  **Alerts are opt-in:** a new farmer gets none until they turn them on. The invented demo farmer Ahmed is seeded
+  with alerts on. Databases created earlier keep each farmer's current setting.
 - **Not kept:** the text of incoming WhatsApp or SMS messages, voice audio and transcripts. Outgoing alert texts are
   logged in the `messages` table with their delivery status.
 - **Not logged:** phone numbers, message text or transcripts never go to the application logs.

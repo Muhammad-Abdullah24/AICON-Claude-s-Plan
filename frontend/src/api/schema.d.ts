@@ -763,7 +763,7 @@ export interface components {
             arhti_commission_pct?: number | null;
             /**
              * Alerts Enabled
-             * @default true
+             * @default false
              */
             alerts_enabled: boolean;
             /** Crops */

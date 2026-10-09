@@ -2469,7 +2469,7 @@
           "alerts_enabled": {
             "type": "boolean",
             "title": "Alerts Enabled",
-            "default": true
+            "default": false
           },
           "crops": {
             "items": {

@@ -175,3 +175,23 @@ def test_round_trip_keeps_every_field():
     db.save_conversation("sms", B, conv.to_fields(s), 30, NOW)
     back = conv.load("sms", B)
     assert conv.to_fields(back) == conv.to_fields(s) and back.expires_at == NOW + timedelta(minutes=30)
+
+
+# ---------------------------------------------------------------- alerts are opt-in
+
+def test_new_farmers_have_alerts_off_and_only_opted_in_farmers_are_checked():
+    f = db.create_farmer({"name": "N", "phone": "923331112222", "district": "vehari"})
+    assert f["alerts_enabled"] is False
+    assert db.alerts_enabled_by_phone("923331112222") is False
+    assert db.alerts_enabled_by_phone("923339999999") is False      # not registered: no alerts either
+    assert db.get_farmer_by_phone(db.DEMO_FARMER["phone"])["alerts_enabled"] is True   # seeded on, explicitly
+    assert [x["name"] for x in db.list_alert_farmers()] == ["Ahmed"]
+    db.set_alerts_by_phone("923331112222", True)
+    assert {x["name"] for x in db.list_alert_farmers()} == {"Ahmed", "N"}
+
+
+def test_the_column_default_is_off_too():
+    conn = db.connect()
+    conn.execute("INSERT INTO farmers (id, name, phone, district, created_at)"
+                 " VALUES ('x', 'Raw', '1', 'vehari', 'now')")
+    assert conn.execute("SELECT alerts_enabled FROM farmers WHERE id = 'x'").fetchone()[0] == 0
