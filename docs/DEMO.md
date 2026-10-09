@@ -14,7 +14,8 @@ decision 12). Never say a number on stage that the app does not show.
 ## 1. Before we walk in (by 10:30)
 
 - [ ] Backend and front end running on the laptop (README "Start the app"), **and** the deployed link opened on a
-      phone over mobile data (the free host sleeps; opening it wakes it, which takes up to a minute).
+      phone over mobile data (the free host sleeps; opening it wakes it, which takes up to a minute). Open the API's
+      `/health` again at 11:15. Deploy steps: `docs/DEPLOY.md`.
 - [ ] Logged in as the demo farmer on both: Profile → phone **+920000000001** (invented farmer "Ahmed", Bahawalpur,
       wheat 100 maund and cotton 60 maund, 12.5 acres). Language: Urdu.
 - [ ] Gemini key set (`FS_LLM_API_KEY`): ask one chat question to check. If chat falls back to the template, that is

@@ -48,6 +48,8 @@ npm --prefix frontend run dev
 
 The front end forwards `/api` to the backend, so open http://localhost:5173 and both work together.
 
+To put it online (Render for the API, Vercel for the web app), follow [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ### Check everything (the same checks CI runs)
 
 ```bash

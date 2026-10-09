@@ -180,8 +180,9 @@ ticks their own lines when done. Claude sessions show the owner their open lines
 | 10 Oct | (Usman, agreed in session) `get_explanation()` keeps the "simple estimate" baseline line after the model's SHAP reasons for wheat, since the price shown is still the baseline. Text moved to `BASELINE_NOTE` | `backend/app/services.py` |
 | 10 Oct | **H-C8 demo runbook.** `docs/DEMO.md`: checklist, the five minutes with real app output, the alert text, backup weeks, failure table, judge answers, commands to regenerate the numbers once the model lands. **Replay mode:** open the app with `?as_of=2025-03-24` and every price screen replays that day, with a banner (lasts for the tab; `?as_of=` ends it). What to Grow: a stale starting price raises the risk one level; "best to sell at harvest" when holding does not beat interest; says which month's price each estimate starts from | `docs/DEMO.md`, `frontend/src/lib/replay.ts`, `components/ReplayBanner.tsx`, `services.crop_plan` |
 | 10 Oct | **On Owner B's engine (H-C14–H-C20).** Advice, compare, offer check, margin, crop plan, selling window and alerts now call `ml.decision`; history comes from `ml.forecast.history`; xgboost and numpy are backend dependencies, so wheat gets the model's direction call and SHAP reasons on Home and Why. Every input honours `as_of`. Interest is 4 weeks (was one month). `docs/DEMO.md` regenerated with this output | `backend/app/services.py`, `alerts.py`, `schemas.py`, `frontend/src/components/DirectionLine.tsx`, `pages/Grow.tsx` |
+| 10 Oct | **C10 deploy prepared.** `render.yaml` (API, free plan, health check, generated `FS_JWT_SECRET` and `FS_ADMIN_TOKEN`), `frontend/vercel.json` (SPA rewrites), `docs/DEPLOY.md` (Render, Vercel, CORS, Meta webhook, troubleshooting). Checked: a fresh clone of `main` serves every endpoint, the production build bakes in `VITE_API_BASE_URL`, CORS allows the Authorization header | `render.yaml`, `frontend/vercel.json`, `docs/DEPLOY.md` |
 
-**Still open on Owner C's list:** C10 deploy; P4.4 re-run `docs/DEMO.md` section 7 on the demo morning.
+**Still open on Owner C's list:** C10 deploy itself (needs the accounts: follow `docs/DEPLOY.md`); P4.4 re-run `docs/DEMO.md` section 7 on the demo morning.
 
 **For Hamza (Owner A)** (filled by Usman and Abd when their changes need data work)
 
@@ -270,7 +271,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 - [x] **C7** (M) Screens: Compare Mandis, What to Grow with the season timeline. *(done 10 Oct by Hamza)*
 - [x] **C8** (S) Screens: offer check, margin, Register/Profile (district dropdown first; map pin if time), Chat (uses A9 and A10). *(done 10 Oct by Hamza; district chips instead of a dropdown, no map pin)*
 - [x] **C9** (S) APScheduler alert job: B8's check → A8's WhatsApp sender, SMS fallback. *(done 10 Oct by Hamza; see 4.2. Asyncio loop instead of APScheduler, no new dependency)*
-- [ ] **C10** (M) Deploy: front end on Vercel, backend on Render or Hugging Face Spaces; environment variables set; link opens on a phone on mobile data.
+- [ ] **C10** (M) Deploy: front end on Vercel, backend on Render or Hugging Face Spaces; environment variables set; link opens on a phone on mobile data. *(prepared 10 Oct by Hamza: `render.yaml`, `frontend/vercel.json`, step-by-step `docs/DEPLOY.md`; a fresh clone serves every endpoint. Still to do: create the Render and Vercel projects with the team's accounts and set the keys)*
 
 **Check-ins Sat 16:00 and 19:00.**
 

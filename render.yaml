@@ -1,0 +1,33 @@
+# Render blueprint for the FarmSight API (task C10). Render -> New -> Blueprint -> pick this repo.
+# Free plan: the service sleeps after 15 idle minutes and takes up to a minute to wake, and the disk is not kept,
+# so SQLite starts fresh on every deploy or restart (the invented demo farmer is seeded again). docs/DEPLOY.md.
+services:
+  - type: web
+    name: farmsight-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      # The Vercel URL of the front end, e.g. https://farmsight.vercel.app (comma-separate several).
+      - key: FS_CORS_ORIGINS
+        sync: false
+      - key: FS_JWT_SECRET
+        generateValue: true
+      - key: FS_ADMIN_TOKEN
+        generateValue: true
+      # Shared outside git by Hamza. Without it, chat answers with its template.
+      - key: FS_LLM_API_KEY
+        sync: false
+      # WhatsApp (A3). Callback URL in the Meta app: https://<this service>.onrender.com/webhooks/whatsapp
+      - key: FS_WA_VERIFY_TOKEN
+        sync: false
+      - key: FS_WA_APP_SECRET
+        sync: false
+      - key: FS_WA_ACCESS_TOKEN
+        sync: false
+      - key: FS_WA_PHONE_NUMBER_ID
+        sync: false
