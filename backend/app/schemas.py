@@ -219,22 +219,80 @@ class CompareResponse(Labelled):
 class OfferCheckRequest(Strict):
     crop: CropId
     mandi: MandiId
-    offer_price: float = Field(gt=0, le=1_000_000)
+    offer_price: float = Field(gt=0, le=1_000_000)       # the buyer's gross quoted price per 40 kg
     quantity_maund: float = Field(100, gt=0, le=1_000_000)
+    arhti_pct: float | None = Field(None, ge=0, le=50)   # the farmer's own commission rate; shown, never applied
+
+
+OfferResultStatus = Literal["BELOW_REFERENCE_RANGE", "WITHIN_REFERENCE_RANGE", "ABOVE_REFERENCE_RANGE",
+                            "REFERENCE_DATA_LIMITED"]
+ReferenceStrength = Literal["STRONG", "LIMITED_STALE", "LIMITED_FROZEN", "LIMITED_FEW_DAYS", "LIMITED_SAME_PRICE"]
+OfferLimitation = Literal["STALE_REFERENCE", "FROZEN_REFERENCE", "FEW_REFERENCE_DAYS", "SAME_PRICE_ALL_WINDOW",
+                          "COMMISSION_FARMER_ESTIMATE", "COMMISSION_NOT_INCLUDED", "TRANSPORT_IS_ESTIMATE",
+                          "SYNTHETIC_DATA", "QUALITY_GRADE_NOT_INCLUDED", "BUYER_TERMS_NOT_INCLUDED"]
+
+
+class OfferCommission(Strict):
+    pct: float
+    per_maund: float
+    total: int
+    source: Literal["farmer"]       # only ever the farmer's own figure; FarmSight assumes no rate
+
+
+class OfferAlternative(Strict):
+    mandi: MandiId
+    has_data: bool
+    reference_price: float | None = None
+    prices_as_of: dt.date | None = None
+    is_stale: bool | None = None
+    price_unchanged_since: dt.date | None = None
+    reference_days: int | None = None
+    transport_cost: float | None = None           # estimate, from the farmer's mandi district
+    net_after_transport: float | None = None
+    difference_vs_offer_per_maund: float | None = None
+    difference_vs_offer_total: int | None = None
+    reference_strength: ReferenceStrength | None = None
+    better_after_transport: bool | None = None    # None: this mandi's reference is too weak to say
+    higher_quote_not_better: bool | None = None   # higher mandi price, but not after transport
 
 
 class OfferCheckResponse(Labelled):
+    """A buyer's offer against recent AMIS reference prices at the farmer's mandi: a reference for negotiation,
+    not a fair, true or guaranteed price. The numbers are always given; `reference_strength` says how far they can
+    be leaned on, and a weak reference makes `result_status` REFERENCE_DATA_LIMITED."""
     crop: CropId
     mandi: MandiId
     unit: Unit
-    offer_price: float
-    fair_low: float                 # lowest price AMIS reported at this mandi in the last 14 days
-    fair_high: float                # highest
-    verdict: Literal["below", "fair", "above"]
-    difference_per_maund: float     # offer minus the nearest edge of the fair range; 0 when fair
-    difference_total: int
+    buyer_offer_price: float
+    offer_price_basis: Literal["GROSS_QUOTED"]
+    quantity_maund: float
+    reference_price: float          # the latest AMIS price at this mandi
+    reference_price_as_of: dt.date
+    reference_range_low: float      # lowest and highest AMIS price reported in the window
+    reference_range_high: float
+    reference_days: int             # how many days AMIS reported a price in the window
     window_days: int
-    prices_as_of: dt.date
+    is_stale: bool
+    price_unchanged_since: dt.date | None
+    reference_strength: ReferenceStrength
+    range_position: Literal["BELOW_REFERENCE_RANGE", "WITHIN_REFERENCE_RANGE", "ABOVE_REFERENCE_RANGE"]
+    result_status: OfferResultStatus
+    difference_vs_reference_per_maund: float
+    total_difference_vs_reference: int
+    difference_vs_range_per_maund: float    # 0 inside the range
+    total_difference_vs_range: int
+    estimated_transport_cost: float         # to the farmer's own mandi (estimate)
+    estimated_commission: OfferCommission | None
+    alternative_mandis: list[OfferAlternative]
+    limitations: list[OfferLimitation]
+    # Deprecated aliases for older clients; do not show the word "fair" to farmers.
+    offer_price: float = Field(json_schema_extra={"deprecated": True})
+    fair_low: float = Field(json_schema_extra={"deprecated": True})
+    fair_high: float = Field(json_schema_extra={"deprecated": True})
+    verdict: Literal["below", "fair", "above"] = Field(json_schema_extra={"deprecated": True})
+    difference_per_maund: float = Field(json_schema_extra={"deprecated": True})
+    difference_total: int = Field(json_schema_extra={"deprecated": True})
+    prices_as_of: dt.date = Field(json_schema_extra={"deprecated": True})
 
 
 class MarginResponse(Labelled):

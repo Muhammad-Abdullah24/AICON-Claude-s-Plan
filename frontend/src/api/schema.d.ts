@@ -983,6 +983,40 @@ export interface components {
             /** Name En */
             name_en: string;
         };
+        /** OfferAlternative */
+        OfferAlternative: {
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /** Has Data */
+            has_data: boolean;
+            /** Reference Price */
+            reference_price?: number | null;
+            /** Prices As Of */
+            prices_as_of?: string | null;
+            /** Is Stale */
+            is_stale?: boolean | null;
+            /** Price Unchanged Since */
+            price_unchanged_since?: string | null;
+            /** Reference Days */
+            reference_days?: number | null;
+            /** Transport Cost */
+            transport_cost?: number | null;
+            /** Net After Transport */
+            net_after_transport?: number | null;
+            /** Difference Vs Offer Per Maund */
+            difference_vs_offer_per_maund?: number | null;
+            /** Difference Vs Offer Total */
+            difference_vs_offer_total?: number | null;
+            /** Reference Strength */
+            reference_strength?: ("STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE") | null;
+            /** Better After Transport */
+            better_after_transport?: boolean | null;
+            /** Higher Quote Not Better */
+            higher_quote_not_better?: boolean | null;
+        };
         /** OfferCheckRequest */
         OfferCheckRequest: {
             /**
@@ -1002,8 +1036,15 @@ export interface components {
              * @default 100
              */
             quantity_maund: number;
+            /** Arhti Pct */
+            arhti_pct?: number | null;
         };
-        /** OfferCheckResponse */
+        /**
+         * OfferCheckResponse
+         * @description A buyer's offer against recent AMIS reference prices at the farmer's mandi: a reference for negotiation,
+         *     not a fair, true or guaranteed price. The numbers are always given; `reference_strength` says how far they can
+         *     be leaned on, and a weak reference makes `result_status` REFERENCE_DATA_LIMITED.
+         */
         OfferCheckResponse: {
             /** Data Source */
             data_source: string;
@@ -1024,28 +1065,115 @@ export interface components {
              * @constant
              */
             unit: "40kg";
-            /** Offer Price */
+            /** Buyer Offer Price */
+            buyer_offer_price: number;
+            /**
+             * Offer Price Basis
+             * @constant
+             */
+            offer_price_basis: "GROSS_QUOTED";
+            /** Quantity Maund */
+            quantity_maund: number;
+            /** Reference Price */
+            reference_price: number;
+            /**
+             * Reference Price As Of
+             * Format: date
+             */
+            reference_price_as_of: string;
+            /** Reference Range Low */
+            reference_range_low: number;
+            /** Reference Range High */
+            reference_range_high: number;
+            /** Reference Days */
+            reference_days: number;
+            /** Window Days */
+            window_days: number;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Price Unchanged Since */
+            price_unchanged_since: string | null;
+            /**
+             * Reference Strength
+             * @enum {string}
+             */
+            reference_strength: "STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE";
+            /**
+             * Range Position
+             * @enum {string}
+             */
+            range_position: "BELOW_REFERENCE_RANGE" | "WITHIN_REFERENCE_RANGE" | "ABOVE_REFERENCE_RANGE";
+            /**
+             * Result Status
+             * @enum {string}
+             */
+            result_status: "BELOW_REFERENCE_RANGE" | "WITHIN_REFERENCE_RANGE" | "ABOVE_REFERENCE_RANGE" | "REFERENCE_DATA_LIMITED";
+            /** Difference Vs Reference Per Maund */
+            difference_vs_reference_per_maund: number;
+            /** Total Difference Vs Reference */
+            total_difference_vs_reference: number;
+            /** Difference Vs Range Per Maund */
+            difference_vs_range_per_maund: number;
+            /** Total Difference Vs Range */
+            total_difference_vs_range: number;
+            /** Estimated Transport Cost */
+            estimated_transport_cost: number;
+            estimated_commission: components["schemas"]["OfferCommission"] | null;
+            /** Alternative Mandis */
+            alternative_mandis: components["schemas"]["OfferAlternative"][];
+            /** Limitations */
+            limitations: ("STALE_REFERENCE" | "FROZEN_REFERENCE" | "FEW_REFERENCE_DAYS" | "SAME_PRICE_ALL_WINDOW" | "COMMISSION_FARMER_ESTIMATE" | "COMMISSION_NOT_INCLUDED" | "TRANSPORT_IS_ESTIMATE" | "SYNTHETIC_DATA" | "QUALITY_GRADE_NOT_INCLUDED" | "BUYER_TERMS_NOT_INCLUDED")[];
+            /**
+             * Offer Price
+             * @deprecated
+             */
             offer_price: number;
-            /** Fair Low */
+            /**
+             * Fair Low
+             * @deprecated
+             */
             fair_low: number;
-            /** Fair High */
+            /**
+             * Fair High
+             * @deprecated
+             */
             fair_high: number;
             /**
              * Verdict
+             * @deprecated
              * @enum {string}
              */
             verdict: "below" | "fair" | "above";
-            /** Difference Per Maund */
+            /**
+             * Difference Per Maund
+             * @deprecated
+             */
             difference_per_maund: number;
-            /** Difference Total */
+            /**
+             * Difference Total
+             * @deprecated
+             */
             difference_total: number;
-            /** Window Days */
-            window_days: number;
             /**
              * Prices As Of
              * Format: date
+             * @deprecated
              */
             prices_as_of: string;
+        };
+        /** OfferCommission */
+        OfferCommission: {
+            /** Pct */
+            pct: number;
+            /** Per Maund */
+            per_maund: number;
+            /** Total */
+            total: number;
+            /**
+             * Source
+             * @constant
+             */
+            source: "farmer";
         };
         /**
          * PricePoint

@@ -74,7 +74,7 @@
 | UC-04 | Compare mandis by net price | Farmer / Guest | High |
 | UC-05 | Rank crops to grow by profit | Farmer | High |
 | UC-06 | Get best selling window in the season | Farmer | Medium |
-| UC-07 | Check a buyer's offer against a fair price | Farmer | Medium |
+| UC-07 | Check a buyer's offer against recent mandi reference prices | Farmer | Medium |
 | UC-08 | View margin breakdown | Farmer / Guest | Medium |
 | UC-09 | Ask the AI chat (text or voice note) | Farmer | Medium |
 | UC-10 | Receive alerts by WhatsApp or SMS | Farmer | Medium |
@@ -207,16 +207,22 @@ Postcondition: The best selling window is added to the crop plan.
 
 ```
 Use Case ID  : UC-07
-Name         : Check a buyer's offer against a fair price
+Name         : Check a buyer's offer against recent mandi reference prices
 Actor(s)     : Farmer
-Precondition : A forecast exists for the crop and mandi.
-Trigger      : Farmer enters "Buyer offered Rs ___".
+Precondition : AMIS has reported prices for the crop at the mandi.
+Trigger      : Farmer enters "Buyer offered Rs ___" (a gross quoted price per 40 kg) and the quantity.
 Main Flow    :
-  1. System computes a fair selling range from the forecast range.
-  2. System compares the offer and shows "Rs X below / above fair".
+  1. System takes the AMIS prices reported at the mandi in the last 14 days: the latest is the reference
+     price, the lowest and highest the reference range.
+  2. System shows the offer against them per maund and in total for the farmer's quantity, and the other
+     mandis after estimated transport.
+  3. System says how strong the reference is. Below / within / above the range is shown only when it is strong.
 Alternative Flow (A1 - invalid amount):
   1. System asks for a valid number.
-Postcondition: The farmer knows whether the offer is fair.
+Alternative Flow (A2 - weak reference: stale, frozen, fewer than 5 reported days, or one repeated price):
+  1. System still shows every number, but the result is "reference data is limited", with the reason.
+Postcondition: The farmer has an independent reference for negotiation. It is not a fair, true or guaranteed
+               price: grade, quality, buyer terms, timing, transport, credit and the auction can change it.
 ```
 
 ```
@@ -384,7 +390,7 @@ Postcondition: New models and a new "prices as of" date are live.
 | FR-05 | Crop selection: rank the four crop options by expected profit per acre, using a seasonal-ratio harvest-price estimate (4–6 months ahead), sourced yields and costs, with price risk shown | High | UC-05 |
 | FR-06 | Selling window: show the seasonal price pattern and the best selling window within the harvest season (sowing dates are not advised) | Medium | UC-06 |
 | FR-07 | Market comparison: compare the mandis that have data for the crop on net price after estimated transport and flag the best | High | UC-04 |
-| FR-08 | Price guidance: recommend a fair selling range and compare it with a buyer's offer | Medium | UC-07 |
+| FR-08 | Offer check: compare a buyer's offer with recent mandi reference prices and other mandis after transport, saying how strong the reference is | Medium | UC-07 |
 | FR-09 | Margin analysis: break down production cost, the farmer's own arhti commission (if entered) and profit; wheat support price as reference | Medium | UC-08 |
 | FR-10 | Urdu language support: Urdu and Roman Urdu in the interface, signals and chat | High | All |
 | FR-11 | AI chat: text and voice-note questions answered in text using the current forecast, with transcript confirmation and a template fallback | Medium | UC-09 |
@@ -1134,7 +1140,7 @@ backup demo weeks (section 14, `docs/DEMO.md`) give the answer the app would hav
 | `GET` | `/api/advice?crop=&mandi=&quantity_maund=&as_of=` | Public (profile quantity and arhti used when logged in) | SELL/WAIT, confidence, expected price, gross gain, interest cost (4 weeks), net rupee impact, `direction`. Decided by `ml.decision.advise`. Logged in the `recommendations` table | UC-03 |
 | `GET` | `/api/compare-mandis?crop=&mandi=&quantity_maund=&as_of=` | Public | Net price per mandi after estimated transport from the farmer's mandi, best first; mandis without data or with stale data flagged | UC-04 |
 | `GET` | `/api/crop-plan?mandi=&land_area_acres=&as_of=` | Public (profile used when logged in) | Ranked crops (`ml.decision.crop_plan`): harvest price estimate and range, profit per acre (with past-years range) and for the land, risk, season months, selling window after interest (`sell_at_harvest`, `sell_window_months`) | UC-05, UC-06 |
-| `POST` | `/api/offer-check` | Public | `{crop, mandi, offer_price, quantity_maund}` → below / fair / above. Fair range = lowest to highest mandi price in the last 14 days | UC-07 |
+| `POST` | `/api/offer-check` | Public | `{crop, mandi, offer_price, quantity_maund, arhti_pct?}` (offer = gross quoted price; `arhti_pct` only shown, never applied) → `buyer_offer_price`, `reference_price` (+ `_as_of`), `reference_range_low/high` (AMIS low/high over 14 days), `reference_days`, `window_days`, `is_stale`, `price_unchanged_since`, `reference_strength` (STRONG / LIMITED_STALE / LIMITED_FROZEN / LIMITED_FEW_DAYS (< 5 days) / LIMITED_SAME_PRICE), `range_position`, `result_status` (BELOW / WITHIN / ABOVE_REFERENCE_RANGE, or REFERENCE_DATA_LIMITED when the reference is not strong), differences per maund and in total vs the reference and the range, `estimated_transport_cost`, `estimated_commission` (farmer's own rate only), `alternative_mandis` (net after estimated transport; `better_after_transport` null when that mandi's reference is weak), `limitations` codes. Deprecated aliases kept: `offer_price, fair_low, fair_high, verdict, difference_per_maund, difference_total, prices_as_of` | UC-07 |
 | `GET` | `/api/margin?crop=&price=&arhti_pct=` | Public | Cost of production, own arhti commission, profit; latest wheat support price with its status | UC-08 |
 | `GET` | `/api/history?crop=&mandi=&as_of=` | Public | 52 weeks (`price: null` for a week without an AMIS price, `frozen` where AMIS repeated a price) and the monthly seasonal pattern (% of trend) | UC-12 |
 | `GET` | `/api/weather?mandi=` | Public | Current weather (live, or cached/offline with `cached: true`), with the Open-Meteo attribution | UC-13 |
@@ -1336,7 +1342,7 @@ from past 4-week swings; the model did not beat it on prices), and `direction` i
 | Arhti commission | The farmer's own commission paid to the commission agent, entered by the farmer; no default |
 | AMIS | Punjab Agricultural Marketing Information Service, source of the daily mandi prices (Rs per 100 kg) |
 | Net price | Mandi price minus estimated transport cost from the farmer's district |
-| Fair price range | Price range a farmer should ask for, based on the forecast range |
+| Reference mandi range | The lowest to highest price AMIS reported at a mandi in the last 14 days. A reference for negotiation, not a fair or guaranteed price |
 | SHAP | Method that shows how much each factor pushed a prediction up or down |
 | MAPE | Mean absolute percentage error; lower is better |
 | Naive baseline | Predicting that the price in 4 weeks equals today's price |
