@@ -127,7 +127,7 @@ Times are local. Each task has an ID, an owner, a priority and a "done when". Ti
 ### Phase 1 — Setup (Fri 22:00 to Sat 01:00)
 
 **A · Hamza**
-- [ ] **A1** (M) Port the feature builder to Python in `ml/features/` (I1). *Done when* regenerating `features.csv` from `farmsight_prices_clean_weekly.csv` and the weather file matches the committed file (same rows; numbers within rounding).
+- [x] **A1** (M) Port the feature builder to Python in `ml/features/` (I1). *Done when* regenerating `features.csv` from `farmsight_prices_clean_weekly.csv` and the weather file matches the committed file (same rows; numbers within rounding).
 - [ ] **A2** (M) Write the runtime tables (I5) from `economics_inputs.json` and the clean data: costs, yields, milling yield, calendar, support prices with status, transport costs, per-series `prices_as_of`. *Done when* every value has a `source` and `confidence` column.
 - [ ] **A3** (S) Create the Meta WhatsApp Cloud API app and test number; register all three demo phones; get the Gemini key (as `FS_LLM_API_KEY` in `.env`); check free-tier limits (blueprint decision 14).
 - [ ] **A4** (S) README data acknowledgements and AMIS terms of use (blueprint decision 22). Send the lines to C.
