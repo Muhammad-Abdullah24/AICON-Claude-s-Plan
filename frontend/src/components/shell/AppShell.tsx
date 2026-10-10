@@ -129,11 +129,13 @@ function TopBar() {
   const { meta, farmer } = useAppState()
   return (
     <header className="sticky top-0 z-20 bg-field text-paper shadow-sm">
-      <div className="flex min-h-16 items-center justify-between gap-2 px-3 sm:px-4 lg:px-8">
+      {/* The bar keeps one arrangement in both languages (logo left; language and profile right); only the
+          words inside it change, and they keep their own reading direction. */}
+      <div dir="ltr" className="flex min-h-16 items-center justify-between gap-2 px-3 sm:px-4 lg:px-8">
         <div className="lg:hidden">
           <Logo />
         </div>
-        <p className="hidden text-sm text-paper/90 lg:block">
+        <p dir={i18n.dir()} className="hidden text-sm text-paper/90 lg:block">
           {t('data.asOf', { date: formatDate(meta.prices_as_of, i18n.language as Lang) })}
         </p>
         <div className="flex items-center gap-2">
@@ -158,7 +160,7 @@ function TopBar() {
 }
 
 function BottomNav() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { farmer } = useAppState()
   const { pathname } = useLocation()
   const primary = NAV.slice(0, BOTTOM_COUNT)
@@ -175,19 +177,22 @@ function BottomNav() {
       aria-label={t('app.name')}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
     >
-      <ul className="flex gap-0.5">
+      {/* Same tab order in both languages; only the labels change (each in its own reading direction). */}
+      <ul dir="ltr" className="flex gap-0.5">
         {primary.map((item) => (
           <li key={item.to} className="flex min-w-0 flex-1">
             <NavLink to={item.to} end className={({ isActive }) => tab(isActive)}>
               <Icon name={item.icon} />
-              <span className="max-w-full break-words">{navLabel(t, item.key, farmer?.name)}</span>
+              <span dir={i18n.dir()} className="max-w-full break-words">
+                {navLabel(t, item.key, farmer?.name)}
+              </span>
             </NavLink>
           </li>
         ))}
         <li className="flex min-w-0 flex-1">
           <Link to={MORE_PATH} aria-current={moreActive ? 'page' : undefined} className={tab(moreActive)}>
             <Icon name="more" />
-            <span>{t('nav.more')}</span>
+            <span dir={i18n.dir()}>{t('nav.more')}</span>
           </Link>
         </li>
       </ul>
