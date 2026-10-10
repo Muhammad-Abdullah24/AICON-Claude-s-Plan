@@ -4,6 +4,9 @@ import { api, type NewsItem, type PolicyEvent } from '../api/client'
 import type { Lang } from '../i18n'
 import { formatDate, formatRs } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
+import { Icon } from './ui/Icon'
+import { Badge, Callout } from './ui/primitives'
+import { cardClass } from './ui/styles'
 
 /**
  * Market news and the policy timeline (docs/PIVOT.md F3). News never changes the advice (rule 8); it only informs.
@@ -22,34 +25,42 @@ export function NewsBanner({ crop, mandi }: { crop: string; mandi: string }) {
   if (items.length === 0 && events.length === 0 && !check) return null
 
   return (
-    <section className="space-y-3 rounded-2xl border border-line bg-paper p-4">
+    <section className={cardClass('surface', 'space-y-4')}>
       {check && (
-        <p className="rounded-lg bg-madder/10 px-3 py-2 text-sm font-medium text-madder">
-          {t('news.conflict', {
-            price: formatRs(check.news_price),
-            amis: formatRs(check.amis_price),
-            pct: Math.abs(Math.round(check.difference_pct)),
-            source: check.news_source,
-            date: formatDate(check.news_date, lang),
-          })}
-        </p>
+        <Callout tone="caution" role="status">
+          <p className="font-semibold">
+            {t('news.conflict', {
+              price: formatRs(check.news_price),
+              amis: formatRs(check.amis_price),
+              pct: Math.abs(Math.round(check.difference_pct)),
+              source: check.news_source,
+              date: formatDate(check.news_date, lang),
+            })}
+          </p>
+        </Callout>
       )}
 
       {items.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="flex items-baseline gap-2 text-sm font-bold">
+        <div className="space-y-3">
+          <h2 className="flex flex-wrap items-center gap-2 text-lg font-bold">
+            <Icon name="info" className="size-5 text-field" />
             {t('news.title')}
-            {is_snapshot && <span className="text-xs font-normal text-slate">({t('news.snapshot')})</span>}
+            {is_snapshot && <Badge kind="stale">{t('news.snapshot')}</Badge>}
           </h2>
-          {items.slice(0, 4).map((it) => (
-            <Item key={it.url} item={it} lang={lang} />
-          ))}
+          <ul className="divide-y divide-line">
+            {items.slice(0, 4).map((it) => (
+              <Item key={it.url} item={it} lang={lang} />
+            ))}
+          </ul>
         </div>
       )}
 
       {events.length > 0 && (
-        <div className="space-y-2 border-t border-line pt-2">
-          <h2 className="text-sm font-bold">{t('news.policy')}</h2>
+        <div className="space-y-3 border-t border-line pt-4">
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Icon name="receipt" className="size-5 text-field" />
+            {t('news.policy')}
+          </h2>
           {events.map((e) => (
             <Policy key={e.url + e.date} event={e} lang={lang} />
           ))}
@@ -61,32 +72,34 @@ export function NewsBanner({ crop, mandi }: { crop: string; mandi: string }) {
 
 function Tag({ tag }: { tag: string }) {
   const { t } = useTranslation()
-  return <span className="rounded bg-line px-1.5 text-xs text-slate">{t(`news.tag.${tag}`)}</span>
+  return <Badge kind="neutral">{t(`news.tag.${tag}`)}</Badge>
 }
 
 function Item({ item, lang }: { item: NewsItem; lang: Lang }) {
   const { t } = useTranslation()
   return (
-    <div className="text-sm">
-      <a href={item.url} target="_blank" rel="noreferrer" className="font-medium underline">
+    <li className="space-y-1 py-2.5 text-sm">
+      <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-field">
         {lang === 'en' ? item.summary_en : item.summary_ur}
       </a>
-      <span className="ms-2 text-xs text-slate">
+      <p className="flex flex-wrap items-center gap-2 text-slate">
         <Tag tag={item.tag} /> {t('news.byline', { source: item.source, date: formatDate(item.published, lang) })}
-      </span>
-    </div>
+      </p>
+    </li>
   )
 }
 
 function Policy({ event, lang }: { event: PolicyEvent; lang: Lang }) {
   const { t } = useTranslation()
   return (
-    <div className="text-sm">
-      <Tag tag={event.tag} />{' '}
-      <a href={event.url} target="_blank" rel="noreferrer" className="underline">
-        {lang === 'en' ? event.text_en : event.text_ur}
-      </a>
-      <span className="ms-1 text-xs text-slate">· {t('news.byline', { source: event.source, date: formatDate(event.date, lang) })}</span>
+    <div className="space-y-1 border-s-2 border-line ps-3 text-sm">
+      <Tag tag={event.tag} />
+      <p>
+        <a href={event.url} target="_blank" rel="noreferrer" className="text-ink underline decoration-line underline-offset-4 hover:decoration-field">
+          {lang === 'en' ? event.text_en : event.text_ur}
+        </a>
+      </p>
+      <p className="text-slate">{t('news.byline', { source: event.source, date: formatDate(event.date, lang) })}</p>
     </div>
   )
 }

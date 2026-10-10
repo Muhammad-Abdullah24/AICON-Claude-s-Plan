@@ -5,6 +5,7 @@ import { api, QUESTION_MAX, type ChatResponse } from '../api/client'
 import { useAppState } from '../appState'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox } from '../components/Status'
+import { buttonClass, inputClass } from '../components/ui/styles'
 
 interface Turn {
   question: string
@@ -37,37 +38,37 @@ export function Chat() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold">{t('chat.title')}</h2>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold">{t('chat.title')}</h2>
         {turns.map((turn, i) => (
           <div key={i} className="space-y-2">
-            <p className="ms-auto w-fit max-w-[85%] rounded-2xl bg-ink px-4 py-2 text-cotton">{turn.question}</p>
+            <p className="ms-auto w-fit max-w-[85%] rounded-2xl bg-field px-4 py-2.5 text-paper">{turn.question}</p>
             {turn.reply && (
-              <div className="w-fit max-w-[90%] space-y-1 rounded-2xl bg-paper px-4 py-2 shadow-sm">
+              <div className="w-fit max-w-[90%] space-y-1 rounded-2xl border border-line bg-paper px-4 py-2.5 shadow-(--shadow-card)">
                 {/* Plain text only: the answer is never rendered as HTML. */}
                 <p className="whitespace-pre-line">{turn.reply.answer}</p>
-                {turn.reply.used_fallback && <p className="text-xs text-slate">{t('chat.fallback')}</p>}
+                {turn.reply.used_fallback && <p className="text-sm text-slate">{t('chat.fallback')}</p>}
               </div>
             )}
             {turn.error !== undefined && <ErrorBox error={turn.error} />}
           </div>
         ))}
-        <form onSubmit={submit} className="space-y-2 rounded-2xl bg-paper p-3 shadow-sm">
+        <form onSubmit={submit} className="space-y-3 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={t('chat.placeholder')}
             rows={2}
             aria-label={t('chat.title')}
-            className="w-full resize-none rounded-xl border-2 border-line px-3 py-2 focus:border-ink focus:outline-none"
+            className={`${inputClass} w-full resize-none`}
           />
           {tooLong && <p className="text-sm text-madder">{t('chat.tooLong', { max: QUESTION_MAX })}</p>}
           <button
             type="submit"
             disabled={busy || !question.trim() || tooLong}
-            className="w-full rounded-xl bg-wheat px-4 py-2.5 text-lg font-bold text-ink disabled:opacity-50"
+            className={buttonClass('primary', 'w-full text-lg')}
           >
             {busy ? t('chat.sending') : t('chat.send')}
           </button>

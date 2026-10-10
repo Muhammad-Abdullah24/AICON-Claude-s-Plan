@@ -3,29 +3,37 @@
 /*
  * FarmSight visual system. Every colour and font in the app comes from here.
  *
- * Palette: ajrak, the indigo-and-madder block print of south Punjab and Sindh,
- * plus the crops themselves. Charts read these same tokens at runtime
- * (src/lib/tokens.ts), so change a colour here and the charts follow.
+ * Palette: a calm paper reference. Warm paper canvas, near-white surfaces, deep ink text, field green for the
+ * next step, wheat gold for caution and madder for errors (the reference design system). Every text pair meets
+ * WCAG AA (4.5:1 or more). Charts read these same tokens at runtime (src/lib/tokens.ts), so change a colour here
+ * and the charts follow. Status is never colour alone: badges and callouts always carry an icon and words.
  *
  * Layout rule: use only logical utilities (ms-, me-, ps-, pe-, start-, end-,
  * text-start, text-end) so right-to-left Urdu mirrors automatically.
  * src/rtl.test.ts fails the build if left/right utilities sneak in.
  */
 @theme {
-  --color-ink: #1b2559; /* indigo: text, primary surfaces */
-  --color-cotton: #f2f3ee; /* page background */
-  --color-paper: #ffffff; /* cards, the parchi */
-  --color-wheat: #d4a017; /* forecast band, highlights */
-  --color-wheat-soft: #f3e3ad;
-  --color-wheat-deep: #7a5800; /* amber text: old or repeated prices (readable on white) */
-  --color-madder: #a3302e; /* risk, the synthetic tape */
-  --color-field: #3e6b3a; /* gains */
-  --color-slate: #5b6178; /* secondary text */
-  --color-line: #d9dbe3; /* hairlines */
+  --color-ink: #19333d; /* primary text */
+  --color-cotton: #f5f2ea; /* paper canvas: the page background */
+  --color-paper: #fffefa; /* surface: cards and inputs */
+  --color-wheat: #e8c77a; /* gold fill: forecast band, harvest months, replay banner (ink text on it: 8:1) */
+  --color-wheat-soft: #f8efda; /* caution panel background */
+  --color-wheat-deep: #876015; /* caution text and icons: old, limited or repeated prices (4.9:1 on caution) */
+  --color-madder: #914b41; /* errors, losses, the synthetic tape */
+  --color-madder-soft: #f7e9e5; /* error panel background */
+  --color-field: #285d43; /* field green: the next step, gains, fresh data */
+  --color-field-soft: #e7efe8; /* selected chip, active navigation, fresh badge */
+  --color-field-bar: #2f6a4d; /* the phone's bottom bar: a shade lighter than the title bar (white text 6.3:1) */
+  --color-slate: #596971; /* secondary text */
+  --color-mist: #edebe4; /* quiet information panel, estimate badge */
+  --color-line: #e3dccb; /* warm hairlines and borders */
 
   --font-sans: 'IBM Plex Sans', 'Noto Nastaliq Urdu', system-ui, sans-serif;
   --font-urdu: 'Noto Nastaliq Urdu', 'IBM Plex Sans', serif;
-  --font-figures: 'IBM Plex Mono', ui-monospace, monospace;
+  /* Figures: the sans face with tabular digits, so rupee amounts line up and read large and calm. */
+  --font-figures: 'IBM Plex Sans', system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(25 51 61 / 0.04), 0 4px 16px rgb(25 51 61 / 0.04);
 
   /*
    * Blueprint NFR-05: 18px minimum text for low-end phones in sunlight. The root size is 18px (19px in Urdu,
@@ -67,8 +75,12 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-wheat);
+    outline: 3px solid var(--color-field);
     outline-offset: 2px;
+  }
+
+  body {
+    background: var(--color-cotton);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -88,6 +100,26 @@
     font-variant-numeric: tabular-nums;
     direction: ltr;
     unicode-bidi: isolate;
+  }
+
+  /*
+   * The app shell. On a desktop the sidebar sits on the left in both languages (the reference layout), so the
+   * grid itself runs left to right while everything inside it keeps the page's own direction.
+   */
+  @media (min-width: 64rem) {
+    .app-shell {
+      direction: ltr;
+    }
+    :root[dir='rtl'] .app-shell > * {
+      direction: rtl;
+    }
+  }
+
+  /* Loading skeleton: a quiet shimmer, still under reduced motion. */
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-mist) 25%, var(--color-cotton) 50%, var(--color-mist) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
   }
 
   /* The "synthetic data" tape: diagonal stripes, impossible to miss. */
@@ -116,6 +148,15 @@
   }
   .tear {
     border-top: 2px dashed var(--color-line);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
   }
 }
 

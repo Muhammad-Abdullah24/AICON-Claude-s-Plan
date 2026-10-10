@@ -6,6 +6,7 @@ import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
+import { inputClass, labelClass } from '../components/ui/styles'
 import { formatRs, parseTypedNumber } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
 
@@ -28,26 +29,26 @@ export function Margin() {
     `${selection.crop}|${price}|${arhti}`,
   )
 
-  const input = 'figures w-36 rounded-xl border-2 border-line bg-paper px-3 py-2 text-lg focus:border-ink focus:outline-none'
+  const input = `${inputClass} figures mt-2 block w-full max-w-xs text-lg font-semibold`
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
-      <section className="space-y-3 rounded-2xl bg-paper p-4 shadow-sm">
-        <h2 className="text-xl font-bold">{t('margin.title')}</h2>
-        <label className="block text-sm text-slate">
+      <section className="space-y-5 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
+        <h2 className="text-2xl font-bold">{t('margin.title')}</h2>
+        <label className={labelClass}>
           {t('margin.price')}
-          <input inputMode="decimal" value={priceTyped} onChange={(e) => setPriceTyped(e.target.value)} className={`${input} mt-1 block`} />
+          <input inputMode="decimal" value={priceTyped} onChange={(e) => setPriceTyped(e.target.value)} className={input} />
         </label>
-        <label className="block text-sm text-slate">
+        <label className={labelClass}>
           {t('margin.arhti')}
-          <input inputMode="decimal" value={arhtiTyped} onChange={(e) => setArhtiTyped(e.target.value)} placeholder="0" className={`${input} mt-1 block`} />
+          <input inputMode="decimal" value={arhtiTyped} onChange={(e) => setArhtiTyped(e.target.value)} placeholder="0" className={input} />
         </label>
         {ready && state.status === 'loading' && <Loading />}
         {ready && state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
         {ready && state.status === 'ok' && (
           <>
             <Bar price={state.data.price} cost={state.data.production_cost} arhti={state.data.arhti_amount} />
-            <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 rounded-xl border border-line bg-cotton p-4">
               <dt>{t('margin.cost')}</dt>
               <dd className="figures">{formatRs(state.data.production_cost)}</dd>
               <dt>{t('margin.arhtiAmount')}</dt>
@@ -64,7 +65,7 @@ export function Margin() {
                 })}
               </p>
             )}
-            <p className="text-xs text-slate">{t('margin.costNote', { confidence: state.data.cost_confidence })}</p>
+            <p className="text-sm text-slate">{t('margin.costNote', { confidence: state.data.cost_confidence })}</p>
             <DataLabel isSynthetic={state.data.is_synthetic} />
           </>
         )}

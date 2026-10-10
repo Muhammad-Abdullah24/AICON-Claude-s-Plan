@@ -5,6 +5,9 @@ import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
+import { Icon } from '../components/ui/Icon'
+import { Badge } from '../components/ui/primitives'
+import { cardClass } from '../components/ui/styles'
 import type { Lang } from '../i18n'
 import { formatDate, formatRs } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
@@ -20,10 +23,10 @@ export function Compare() {
   )
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
-      <section className="space-y-3">
-        <h2 className="text-xl font-bold">{t('compare.title')}</h2>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-bold">{t('compare.title')}</h2>
         {state.status === 'loading' && <Loading />}
         {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
         {state.status === 'ok' &&
@@ -32,31 +35,30 @@ export function Compare() {
             return state.data.rows.map((r) => (
             <article
               key={r.mandi}
-              className={`rounded-2xl bg-paper p-4 shadow-sm ${r.mandi === bestMandi ? 'border-2 border-field' : ''}`}
+              className={cardClass(r.mandi === bestMandi ? 'highlight' : 'surface', 'space-y-4')}
             >
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-lg font-bold">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="flex items-center gap-2 text-xl font-bold">
+                  <Icon name="pin" className="size-5 text-field" />
                   {mandiName(r.mandi)}
-                  {r.mandi === bestMandi && (
-                    <span className="ms-2 rounded bg-field px-2 text-sm text-paper">{t('compare.best')}</span>
-                  )}
                 </h3>
-                {r.has_data && r.net_price != null ? (
-                  <span className="figures text-2xl">{formatRs(r.net_price)}</span>
-                ) : (
-                  <span className="text-slate">{t('compare.noData')}</span>
-                )}
+                {r.mandi === bestMandi && <Badge kind="fresh">{t('compare.best')}</Badge>}
               </div>
+              {r.has_data && r.net_price != null ? (
+                <p className="figures text-3xl font-semibold text-ink">{formatRs(r.net_price)}</p>
+              ) : (
+                <Badge kind="limited">{t('compare.noData')}</Badge>
+              )}
               {r.has_data && (
-                <dl className="mt-1 grid grid-cols-[1fr_auto] gap-x-3 text-sm text-slate">
+                <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 border-t border-line pt-3 text-sm text-slate">
                   <dt>{t('compare.price')}</dt>
-                  <dd className="figures">{formatRs(r.price ?? 0)}</dd>
+                  <dd className="figures text-base text-ink">{formatRs(r.price ?? 0)}</dd>
                   <dt>{t('compare.transport')}</dt>
-                  <dd className="figures">−{formatRs(r.transport_cost ?? 0)}</dd>
+                  <dd className="figures text-base text-ink">−{formatRs(r.transport_cost ?? 0)}</dd>
                   {r.gain_vs_preferred != null && r.mandi !== selection.mandi && (
                     <>
                       <dt>{t('compare.gainFor', { qty: quantity })}</dt>
-                      <dd className={`figures ${r.gain_vs_preferred >= 0 ? 'text-field' : 'text-madder'}`}>
+                      <dd className={`figures text-base font-semibold ${r.gain_vs_preferred >= 0 ? 'text-field' : 'text-madder'}`}>
                         {r.gain_vs_preferred >= 0 ? '+' : '−'}
                         {formatRs(Math.abs(r.gain_vs_preferred))}
                       </dd>
@@ -64,11 +66,12 @@ export function Compare() {
                   )}
                 </dl>
               )}
-              {r.prices_as_of && (
-                <p className={`mt-1 text-xs ${r.is_stale ? 'font-semibold text-wheat-deep' : 'text-slate'}`}>
-                  {t('compare.priceOf', { date: formatDate(r.prices_as_of, lang) })}
-                </p>
-              )}
+              {r.prices_as_of &&
+                (r.is_stale ? (
+                  <Badge kind="stale">{t('compare.priceOf', { date: formatDate(r.prices_as_of, lang) })}</Badge>
+                ) : (
+                  <p className="text-sm text-slate">{t('compare.priceOf', { date: formatDate(r.prices_as_of, lang) })}</p>
+                ))}
             </article>
             ))
           })()}
