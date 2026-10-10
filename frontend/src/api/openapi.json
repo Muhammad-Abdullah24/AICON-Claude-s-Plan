@@ -1743,6 +1743,81 @@
         }
       }
     },
+    "/api/channels/sms/textbee/webhook": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Receive",
+        "operationId": "receive_api_channels_sms_textbee_webhook_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Receive Api Channels Sms Textbee Webhook Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/sms/simpapp/webhook": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Receive",
+        "operationId": "receive_api_channels_sms_simpapp_webhook_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Receive Api Channels Sms Simpapp Webhook Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat": {
       "post": {
         "tags": [

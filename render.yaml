@@ -31,3 +31,12 @@ services:
         sync: false
       - key: FS_WA_PHONE_NUMBER_ID
         sync: false
+      # SMS through the "SMS Gateway API" Android app (docs/SIMPAPP_SMS.md). Empty SMS_PROVIDER = SMS off.
+      - key: SMS_PROVIDER
+        sync: false
+      - key: SIMPAPP_SMS_API_URL
+        value: https://europe-west1-sms-gateway-api-simpapp.cloudfunctions.net/api_sms_send
+      - key: SIMPAPP_SMS_API_KEY
+        sync: false
+      - key: SIMPAPP_WEBHOOK_SECRET
+        generateValue: true
