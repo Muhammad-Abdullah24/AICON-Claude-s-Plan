@@ -4,8 +4,21 @@ The team agreed on 10 Oct to change the core question. Instead of asking "will t
 **"can you afford to wait, and with whose money?"** It also adds a free news feed, because in 2026 AMIS showed
 wheat capped at Rs 3,450 while the open market reached about Rs 5,300.
 
-**Reassigned 10 Oct, after U1 and U2:** Hamza builds the rest of the code (Phase H). Abd reviews, merges, deploys and
-runs the demo and pitch (Phase U). Abd touches only docs and deploy config, so the two phases can't conflict.
+**v3, 10 Oct evening: three people, small farmers only, the loan planner added.** An agriculture expert we spoke to
+(who can't give figures) said the small farmer's real problem is the **loan**:
+1. They borrow more than the crop needs.
+2. The whole loan falls due at harvest.
+3. So they have to sell at the harvest low.
+
+FarmSight now covers that thread through the season:
+- **Sowing:** the *loan planner*. What the crop actually needs, the cheapest money first (Kissan Card 0%, PM Youth 0%,
+  Akhuwat 0%), and what over-borrowing from the arhti costs.
+- **During the season:** a simple *loan list* in the profile.
+- **Harvest:** the *wait plan*. Loans due plus household spending minus other income (e.g. milk) gives the cash needed,
+  and from that, sell X now and hold Y.
+
+**Who:** Usman (engine), Hamza (data and API) and Abd (screens, review, demo). Each owns separate files (section 2).
+Every task is sized for **one AI session** (section 1, rules 9–11).
 
 ## 1. Rules that keep us conflict-free
 
@@ -24,29 +37,38 @@ runs the demo and pitch (Phase U). Abd touches only docs and deploy config, so t
 7. **Run the full suite before every push:** `pytest` from the repo root, then `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` in `frontend/`. CI also fails if the API
    changed and the front-end types were not regenerated.
 8. **Never let a forecast or a news item flip the advice** (agreed 10 Oct). News can only add a warning or lower confidence.
+9. **One task per AI session.** Open the session with: *"Read docs/PIVOT.md sections 1 and 3, then task card <id> in
+   section 5. Do only that task."* Point it at the files on the card; don't paste whole files into chat. Start a fresh
+   session (or compact) between tasks.
+10. **Finish every session with a push**, even if the task isn't done. Use `WIP:` in the commit title, and put
+    *done / left / next step* in the PR description. The next session reads that and carries on, so nothing is lost
+    when a session limit hits.
+11. **Small farmers only** (land of 12.5 acres or less, the Kissan Card limit). Medium and large farmers are out of scope.
 
 ## 2. Who owns which files
 
-| Area | Phase H (Hamza): all code | Phase U (Abd): review, docs, deploy |
-|---|---|---|
-| Engine and backtest | `ml/decision/**`, new `ml/backtest/**` | none |
-| API | `backend/app/**` (incl. `services.py`, `schemas.py`, `main.py`, the new `news/`, `channels/`), `backend/tests/**` | none |
-| Front end | `frontend/**` | none |
-| Docs | `FACTS.md`, `MODEL_CARD.md`, `DATA_NOTES.md`, `URDU_REVIEW.md` | `BLUEPRINT.md`, `PLAN.md`, `PIVOT.md`, `DEMO.md`, `DEPLOY.md`, `README.md`, `CLAUDE.md` |
-| Config and CI | `requirements*.txt` (ask first: rule 4) | `.github/**`, `render.yaml`, `frontend/vercel.json`, `.env.example` |
+| Area | Usman: engine | Hamza: data and API | Abd: screens, review, demo |
+|---|---|---|---|
+| Python | `ml/**` (incl. new `ml/backtest/`, `ml/decision/wait.py`, `ml/decision/loan.py`) | `backend/app/**` except `news/policy*`; `backend/tests/**` | none |
+| Policy events | `backend/app/news/policy.py`, `backend/app/news/policy_events.json` | none | none |
+| Data | none | `data/**` (new `input_costs.json`, `loan_options.json`) | none |
+| Front end | `frontend/src/pages/Grow.tsx`, `Compare.tsx`; locale blocks `"grow"`, `"compare"` | none | all other `frontend/**` |
+| Docs | `MODEL_CARD.md` | `FACTS.md`, `DATA_NOTES.md`, `URDU_REVIEW.md` | `BLUEPRINT.md`, `PLAN.md`, `PIVOT.md`, `DEMO.md`, `DEPLOY.md`, `README.md`, `CLAUDE.md` |
+| Config and CI | none | `requirements*.txt` (ask first: rule 4) | `.github/**`, `render.yaml`, `frontend/vercel.json`, `.env.example` |
 
-`schemas.py` is now Hamza's. A change to the U1 contract still needs a word in chat first, because the front end and
-WhatsApp both depend on it.
+**Locale files are shared** (`frontend/src/locales/ur.json` and `en.json`). Add keys **only inside your own top-level
+block**: Usman `"grow"` and `"compare"`; Abd `"wait"`, `"loan"`, `"news"` and the rest. Git merges edits in different
+blocks cleanly. `src/locales.test.ts` checks that Urdu and English have the same keys.
 
-**Database:** put the news cache in its own table (`CREATE TABLE IF NOT EXISTS news_items ...`) inside
-`backend/app/news/`, using `backend.app.db.connect()`.
+**Contract changes** (`schemas.py`, Hamza's) need a word in chat first: the screens, WhatsApp and the engine all depend
+on them.
 
-**Rates the engine uses** (storage loss, arhti rate, bank rate) go in `ml/decision/config.py`, with their sources in
-`FACTS.md` (the table in section 5).
+**Database:** new tables (news cache, `farmer_loans`) go in with `CREATE TABLE IF NOT EXISTS`. The news cache sits inside
+`backend/app/news/`; `farmer_loans` sits in `db.py`.
 
 ## 3. Interfaces (fixed now)
 
-### 3.1 Hold backtest (H1; the wait engine B1 calls it)
+### 3.1 Hold backtest (H1, Usman; the wait engine B1 calls it)
 
 ```python
 # ml/backtest/hold.py
@@ -75,7 +97,9 @@ Check figures from Claude's quick run (`start_month=5`, later months 9 and 10, a
 
 The function uses a single later month, so its numbers will differ slightly. That's fine; just document the method.
 
-### 3.2 News (H2, H3; services B2 and screens F3 show it)
+### 3.2 News (H2 Hamza, H3 Usman; B2 and F3 show it)
+
+`get_news` lives in `backend/app/news/service.py` (Hamza). `get_policy_events` lives in `backend/app/news/policy.py` (Usman), with the same signature as below.
 
 ```python
 # backend/app/news/service.py
@@ -124,7 +148,7 @@ def get_policy_events(crop_option: str, as_of: date | None = None) -> list[dict]
 **What news does to the advice** (B2, in `services.py`): the conflict banner (news price more than 10% away from
 AMIS) and lowering confidence by one level when a SUPPORT_PRICE, CAP_OR_BAN or IMPORT item is less than 14 days old.
 
-### 3.3 Wait plan (B1, B2; WhatsApp B3 and the home screen F1 show it)
+### 3.3 Wait plan (B1 Usman, B2 Hamza; B3 and F1 show it)
 
 ```python
 # backend/app/services.py
@@ -156,69 +180,145 @@ labelled `data_source: "placeholder"`, `is_synthetic: True`, so H6 can call it t
 the same signature. `services.news()` and `services.policy_events()` are wired the same way, with placeholders until
 H2/H3. U4 then calls Hamza's `get_news` / `get_policy_events` from them.
 
-## 4. Phase U: Abd (light, saves tokens)
+### 3.4 Loan planner and loan list (L1 engine, L2 API, L3 screens)
+
+**Engine** (Usman, `ml/decision/loan.py`, pure function, no file reading):
+
+```python
+def loan_plan(acres: float, input_items: list[dict], savings_rs: float, options: list[dict],
+              months_to_harvest: int, planned_borrow_rs: float | None = None,
+              planned_rate_pct: float | None = None) -> dict:
+    """input_items: [{"item": "fertilizer", "rs_per_acre": 21000}, ...] for this crop (Hamza's input_costs.json).
+    options: loan options this farmer is eligible for, each {"id", "annual_rate_pct", "max_rs"}, already filtered and
+    capped by the API (Kissan Card max = min(30,000 x acres, 150,000) for 1-12.5 acres, etc.).
+    need = sum(rs_per_acre) x acres; borrow_needed = max(0, need - savings).
+    Ladder: fill borrow_needed from the cheapest option up (ties: keep the input order).
+    interest on each slice = amount x rate x months_to_harvest / 12; due at harvest = principal + interest."""
+    return {
+        "input_need_rs": 290000, "savings_rs": 0, "borrow_needed_rs": 290000,
+        "ladder": [{"id": "kissan_card", "amount_rs": 150000, "interest_rs": 0},
+                   {"id": "zarkhez_e", "amount_rs": 140000, "interest_rs": 10500}],
+        "ladder_interest_rs": 10500, "harvest_due_rs": 300500,
+        "planned_borrow_rs": 400000, "planned_interest_rs": 132000,   # planned x planned_rate x months / 12
+        "over_borrow_rs": 110000,                                     # max(0, planned - borrow_needed)
+        "extra_cost_rs": 121500,                                      # planned_interest - ladder_interest
+        "uncovered_rs": 0,                                            # borrow_needed the eligible options can't cover
+    }
+```
+
+**API** (Hamza):
+- `GET /api/loan-plan?crop=&acres=&savings_rs=&age=&planned_borrow_rs=&planned_lender=&as_of=` returns
+  `LoanPlanResponse` (`Labelled`). It holds the engine's fields plus:
+  - `input_items`: `[{item, name_ur, name_en, rs_per_acre}]`, with a source note.
+  - `options`: `[{id, name_ur, name_en, annual_rate_pct, max_rs, eligible, why_not_ur, why_not_en, conditions_ur,
+    conditions_en, source_url, verified}]`. Ineligible options are listed too, with the reason.
+  - `months_to_harvest` (from the crop calendar and `as_of`).
+  - `warnings`: `OVER_BORROWING`, `NOT_SMALL_FARMER` (over 12.5 acres), `COST_ESTIMATE` (always: costs are escalated
+    from the official table) and `UNCOVERED`.
+- `planned_lender` is one of the option ids; its rate prices the "what you planned" line.
+- `age` is optional; without it, PM Youth shows `eligible: false` with "age needed".
+- Loan list: `GET /api/farmers/me/loans`, `POST /api/farmers/me/loans` with
+  `{lender, amount_rs, annual_rate_pct, due_date}`, and `DELETE /api/farmers/me/loans/{id}`. Farmer auth is required.
+- **Wait plan additions:**
+  - New query params `household_spend_rs_month` and `other_income_rs_month` (default 0).
+  - When logged in and `cash_need_rs` isn't given: `cash_need_rs` = loans due before the later sale (principal +
+    interest) + max(0, household − other income) × `wait_months`.
+  - The response echoes `household_spend_rs_month`, `other_income_rs_month` and `loans_due_rs`. B1 gets these as
+    plain numbers.
+
+**Loan options** (Hamza's `data/processed/loan_options.json`; verify each on its official page and set `verified`):
+
+| id | Rate | Limit | Who | Source |
+|---|---|---|---|---|
+| `kissan_card` | 0% | Rs 30,000/acre, up to Rs 150,000 a season; inputs only; 6 months + 1 month grace | Punjab, 1–12.5 acres | punjab.gov.pk/node/5690, bop.com.pk/CMPunjabKissanCard |
+| `pm_youth` | 0% (Tier 1) | up to Rs 500,000 | age 21–45 | ztbl.com.pk (PM Youth Business & Agriculture Loan) |
+| `akhuwat` | 0% | small (sources say Rs 10,000–80,000); two guarantors; apply at a branch | anyone with a CNIC, 18–62 | akhuwat.org.pk (confirm the amount) |
+| `zarkhez_e` | KIBOR + 8%, floor 18% | Rs 100,000/acre, up to Rs 1,000,000 | up to 12.5 acres in Punjab | ztbl.com.pk Zarkhez-e, sbp.org.pk/acd/2025/CL1-AnnexA.pdf |
+| `bank` | 16.5% | none | anyone | our economics inputs (KIBOR + 5%) |
+| `arhti` | 66% | none | anyone | 4× the formal rate (SBP 2014, PIDE) |
+
+**Input costs** (Hamza's `data/processed/input_costs.json`, from the official API cost table already in
+`data/sources/api_wheat_2023_24.*`):
+- **Cash inputs only:** seed, fertiliser, sprays, land preparation, irrigation, harvesting and threshing. Leave out
+  land rent and the farmer's own family labour.
+- **Fertiliser** escalated by actual prices (urea 2,150 to 4,455, DAP 9,000 to 14,259, in `economics_inputs.json`);
+  everything else by CPI.
+- **Wheat first.** Cotton only if time allows (its API table is 2022-23).
+- Each item: `{item, rs_per_acre, method, source}`.
+
+## 4. Done so far
 
 | # | Task | Status |
 |---|---|---|
-| U1 | API contract: schemas, the three routes with placeholder answers, blueprint section 0 | ✅ done 10 Oct |
-| U2 | Contradiction copy: beside SELL, an UP call adds "the price may rise, but probably not by more than the interest of waiting" | ✅ done 10 Oct |
-| U3 | Review and merge Hamza's PRs: pull, run the full suite (rule 7), click through the app in Urdu and English | as PRs arrive |
-| U4 | `DEMO.md`: the 27 Apr 2026 replay, then today with the news banner; real numbers from the running app | after B2 and B4 |
-| U5 | Deploy (Render + Vercel, `docs/DEPLOY.md`), demo-morning refresh of the news snapshot, rehearsal, pitch | demo eve and morning |
-| U6 | Get one real arhti deal from a farmer (voice note) for the pitch | any time |
+| U1 | API contract for wait plan, news and policy (placeholder answers); blueprint section 0 | ✅ merged 10 Oct |
+| U2 | Beside SELL, an UP call adds "the price may rise, but probably not by more than the interest of waiting" | ✅ merged 10 Oct |
 
-## 5. Phase H: Hamza (the build)
+## 5. Task cards (each one session)
 
-Do the batches in order. Within a batch, the tasks touch different files, so separate AI sessions can run them in
-parallel. One PR per batch (or per task), named `hamza/P-<task>`.
+Do the waves in order. Within a wave, the three people work in parallel on different files. One PR per card, named
+`<name>/P-<card>`. Abd reviews and merges (rule 2).
 
-**Batch 1: engine and data** (no front end)
+### Wave 1: contracts and data (start now)
 
-| # | Task | Files |
+| Card | Who | Task | Files | Done when |
+|---|---|---|---|---|
+| **L2a** | Hamza | **First, and fast.** Loan contract per 3.4: `LoanPlanResponse`, `Loan`/`LoanIn`, the wait-plan additions in `schemas.py`; routes returning placeholder answers (`data_source: "placeholder"`, as U1 did); `farmer_loans` table; regenerate OpenAPI and front-end types | `schemas.py`, `main.py`, `services.py`, `placeholders.py`, `db.py`, `backend/tests/`, `frontend/src/api/*` | Merged. Abd's screens and Usman's engine build against it. |
+| **D1** | Hamza | Cash input cost per acre for wheat (cotton if time) per 3.4, plus a `FACTS.md` entry | `data/processed/input_costs.json`, `docs/FACTS.md` | Each item has a method and source; the total per acre is in the PR description |
+| **D2** | Hamza | `loan_options.json` per 3.4, each option checked on its official page; also the rates for H4 (table below) | `data/processed/loan_options.json`, `docs/FACTS.md` | Every row has `source_url` and `verified` |
+| **H1** | Usman | `hold_history` per 3.1, with tests (no peeking past `as_of`; under 3 seasons returns None; check figures roughly reproduce) | `ml/backtest/**` | Tests pass |
+| **L1** | Usman | `loan_plan` per 3.4, with tests (ladder order, the cap, over-borrowing, uncovered, zero savings) | `ml/decision/loan.py`, `test_loan.py` | Tests pass |
+| **H3** | Usman | Policy events JSON (list in 3.2) and `get_policy_events(crop_option, as_of)`, with tests | `backend/app/news/policy.py`, `policy_events.json` | Every row sourced; `as_of` respected |
+| **F2** | Abd | Liquidity-tax chart from the wait plan's `history.seasons` (placeholder data for now), 2026 marked "AMIS capped" | `frontend/src/pages/Why.tsx`, new component, `"wait"` locale block | Builds, readable at 360px in Urdu and English |
+
+### Wave 2: real answers (after L2a)
+
+| Card | Who | Task | Files | Done when |
+|---|---|---|---|---|
+| **H2** | Hamza | News per 3.2: fetch, cache, Gemini tags with a rules fallback, price extraction, saved snapshot. Tests use a saved RSS file. | `backend/app/news/**` except `policy*` | `get_news()` works offline from the snapshot |
+| **B1** | Usman | Wait engine. Cash need comes in as a number (loans due + household − other income, computed by the API). Sell-now maund = ceil(cash need / best net price), capped at the quantity. Hold the rest only for wheat, and only if `wins/n >= 0.5` and `median_net > 0` for this money and storage. Exits and warnings per the schema. | `ml/decision/wait.py`, `config.py`, `test_wait.py` | Tests pass |
+| **F1** | Abd | Wait-plan screen on Home: cash need (or "from my loans" when logged in), household spending, other income (milk, labour), months, whose money, storage, offer; then the split, ways out, "waiting paid in N of M seasons with your setup", worst year | `frontend/src/pages/Home.tsx`, new `components/Wait*.tsx`, `"wait"` locale block | Works on placeholder data; 18px / 48px rules; RTL test passes |
+| **L3** | Abd | Loan planner screen (new tab): crop, acres, savings, age, what you planned to borrow and from whom; then inputs per acre, the cheapest-first ladder, harvest due, and over-borrowing in rupees. Plus a loan list in Profile. | new `frontend/src/pages/Loan.tsx`, `Profile.tsx`, `Header.tsx`, `"loan"` locale block | Works on placeholder data |
+
+### Wave 3: wire up (after wave 2)
+
+| Card | Who | Task | Files | Done when |
+|---|---|---|---|---|
+| **B2** | Hamza | Swap the placeholders for B1, L1, H1, H2 and H3. News rules: `NEWS_PRICE_CONFLICT` (a crop price within 14 days, more than 10% from AMIS; fill `news_check`), `POLICY_UNCERTAIN` plus confidence down one level. Loan options filtered and capped by eligibility; cash need from loans. Delete `placeholders.py`. Tighten the API tests to real numbers. | `backend/app/services.py`, `backend/tests/**` | No placeholder left; full suite green |
+| **B3** | Hamza | WhatsApp replies: wait plan (`wait_text`) and loan plan (`loan_text`), Urdu, under the message limit | `backend/app/channels/**` | Tests pass |
+| **F4** | Usman | Fix What to Grow (compare within a season only; a stale price never ranks first; rice water note at Bahawalpur; wheat support-price status from H3). In Compare, a stale price can't be "best". | `ml/decision/**`, `Grow.tsx`, `Compare.tsx`, `"grow"` / `"compare"` locale blocks | If an API field is needed, ask Hamza |
+| **F3** | Abd | News banner (warnings, `news_check`, always with source, date and link) and policy card | new `components/News*.tsx`, Home, `"news"` locale block | Uses the real `/api/news` and `/api/policy` |
+| **B4** | Usman | `MODEL_CARD.md` "Decision backtest": the new engine vs always-sell, and the loan-ladder method | `docs/MODEL_CARD.md` | Numbers from H1 |
+
+### Wave 4: ship (Abd)
+
+| Card | Task |
+|---|---|
+| **R** | Review and merge every PR as it arrives: pull, run the full suite (rule 7), click through in Urdu and English |
+| **DM** | `DEMO.md` with real numbers. Act 1: October sowing, Ahmed with 5 acres plans Rs 4 lakh from the arhti; the loan planner shows what he really needs and the cheapest money. Act 2: replay 27 Apr 2026, where the small loan lets him hold. Act 3: today's news banner. |
+| **DP** | Deploy (Render + Vercel, `docs/DEPLOY.md`), refresh the news snapshot on demo morning, rehearse, pitch |
+
+### Optional data (only if waves 1–3 are merged before the freeze)
+
+| Card | Who | Task |
 |---|---|---|
-| H1 | `hold_history` per 3.1, with tests: no peeking past `as_of`; fewer than 3 seasons returns None; the check figures in 3.1 roughly reproduce | `ml/backtest/**` |
-| H2 | News: fetch, cache, Gemini tags with a rules fallback, price extraction, snapshot, `get_news` per 3.2. Tests use a saved RSS file, never the network. | `backend/app/news/**` (except the policy files) |
-| H3 | Policy events JSON and `get_policy_events` (respects `as_of`), with tests | `backend/app/news/policy_events.json`, `backend/app/news/policy.py` |
-| H4 | Check the rates in the table below and record them with sources in `FACTS.md` | `docs/FACTS.md` |
+| **D4** | Hamza | Add **Bahawalnagar** and **Lodhran** (wheat and cotton) from AMIS: about 1.08M and 0.37M acres of wheat, the biggest small-farm districts beside ours. Re-run cleaning, features and runtime tables; add transport distances. Skip it if anything is red. |
 
-**Batch 2: wire it up** (needs batch 1)
-
-| # | Task | Files |
-|---|---|---|
-| B1 | Wait engine, with tests. Sell-now maund = ceil(cash need / best net price), capped at the quantity. Hold the rest only for wheat, and only if `wins / n >= 0.5` and `median_net > 0` for the farmer's money and storage, else SELL_ALL. Exits: SELL_NOW, ARHTI_OFFER (if given) and HOLD (median and p10). Warnings per the `WaitWarning` list. | `ml/decision/wait.py`, `config.py`, `test_wait.py` |
-| B2 | Replace the placeholders in `services.wait_plan` / `news` / `policy_events` with B1, H2 and H3. Add the news rules: `NEWS_PRICE_CONFLICT` when a price for the crop in the last 14 days is more than 10% from AMIS (fill `news_check`); `POLICY_UNCERTAIN` and confidence down one level for a SUPPORT_PRICE, CAP_OR_BAN or IMPORT item in the last 14 days. Delete `placeholders.py`. Tighten the U1 tests in `backend/tests/test_api.py` to real numbers. | `backend/app/services.py`, `backend/tests/**` |
-| B3 | WhatsApp reply for the wait plan (`wait_text`), Urdu, under the message limit | `backend/app/channels/**` |
-| B4 | `MODEL_CARD.md` "Decision backtest" (the new engine vs always-sell) and a `DATA_NOTES.md` note on the 2026 AMIS cap | `docs/MODEL_CARD.md`, `docs/DATA_NOTES.md` |
-
-**Batch 3: screens** (needs B2 merged; regenerate types with
-`python -m backend.app.export_openapi && npm --prefix frontend run gen:api`)
-
-| # | Task | Files |
-|---|---|---|
-| F1 | New home screen: cash need, months, whose money (rate editable), storage, offer, then the split, the ways out in rupees, "waiting paid in N of M seasons with your setup" and the worst year. Keep the 18px / 48px readability rules and RTL-only logical classes (`rtl.test.ts`). Reuse `SelectionBar` / `ChipGroup`. | `frontend/src/pages/Home.tsx`, new `components/Wait*.tsx`, locales |
-| F2 | Liquidity-tax chart from `history.seasons`: start price vs later price per year, 2026 marked "AMIS capped" | `frontend/src/pages/Why.tsx` (or `History.tsx`), locales |
-| F3 | News banner (warnings and `news_check`, always with source, date and link) and policy card | new `components/News*.tsx`, used on Home, locales |
-| F4 | Fix What to Grow (compare only within a season, a stale price never ranks first, rice water note at Bahawalpur, wheat support-price card from `/api/policy`). In Compare, a stale price can't be "best". | `services.py` (`crop_plan`, `compare_mandis`), `ml/decision/**`, `Grow.tsx`, `Compare.tsx` |
-
-F1–F3 all add keys to `locales/*.json`: merge them one at a time, or have one session own the locale files for the batch.
-
-**Rates for H4** (they go in `ml/decision/config.py` in B1):
+**Rates for D2** (they go in `ml/decision/config.py` in B1, with sources in `FACTS.md`):
 
 | Rate | Value | Source to check |
 |---|---|---|
 | Storage loss, proper godown | 3.5% per about 5 months | FAO: 3.5% over 5.4 months in public godowns |
 | Storage loss, bags at home | 10% | FAO 2013 via GAIN: "more than 10%" lost in stored wheat |
-| Bank or warehouse-receipt loan | 16.5%/yr | already in our economics inputs; confirm source |
-| Arhti money | 66%/yr | 4× the formal rate, per the SBP 2014 bulletin and PIDE ("4–5×"); look for a direct figure |
-| Kissan Card | Rs 30,000/acre, up to Rs 150,000 a season, 1–12.5 acres, 6 months + 1 month grace, **inputs only** | punjab.gov.pk/node/5690 and bop.com.pk/CMPunjabKissanCard |
+| Bank loan | 16.5%/yr | economics inputs (KIBOR + 5%) |
+| Arhti money | 66%/yr | 4× the formal rate, per the SBP 2014 bulletin and PIDE ("4–5×") |
 
 ## 6. Merge order
 
-1. U1 + U2 into `main` (done when this file lands), **before** Hamza branches off.
-2. Batch 1 (any order), then batch 2, then batch 3. Abd reviews and merges each PR (U3).
-3. Freeze on demo eve (time set by Abd), then deploy and rehearse in the morning (U5).
+1. **L2a first** (it unblocks everyone), then the rest of wave 1 in any order.
+2. Waves 2, 3 and 4 in order. Abd merges each PR after the full suite passes.
+3. Freeze on demo eve (time set by Abd), then deploy and rehearse in the morning.
 
-## 7. Research links (starting points for H3 and H4)
+## 7. Research links (starting points for H3, D1 and D2)
 
 - Punjab wheat policy 2026, Rs 3,500: https://dunyanews.tv/en/Business/930787-punjab-announces-wheat-policy-2026-with-rs3,500-per-maund
 - Aggregators short of bank money (Apr 2026): https://cropgpt.ai/funding-shortfall-jeopardizes-punjabs-3m-tonne-wheat-procurement
@@ -236,3 +336,12 @@ F1–F3 all add keys to `locales/*.json`: merge them one at a time, or have one 
 - Storage loss: https://www.fao.org/4/X5048E/x5048E13.htm and https://nutritionconnect.org/resource-center/power-hermetic-storage-technology-reducing-food-loss-and-waste-pakistan-0
 - Arhti credit cost: https://www.sbp.org.pk/research/bulletin/2014/Vol-10-1/Tete-a-TeteArhtiyas.pdf and https://pide.org.pk/research/the-role-of-arthi-in-agriculture-marketing-an-exploiter-or-facilitator-of-farmers/
 - Liquidity evidence (Kenya trial, 29% return on harvest loans): https://www.atai-research.org/wp-content/uploads/2018/12/BurkeBergquistMiguel2019.pdf
+- Loan options: https://ztbl.com.pk/agri-loan/prime-ministers-youth-business-agriculture-loan-scheme/ ,
+  https://ztbl.com.pk/agri-loan/zarkhez-e-assan-digital-zarai-qarza/ , https://www.sbp.org.pk/acd/2025/CL1-AnnexA.pdf ,
+  https://en.wikipedia.org/wiki/Akhuwat_Foundation
+- Smallholders put only about half of their credit into farming (fungibility): https://link.springer.com/article/10.1186/s40854-018-0109-x
+  and https://www.researchgate.net/publication/281078636_Fungibility_of_Smallholder_Agricultural_Credit_Empirical_Evidence_from_Pakistan
+- District crop areas (Crop Reporting Service): https://crs-agripunjab.punjab.gov.pk/system/files/Bahawalpur.pdf ,
+  .../Bahawalnagar.pdf , .../Lodhran.pdf
+- Milk (reference only): Sindh ex-farm Rs 215/L, Oct 2026: https://arynews.tv/dairy-farmers-urge-immediate-notification-of-revised-milk-prices ;
+  yields 7.9 L/day buffalo, 6.1 L/day cow (PBS 2006): https://www.pbs.gov.pk/sites/default/files/agriculture/publications/pakistan-livestock-cencus2006/special_report/Write-up%20Special%20report%20on%20Milk%20Production%202006.pdf
