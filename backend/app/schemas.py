@@ -387,6 +387,16 @@ class NewsPriceCheck(Strict):
     difference_pct: float           # (news - amis) / amis x 100
 
 
+class HarvestWeek(Strict):
+    week: int                       # 0 = harvest week, then weeks after it
+    price: float                    # expected price per 40 kg that week (median of past seasons)
+    low: float                      # middle half of past seasons: 25th..75th percentile
+    high: float
+    net_per_maund: float            # after interest on the money tied up and storage loss so far
+    total_rs: int                   # net x the farmer's quantity
+    gain_rs: int                    # versus selling in harvest week
+
+
 class WaitPlanResponse(Labelled):
     crop: CropId
     mandi: MandiId
@@ -411,6 +421,10 @@ class WaitPlanResponse(Labelled):
     news_check: NewsPriceCheck | None = None
     prices_as_of: dt.date
     is_stale: bool
+    weeks: list[HarvestWeek] = []   # sell in harvest week or 1..4 weeks later (AMIS weekly prices, past seasons)
+    weeks_n_years: int = 0
+    best_week: int | None = None
+    harvest_month: int | None = None
 
 
 class NewsItem(Strict):

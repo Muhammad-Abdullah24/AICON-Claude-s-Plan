@@ -60,9 +60,7 @@ export function WaitPlan() {
   const input = `${inputClass} figures mt-2 block w-full max-w-xs text-lg font-semibold`
   return (
     <section className={cardClass('surface', 'space-y-5')}>
-      <CardTitle icon="clock">
-        {t('wait.title')}
-      </CardTitle>
+      <CardTitle icon="clock">{t('wait.title')}</CardTitle>
 
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
@@ -161,6 +159,8 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
         </p>
       )}
 
+      {plan.weeks.length > 0 && <Weeks plan={plan} />}
+
       <div className="space-y-2">
         <p className="text-sm font-semibold text-slate">{t('wait.ways', { qty: plan.quantity_maund })}</p>
         <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
@@ -184,6 +184,46 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
         .map((w) => (
           <Warning key={w} code={w} check={plan.news_check} />
         ))}
+    </div>
+  )
+}
+
+/** Sell in harvest week or 1..4 weeks later: each week's expected price and what it leaves after interest and
+ * storage loss, from past seasons' AMIS weekly prices. The best week is marked. */
+function Weeks({ plan }: { plan: WaitPlanResponse }) {
+  const { t } = useTranslation()
+  const best = plan.best_week
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-semibold text-slate">{t('wait.weeksTitle', { qty: plan.quantity_maund })}</p>
+      <ol className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
+        {plan.weeks.map((w) => (
+          <li
+            key={w.week}
+            className={`flex items-center justify-between gap-3 px-4 py-3 ${w.week === best ? 'bg-field-soft' : ''}`}
+          >
+            <span className="flex flex-col">
+              <span className="font-semibold">
+                {w.week === 0 ? t('wait.weekHarvest') : t('wait.weekN', { n: w.week })}
+                {w.week === best && (
+                  <span className="ms-2 rounded-full bg-field px-2 text-sm text-paper">{t('wait.best')}</span>
+                )}
+              </span>
+              <span className="figures text-sm text-slate">{formatRs(w.price)}</span>
+            </span>
+            <span className="text-end">
+              <span className="figures block font-semibold">{formatRs(w.total_rs)}</span>
+              {w.week > 0 && (
+                <span className={`figures block text-sm ${w.gain_rs >= 0 ? 'text-field' : 'text-madder'}`}>
+                  {w.gain_rs >= 0 ? '+' : '−'}
+                  {formatRs(Math.abs(w.gain_rs))}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="text-sm text-slate">{t('wait.weeksFrom', { n: plan.weeks_n_years })}</p>
     </div>
   )
 }
