@@ -29,3 +29,17 @@ SELLING_WINDOW_TOLERANCE_PCT = 1.0
 
 # Alerts (B8). At most one alert per farmer in this many days, across all their crops.
 ALERT_MIN_DAYS_BETWEEN = 7
+
+
+# ---------------------------------------------------------------- pivot: the wait engine (ml/decision/wait.py)
+# "Can you afford to wait, and with whose money?" Rates and storage losses, with sources in docs/FACTS.md.
+# The annual cost of the money tied up while the crop is held, by source (%/year).
+DEFAULT_RATE_PCT = {"own": 0.0, "bank": 16.5, "arhti": 66.0}
+# Grain lost over the wait, by store. Assumptions inside a documented 2-18% band (docs/FACTS.md H4): treat as estimates.
+LOSS_PCT = {"godown": 3.5, "bags": 10.0}
+# Holding the rest is advised only when it paid in at least this share of past seasons AND the median was positive.
+HOLD_MIN_WIN_RATE = 0.5
+# A news price this far (%) from the AMIS price, or closer, is not flagged as a conflict.
+NEWS_CONFLICT_PCT = 10.0
+# A policy/news item within this many days counts as "recent" (POLICY_UNCERTAIN, confidence down one level).
+POLICY_RECENT_DAYS = 14

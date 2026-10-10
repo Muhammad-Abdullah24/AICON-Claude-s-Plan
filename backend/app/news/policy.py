@@ -33,6 +33,7 @@ def get_policy_events(crop_option: str, as_of: date | None = None) -> list[dict]
         return []
     crop_id = _crop_id(crop_option)
     cutoff = (as_of or date.today()).isoformat()
-    out = [e for e in events
+    fields = ("date", "tag", "text_ur", "text_en", "source", "url")   # "crop" is for filtering only, not returned
+    out = [{k: e[k] for k in fields} for e in events
            if e.get("date", "") <= cutoff and (e.get("crop") in (None, crop_id))]
     return sorted(out, key=lambda e: e["date"], reverse=True)

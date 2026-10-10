@@ -194,6 +194,12 @@ def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY, chat: 
         if p.kind in ("stop", "start"):
             provider.set_alerts(phone, p.kind == "start")
             return text_message(reply.STOPPED if p.kind == "stop" else reply.STARTED)
+        if p.kind == "wait":
+            q = memory.last.get(phone)
+            if q is None:
+                return text_message(reply.NEED_QUERY_FIRST)
+            ctx = q
+            return buttons_message(reply.wait_text(provider.wait_plan(q.crop_option, q.mandi, q.quantity_maund, phone)))
         if p.kind in ("why", "compare"):
             q = memory.last.get(phone)
             if q is None:

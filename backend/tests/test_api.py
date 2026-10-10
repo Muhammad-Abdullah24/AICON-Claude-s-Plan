@@ -221,24 +221,39 @@ def test_dates_in_responses_are_iso(client):
 # ---------------------------------------------------------------- pivot contract (docs/PIVOT.md, U1)
 # Placeholder answers for now; these tests pin the shape and the labelling, not the numbers. U4 tightens them.
 
-def test_wait_plan_shape_and_split(client):
+def test_wait_plan_is_real_and_splits_correctly(client):
     r = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "quantity_maund": 100,
                                              "cash_need_rs": 200_000, "offer": 2900})
     assert r.status_code == 200
     p = r.json()
     assert p["crop"] == "wheat" and p["mandi"] == "bahawalpur" and p["unit"] == "40kg"
+    assert p["data_source"] == "amis" and p["is_synthetic"] is False      # real data, never a placeholder
     assert p["sell_now_maund"] + p["hold_maund"] == p["quantity_maund"] == 100
-    kinds = [e["kind"] for e in p["exits"]]
-    assert kinds[0] == "SELL_NOW" and "ARHTI_OFFER" in kinds
-    assert p["exits"][0]["mandi"] in MANDIS
-    if p["is_synthetic"]:   # never let a placeholder pass for advice
-        assert p["data_source"] == "placeholder"
+    sell_now = p["exits"][0]
+    assert sell_now["kind"] == "SELL_NOW" and sell_now["mandi"] in MANDIS and sell_now["per_maund"] > 0
+    assert sell_now["total_rs"] == round(sell_now["per_maund"] * 100)
+    assert next(e for e in p["exits"] if e["kind"] == "ARHTI_OFFER")["per_maund"] == 2900
+    # wheat has years of AMIS data, so the hold history and a HOLD exit are present
+    assert p["history"] is not None and p["history"]["n"] >= 3
+    hold = next(e for e in p["exits"] if e["kind"] == "HOLD")
+    assert hold["worst_total_rs"] <= hold["total_rs"] and hold["cost_rs"] > 0
+
+
+def test_wait_plan_holds_only_wheat(client):
+    p = client.get("/api/wait-plan", params={"crop": "cotton", "mandi": "bahawalpur"}).json()
+    assert p["verdict"] == "SELL_ALL" and p["history"] is None and "HOLD_WHEAT_ONLY" in p["warnings"]
+    assert not any(e["kind"] == "HOLD" for e in p["exits"])
+
+
+def test_wait_plan_replays_a_past_week_without_live_news(client):
+    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "as_of": "2025-08-04"}).json()
+    assert p["prices_as_of"] <= "2025-08-04" and p["news_check"] is None   # news is today's, not replayed
 
 
 def test_wait_plan_defaults_by_money_and_storage(client):
     p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "vehari", "money": "arhti",
                                              "storage": "bags"}).json()
-    assert p["money"] == "arhti" and p["annual_rate_pct"] > 16.5 and p["loss_pct"] > 3.5
+    assert p["money"] == "arhti" and p["annual_rate_pct"] == 66.0 and p["loss_pct"] == 10.0
     own = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "vehari", "annual_rate": 12}).json()
     assert own["annual_rate_pct"] == 12
 
@@ -253,12 +268,16 @@ def test_wait_plan_404_without_data(client):
     assert client.get("/api/wait-plan", params={"crop": "irri", "mandi": "rahim_yar_khan"}).status_code == 404
 
 
-def test_news_uses_api_ids(client):
+def test_news_is_offline_in_tests_with_api_ids(client):
     n = client.get("/api/news", params={"crop": "wheat", "mandi": "bahawalpur"}).json()
-    assert "items" in n and "is_snapshot" in n
+    assert n["is_snapshot"] is True and n["tagged_by"] in ("llm", "rules")   # offline -> committed snapshot
     assert all(i["crop"] in CROPS + [None] for i in n["items"])
+    assert all({"title", "url", "source", "published", "tag", "summary_ur", "summary_en"} <= i.keys()
+               for i in n["items"])
 
 
 def test_policy_respects_as_of(client):
     events = client.get("/api/policy", params={"crop": "wheat", "as_of": "2026-04-01"}).json()["events"]
-    assert all(e["date"] <= "2026-04-01" for e in events)
+    assert events and all(e["date"] <= "2026-04-01" for e in events)
+    assert not any(e["date"] == "2026-04-28" for e in events)   # the late-April cap is not yet known
+    assert all(e["source"] and e["url"].startswith("http") and e["text_ur"] for e in events)

@@ -211,3 +211,36 @@ def test_signature_check():
     good = "sha256=" + hmac.new(b"s", raw, hashlib.sha256).hexdigest()
     assert whatsapp.signature_ok(raw, good, "s")
     assert not whatsapp.signature_ok(raw, good, "other") and not whatsapp.signature_ok(raw, None, "s")
+
+
+def test_wait_text_lays_out_the_plan():
+    plan = {"crop_option": "Wheat", "mandi": "BahawalPur", "verdict": "SPLIT", "sell_now_maund": 40,
+            "hold_maund": 60, "exits": [{"kind": "SELL_NOW", "mandi": "BahawalPur", "per_maund": 3820,
+                                         "total_rs": 382000},
+                                        {"kind": "HOLD", "mandi": None, "per_maund": 3900, "total_rs": 390000,
+                                         "worst_total_rs": 350000, "cost_rs": 5000}],
+            "history": {"n": 9, "wins": 6}, "warnings": ["STALE_PRICE"], "confidence": "MEDIUM"}
+    t = reply.wait_text(plan)
+    for expected in ("گندم", "بہاولپور", "کچھ ابھی بیچیں", "40 من", "60 من", "Rs 382,000", "Rs 390,000",
+                     "Rs 350,000", "9 سالوں", "6 بار", reply.WAIT_WARNING_UR["STALE_PRICE"]):
+        assert expected in t
+    assert len(t) <= reply.MAX_BODY
+
+
+def test_wait_word_after_a_query_returns_the_plan():
+    class WaitProvider(FakeProvider):
+        def wait_plan(self, crop_option, mandi, quantity_maund, phone):
+            return {"crop_option": crop_option, "mandi": mandi, "verdict": "HOLD_ALL", "sell_now_maund": 0,
+                    "hold_maund": quantity_maund, "exits": [{"kind": "SELL_NOW", "mandi": mandi, "per_maund": 3820,
+                                                             "total_rs": 382000}],
+                    "history": {"n": 9, "wins": 7}, "warnings": [], "confidence": "MEDIUM"}
+
+    mem = whatsapp.Memory()
+    whatsapp.respond(text_msg("گندم بہاولپور 100 من"), WaitProvider(), mem)   # sets last query
+    body = body_of(whatsapp.respond(text_msg("رکھیں"), WaitProvider(), mem))
+    assert "روک لیں" in body and "گندم" in body
+
+
+def test_wait_word_without_a_query_asks_first():
+    body = body_of(whatsapp.respond(text_msg("رکھیں"), FakeProvider(), whatsapp.Memory()))
+    assert body == reply.NEED_QUERY_FIRST

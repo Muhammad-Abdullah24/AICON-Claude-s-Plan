@@ -94,3 +94,48 @@ def compare_text(crop_option: str, rows: Sequence[Mapping]) -> str:
 
 def clip(text: str, limit: int = MAX_BODY) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+# ---------------------------------------------------------------- wait plan (task B3; docs/PIVOT.md 3.3)
+
+WAIT_VERDICT_UR = {
+    "SELL_ALL": "سب ابھی بیچ دیں",
+    "SPLIT": "کچھ ابھی بیچیں، باقی روک لیں",
+    "HOLD_ALL": "فی الحال سب روک لیں",
+}
+WAIT_EXIT_UR = {"SELL_NOW": "ابھی بیچنے پر", "ARHTI_OFFER": "آڑھتی کی آفر پر", "HOLD": "روکنے پر"}
+WAIT_WARNING_UR = {
+    "STALE_PRICE": "⚠️ ریٹ پرانا ہے",
+    "NEWS_PRICE_CONFLICT": "⚠️ خبروں میں ریٹ مختلف آ رہا ہے",
+    "POLICY_UNCERTAIN": "⚠️ سرکاری پالیسی ابھی غیر یقینی ہے",
+    "HOLD_WHEAT_ONLY": "روکنے کا حساب صرف گندم کے لیے ہے",
+    "CASH_NEED_EXCEEDS_CROP": "⚠️ ساری فصل بیچ کر بھی مطلوبہ رقم پوری نہیں ہوتی",
+    "TOO_FEW_SEASONS": "روکنے کا فیصلہ کرنے کے لیے کافی پرانے ریٹ نہیں",
+}
+
+
+def wait_text(plan: Mapping) -> str:
+    """One WhatsApp reply from the wait plan (docs/PIVOT.md 3.3): sell now or hold, each way out in rupees, how
+    often holding paid, and any warnings. Every number comes from the plan; this only lays it out. `plan` carries
+    `crop_option` and `mandi` (data names, added by the provider); `exits[].mandi` is a data name too."""
+    crop = CROP_UR.get(plan["crop_option"], plan["crop_option"])
+    mandi = MANDI_UR.get(plan["mandi"], plan["mandi"])
+    lines = [f"{crop}، {mandi}: {WAIT_VERDICT_UR.get(plan['verdict'], plan['verdict'])}"]
+    if plan.get("sell_now_maund"):
+        lines.append(f"ابھی بیچیں: {plan['sell_now_maund']:g} من")
+    if plan.get("hold_maund"):
+        lines.append(f"روک لیں: {plan['hold_maund']:g} من")
+    for e in plan.get("exits", []):
+        label = WAIT_EXIT_UR.get(e["kind"], e["kind"])
+        if e["kind"] == "HOLD":
+            lines.append(f"• {label}: اندازاً {rs(e['total_rs'])}، برے سال میں {rs(e['worst_total_rs'])}")
+        else:
+            where = MANDI_UR.get(e.get("mandi"), e.get("mandi"))
+            at = f" ({where})" if e["kind"] == "SELL_NOW" and where else ""
+            lines.append(f"• {label}{at}: {rs(e['total_rs'])}")
+    h = plan.get("history")
+    if h and h.get("n"):
+        lines.append(f"پچھلے {h['n']} سالوں میں رکنا {h['wins']} بار فائدہ مند رہا")
+    lines += [WAIT_WARNING_UR[w] for w in plan.get("warnings", []) if w in WAIT_WARNING_UR]
+    lines.append(DISCLAIMER)
+    return clip("\n".join(lines))

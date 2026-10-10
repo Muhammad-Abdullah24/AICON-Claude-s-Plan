@@ -17,6 +17,7 @@ class AdviceProvider(Protocol):
     def advice(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
     def explain(self, crop_option: str, mandi: str, phone: str) -> list[dict]: ...
     def compare(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> list[dict]: ...
+    def wait_plan(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
     def set_alerts(self, phone: str, enabled: bool) -> None: ...
 
 
@@ -49,6 +50,10 @@ class ServicesProvider:
 
     def compare(self, crop_option, mandi, quantity_maund, phone):
         return self._fn("compare_mandis")(crop_option, mandi, quantity_maund)
+
+    def wait_plan(self, crop_option, mandi, quantity_maund, phone):
+        plan = self._fn("wait_plan")(crop_option, mandi, quantity_maund, phone=phone)
+        return {**plan, "crop_option": crop_option, "mandi": mandi}
 
     def set_alerts(self, phone, enabled):
         self._fn("set_alerts")(phone, enabled)

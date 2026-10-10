@@ -17,7 +17,7 @@ from __future__ import annotations
 import bisect
 import csv
 import math
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
 
@@ -415,31 +415,106 @@ def model_available() -> bool:
 
 
 # ---------------------------------------------------------------- pivot: wait plan, news, policy (docs/PIVOT.md)
-# Placeholders until U3/U4 (the wait engine) and H2/H3 (Hamza's news package) land. The signatures are the
-# contract (PIVOT.md section 3): WhatsApp (H6) and the screens (U5-U7) build against them now.
+# The wait engine (ml/decision/wait.py), the news package (backend/app/news/) and the policy timeline, wired in.
+# News never flips the advice (PIVOT rule 8): it only adds a warning (NEWS_PRICE_CONFLICT / POLICY_UNCERTAIN) and
+# lowers confidence. News is always today's and is skipped when replaying a past week (as_of set); the dated policy
+# timeline still works in replay.
+
+def _news_price_check(crop_option: str, mandi: str, amis_price: float, amis_date: str) -> dict | None:
+    """A NewsPriceCheck dict when a news price for this crop, published in the last 14 days, is more than
+    NEWS_CONFLICT_PCT away from today's AMIS price; else None. Newest qualifying item wins."""
+    from backend.app.ids import CROP_FROM_DATA  # noqa: PLC0415
+    from backend.app.news.service import get_news  # noqa: PLC0415
+    crop_id = CROP_FROM_DATA.get(crop_option)
+    try:
+        items = get_news(crop_id)["items"]
+    except Exception:  # noqa: BLE001 (a news failure must never break the advice)
+        return None
+    today = date.today()
+    hits = []
+    for it in items:
+        price = it.get("price_rs_per_40kg")
+        if price is None or it.get("crop") != crop_id:
+            continue
+        try:
+            pub = date.fromisoformat(it["published"])
+        except (TypeError, ValueError):
+            continue
+        if (today - pub).days > decision.config.POLICY_RECENT_DAYS:
+            continue
+        diff = (price - amis_price) / amis_price * 100
+        if abs(diff) > decision.config.NEWS_CONFLICT_PCT:
+            hits.append((it["published"], it, price, diff))
+    if not hits:
+        return None
+    _, it, price, diff = max(hits)
+    return {"amis_price": amis_price, "amis_date": amis_date, "news_price": price, "news_date": it["published"],
+            "news_source": it["source"], "news_url": it["url"], "difference_pct": round(diff, 1)}
+
+
+def _policy_recent(crop_option: str, as_of: date | None) -> bool:
+    """True when a SUPPORT_PRICE, CAP_OR_BAN or IMPORT policy event falls in the last POLICY_RECENT_DAYS (as of
+    `as_of`, so it works in replay)."""
+    from backend.app.ids import CROP_FROM_DATA  # noqa: PLC0415
+    from backend.app.news.policy import get_policy_events  # noqa: PLC0415
+    ref = as_of or date.today()
+    cutoff = (ref - timedelta(days=decision.config.POLICY_RECENT_DAYS)).isoformat()
+    events = get_policy_events(CROP_FROM_DATA.get(crop_option), ref)
+    return any(e["tag"] in ("SUPPORT_PRICE", "CAP_OR_BAN", "IMPORT") and e["date"] >= cutoff for e in events)
+
 
 def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_need_rs: float = 0,
               wait_months: int = 4, money: str = "own", annual_rate: float | None = None,
               storage: str = "godown", offer: float | None = None, phone: str | None = None,
               as_of: date | None = None) -> dict:
     """Can this farmer afford to wait? Sell enough now for the cash they need; hold the rest only if, with their
-    money and their storage, holding paid in most past seasons. Returns the WaitPlanResponse fields except
-    crop and mandi (`exits[].mandi` is a data name). Placeholder answer for now (is_synthetic: True)."""
-    from backend.app import placeholders  # noqa: PLC0415
+    money and their storage, holding paid in most past seasons (ml/backtest + ml/decision/wait.py). Returns the
+    WaitPlanResponse fields except crop and mandi (`exits[].mandi` is a data name)."""
+    from ml.backtest.hold import hold_history  # noqa: PLC0415
+    from ml.decision import wait as wait_engine  # noqa: PLC0415
     _series(crop_option, mandi)
-    return placeholders.wait_plan(crop_option, mandi, quantity_maund, cash_need_rs, wait_months, money,
-                                  annual_rate, storage, offer)
+    price, price_date = latest_price(crop_option, mandi, as_of)
+    stale = is_stale(price_date, as_of)
+    priced = [r for r in compare_mandis(crop_option, mandi, quantity_maund, as_of) if r.get("has_data")]
+    non_stale = [r for r in priced if not r["is_stale"]]
+    best = (non_stale or priced)[0]   # compare_mandis is sorted by net price, best first
+    rate = decision.config.DEFAULT_RATE_PCT[money] if annual_rate is None else annual_rate
+    loss = decision.config.LOSS_PCT[storage]
+    is_wheat = crop_option == "Wheat"
+    hold = (hold_history(crop_option, mandi, date.fromisoformat(price_date).month, wait_months, rate, loss, as_of)
+            if is_wheat else None)
+    news_check = _news_price_check(crop_option, mandi, price, price_date) if as_of is None else None
+    plan = wait_engine.wait_plan(
+        quantity_maund=quantity_maund, cash_need_rs=cash_need_rs, best_mandi=best["mandi"],
+        best_net_price=best["net_price"], hold=hold, is_wheat=is_wheat, wait_months=wait_months, money=money,
+        annual_rate_pct=rate, storage=storage, loss_pct=loss, offer=offer, is_stale=stale,
+        news_conflict=news_check is not None, policy_recent=_policy_recent(crop_option, as_of))
+    return {**plan, "data_source": "amis", "is_synthetic": False, "prices_as_of": price_date, "is_stale": stale,
+            "news_check": news_check}
 
 
 def news(crop_option: str | None = None, mandi: str | None = None) -> dict:
     """Today's Pakistan farm news (NewsResponse fields; `items[].crop` is a data name or None). With crop and
-    mandi, `price_check` says when a news price is more than 10% away from AMIS. Placeholder for now."""
-    from backend.app import placeholders  # noqa: PLC0415
-    return placeholders.news()
+    mandi, `price_check` flags a news price more than 10% from today's AMIS price."""
+    from backend.app.ids import CROP_FROM_DATA, CROP_TO_DATA  # noqa: PLC0415
+    from backend.app.news.service import get_news  # noqa: PLC0415
+    n = get_news(CROP_FROM_DATA.get(crop_option) if crop_option else None)
+    items = [{**i, "crop": CROP_TO_DATA.get(i["crop"]) if i.get("crop") else None} for i in n["items"]]
+    price_check = None
+    if crop_option and mandi:
+        try:
+            price, price_date = latest_price(crop_option, mandi)
+            price_check = _news_price_check(crop_option, mandi, price, price_date)
+        except LookupError:
+            pass
+    return {"data_source": "google_news", "is_synthetic": False, "items": items, "fetched_at": n["fetched_at"],
+            "is_snapshot": n["is_snapshot"], "tagged_by": n["tagged_by"], "price_check": price_check}
 
 
 def policy_events(crop_option: str, as_of: date | None = None) -> dict:
     """Dated, sourced policy events for the crop, newest first, none after as_of, with their data label
-    (the PolicyResponse fields except crop). Placeholder for now."""
-    from backend.app import placeholders  # noqa: PLC0415
-    return {**placeholders.PLACEHOLDER, "events": placeholders.policy_events(as_of)}
+    (the PolicyResponse fields except crop)."""
+    from backend.app.ids import CROP_FROM_DATA  # noqa: PLC0415
+    from backend.app.news.policy import get_policy_events  # noqa: PLC0415
+    return {"data_source": "curated", "is_synthetic": False,
+            "events": get_policy_events(CROP_FROM_DATA.get(crop_option), as_of)}
