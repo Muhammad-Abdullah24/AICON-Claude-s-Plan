@@ -26,6 +26,14 @@
   --font-sans: 'IBM Plex Sans', 'Noto Nastaliq Urdu', system-ui, sans-serif;
   --font-urdu: 'Noto Nastaliq Urdu', 'IBM Plex Sans', serif;
   --font-figures: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /*
+   * Blueprint NFR-05: 18px minimum text for low-end phones in sunlight. The root size is 18px (19px in Urdu,
+   * since Nastaliq reads smaller than Latin at the same size), and Tailwind's two smaller steps are floored at
+   * 1rem, so no text-xs or text-sm can ever render below it. Secondary text is told apart by colour, not size.
+   */
+  --text-xs: 1rem;
+  --text-sm: 1rem;
 }
 
 @layer base {
@@ -43,7 +51,7 @@
    * too; otherwise every text-sm or text-xs would clip.
    */
   html:lang(ur) {
-    font-size: 17px;
+    font-size: 19px;
     line-height: 2.1;
     --text-xs--line-height: 2.2;
     --text-sm--line-height: 2.1;
@@ -54,7 +62,7 @@
     --text-3xl--line-height: 1.9;
   }
   html:lang(en) {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.5;
   }
 

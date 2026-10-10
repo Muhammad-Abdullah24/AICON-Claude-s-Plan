@@ -10,7 +10,7 @@ service layer as the web app, and the decision is Owner B's `ml.decision.alert_c
 At most one alert per farmer every 7 days, across all their crops; the most important event is sent and the rest
 are recorded as SUPPRESSED. The first check for a crop records its signal silently (BASELINE), so a later change
 can be noticed. Dates are the check's as-of date, so replaying past weeks with `as_of` (the demo time machine)
-behaves as those weeks did; the candidates are built here for that reason, with only data up to `as_of`.
+behaves as those weeks did: Owner B's `alert_candidate` uses only data up to `as_of`.
 
 SMS fallback (task A11): only for farmers with alerts on, only when WhatsApp delivery failed, and only when an SMS
 provider is configured (backend/app/channels/sms.py; none is yet, so today there is no fallback). The SMS carries
@@ -36,6 +36,7 @@ from backend.app import db, services
 from backend.app.channels import reply, sms_reply
 from backend.app.ids import CROP_FROM_DATA, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_TO_DATA
 from ml import decision
+from ml.decision import inputs as engine_inputs
 
 log = logging.getLogger("farmsight.alerts")
 
@@ -46,31 +47,15 @@ SIGNAL_CHANGED = "مشورہ بدل گیا ہے"
 SendFn = Callable[[str, str, str], bool]   # (phone digits, full text, one-line summary) -> delivered?
 
 
-def recent_change(crop_option: str, mandi: str, as_of: date | None) -> tuple[float | None, bool]:
-    """(% change of the latest observed weekly price vs exactly 4 weeks earlier, either week frozen), using only
-    weeks on or before `as_of`. The change is None when the earlier week has no real price."""
-    from ml.forecast.history import history  # noqa: PLC0415 (Owner B; loads the weekly table once)
-    h = history(crop_option, mandi, as_of, weeks=5)
-    if h is None or len(h["weeks"]) < 5:
-        return None, False
-    earlier, latest = h["weeks"][0], h["weeks"][-1]
-    frozen = earlier["frozen"] or latest["frozen"]
-    if earlier["price"] is None or earlier["filled"] or latest["price"] is None:
-        return None, frozen
-    return round((latest["price"] / earlier["price"] - 1) * 100, 2), frozen
-
-
-def _candidate(advice: dict, previous_signal: str | None, as_of: date | None) -> dict:
-    """alert_check's input for one crop, like ml.decision.inputs.alert_candidate but honouring as_of."""
-    change, frozen = recent_change(advice["crop_option"], advice["mandi"], as_of)
-    now = advice["current_price"]
-    return {
-        "crop_option": advice["crop_option"], "mandi": advice["mandi"], "signal": advice["signal"],
-        "previous_signal": previous_signal, "prices_as_of": advice["prices_as_of"], "change_4w_pct": change,
-        "band_q10_pct": (advice["range"]["low"] / now - 1) * 100,
-        "band_q90_pct": (advice["range"]["high"] / now - 1) * 100,
-        "is_frozen": frozen, "is_stale": advice["is_stale"],
-    }
+def _candidate(advice: dict, previous_signal: str | None, as_of: date | None) -> dict | None:
+    """alert_check's input for one crop: Owner B's `alert_candidate` (weeks on or before `as_of`, H-C21), with the
+    price date and staleness the farmer sees in the advice, so the alert and the app always agree (see H-B16).
+    None when the crop has no weekly prices up to `as_of`."""
+    c = engine_inputs.alert_candidate(advice["crop_option"], advice["mandi"], advice["signal"], previous_signal,
+                                      as_of)
+    if c is not None:
+        c.update(prices_as_of=advice["prices_as_of"], is_stale=advice["is_stale"])
+    return c
 
 
 def _why_ur(event: dict) -> str:
@@ -105,7 +90,9 @@ def check_farmer(farmer: dict, today: date, as_of: date | None) -> dict:
         last = db.last_alert(farmer["id"], c["crop"])
         if last is None:
             baseline.append(a)
-        candidates.append(_candidate(a, last["signal"] if last else None, as_of))
+        candidate = _candidate(a, last["signal"] if last else None, as_of)
+        if candidate is not None:
+            candidates.append(candidate)
     last_sent = db.last_sent_date(farmer["id"])
     result = decision.alert_check(candidates, date.fromisoformat(last_sent) if last_sent else None, today)
     return {"farmer_id": farmer["id"], "result": result, "advice": advice, "baseline": baseline}
