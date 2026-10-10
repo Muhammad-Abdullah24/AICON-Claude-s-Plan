@@ -1,0 +1,74 @@
+[
+  {
+    "date": "2026-01-15",
+    "tag": "SUPPORT_PRICE",
+    "crop": "wheat",
+    "text_en": "Punjab's 2026 wheat policy: an indicative Rs 3,500 per 40 kg, bought through private aggregators, not direct government procurement.",
+    "text_ur": "پنجاب کی 2026 گندم پالیسی: اشاراتی ریٹ 3,500 روپے فی من، سرکاری خریداری کے بجائے نجی ایگریگیٹرز کے ذریعے۔",
+    "source": "Dunya News",
+    "url": "https://dunyanews.tv/en/Business/930787-punjab-announces-wheat-policy-2026-with-rs3,500-per-maund"
+  },
+  {
+    "date": "2026-04-10",
+    "tag": "PROCUREMENT",
+    "crop": "wheat",
+    "text_en": "Aggregators run short of bank funding, putting Punjab's 3-million-tonne wheat procurement at risk.",
+    "text_ur": "ایگریگیٹرز کے پاس بینک رقم کم پڑ گئی، پنجاب کی 30 لاکھ ٹن گندم خریداری خطرے میں۔",
+    "source": "CropGPT",
+    "url": "https://cropgpt.ai/funding-shortfall-jeopardizes-punjabs-3m-tonne-wheat-procurement"
+  },
+  {
+    "date": "2026-04-28",
+    "tag": "CAP_OR_BAN",
+    "crop": "wheat",
+    "text_en": "Punjab makes selling wheat above Rs 3,500 per 40 kg a criminal offence.",
+    "text_ur": "پنجاب: گندم 3,500 روپے فی من سے اوپر بیچنا جرم قرار۔",
+    "source": "The News",
+    "url": "https://www.thenews.pk/print/1412565-punjab-criminalises-wheat-sales-above-rs-3-500-40kg"
+  },
+  {
+    "date": "2026-05-22",
+    "tag": "CAP_OR_BAN",
+    "crop": "wheat",
+    "text_en": "Sindh bans the movement of wheat out of the province as prices rise.",
+    "text_ur": "سندھ نے صوبے سے گندم کی نقل و حمل پر پابندی لگا دی۔",
+    "source": "Newswav",
+    "url": "https://newswav.com/article/sindh-bans-wheat-movement-as-pakistan-battles-rising-prices-A2605_QyhPaU"
+  },
+  {
+    "date": "2026-07-24",
+    "tag": "IMPORT",
+    "crop": "wheat",
+    "text_en": "The government decides to import 1 million tonnes of wheat.",
+    "text_ur": "حکومت نے 10 لاکھ ٹن گندم درآمد کرنے کا فیصلہ کیا۔",
+    "source": "ProPakistani",
+    "url": "https://propakistani.pk/2026/07/24/govt-decides-to-import-of-1-million-tonnes-of-wheat/"
+  },
+  {
+    "date": "2026-07-27",
+    "tag": "PROCUREMENT",
+    "crop": "wheat",
+    "text_en": "Punjab misses its wheat target as the aggregator model fails and grain flows to Sindh and KP.",
+    "text_ur": "ایگریگیٹر ماڈل ناکام، پنجاب گندم ہدف سے پیچھے، اناج سندھ اور کے پی کی طرف گیا۔",
+    "source": "ProPakistani",
+    "url": "https://propakistani.pk/2026/07/27/punjab-misses-wheat-target-as-aggregator-model-fails-and-grain-flows-to-sindh-kp/"
+  },
+  {
+    "date": "2026-09-15",
+    "tag": "SUPPORT_PRICE",
+    "crop": "wheat",
+    "text_en": "Kissan Ittehad demands a Rs 5,000 per 40 kg wheat support price.",
+    "text_ur": "کسان اتحاد نے گندم کی امدادی قیمت 5,000 روپے فی من مقرر کرنے کا مطالبہ کیا۔",
+    "source": "Dawn",
+    "url": "https://www.dawn.com/news/2031938"
+  },
+  {
+    "date": "2026-10-05",
+    "tag": "SUPPORT_PRICE",
+    "crop": "wheat",
+    "text_en": "Wheat support price still undecided: Punjab leans to Rs 4,200, Sindh to Rs 5,000 per 40 kg.",
+    "text_ur": "گندم کی امدادی قیمت ابھی طے نہیں: پنجاب 4,200 اور سندھ 5,000 روپے فی من کی طرف۔",
+    "source": "Bloom Pakistan",
+    "url": "https://bloompakistan.com/pakistan-wheat-support-price-punjab-sindh-rs5000/"
+  }
+]
