@@ -623,6 +623,23 @@ export interface components {
             /** Is Stale */
             is_stale?: boolean | null;
         };
+        /** ContextNote */
+        ContextNote: {
+            /**
+             * Id
+             * @constant
+             */
+            id: "RICE_WATER_BAHAWALPUR";
+            /** Source */
+            source: string;
+            /**
+             * Source Date
+             * Format: date
+             */
+            source_date: string;
+            /** Url */
+            url: string;
+        };
         /** CropInfo */
         CropInfo: {
             /** Id */
@@ -655,7 +672,12 @@ export interface components {
              */
             crop: "wheat" | "cotton" | "irri" | "super_basmati";
             /** Rank */
-            rank: number;
+            rank: number | null;
+            /**
+             * Season
+             * @enum {string}
+             */
+            season: "RABI" | "KHARIF";
             /** Latest Price */
             latest_price: number;
             /**
@@ -712,6 +734,12 @@ export interface components {
             profit_per_acre_high: number;
             /** Is Stale */
             is_stale: boolean;
+            /** Is Frozen */
+            is_frozen: boolean;
+            /** Evidence Issues */
+            evidence_issues: ("STALE_PRICE" | "FROZEN_PRICE" | "FEW_YEARS")[];
+            /** Notes */
+            notes: components["schemas"]["ContextNote"][];
         };
         /** CropPlanResponse */
         CropPlanResponse: {
@@ -728,10 +756,30 @@ export interface components {
             land_area_acres: number;
             /** Items */
             items: components["schemas"]["CropPlanItem"][];
+            /** Seasons */
+            seasons: components["schemas"]["CropPlanSeason"][];
+            support_price_context: components["schemas"]["SupportPriceContext"];
             /** Not Available */
             not_available: ("wheat" | "cotton" | "irri" | "super_basmati")[];
             /** Is Estimate */
             is_estimate: boolean;
+        };
+        /** CropPlanSeason */
+        CropPlanSeason: {
+            /**
+             * Season
+             * @enum {string}
+             */
+            season: "RABI" | "KHARIF";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "RANKED" | "TOO_FEW_CROPS" | "NOT_ENOUGH_CURRENT_EVIDENCE";
+            /** N Crops */
+            n_crops: number;
+            /** N Comparable */
+            n_comparable: number;
         };
         /** DataSourceInfo */
         DataSourceInfo: {
@@ -1509,6 +1557,27 @@ export interface components {
             latest_price: number;
             /** Is Stale */
             is_stale: boolean;
+        };
+        /**
+         * SupportPriceContext
+         * @description The latest wheat SUPPORT_PRICE item from the policy timeline: policy context, not a mandi price and not a
+         *     price anyone is promised.
+         */
+        SupportPriceContext: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "CURRENT" | "OUTDATED" | "UNAVAILABLE";
+            event: components["schemas"]["PolicyEvent"] | null;
+            /** Age Days */
+            age_days: number | null;
+            /** Max Age Days */
+            max_age_days: number;
+            /** Uncertain */
+            uncertain: boolean;
+            /** Uncertain Window Days */
+            uncertain_window_days: number;
         };
         /** TokenResponse */
         TokenResponse: {

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { api, ApiError, type CropId, type MandiId } from '../api/client'
 import { useAppState } from '../appState'
+import { LoanList } from '../components/LoanList'
 import { ChipGroup } from '../components/ChipGroup'
 import { ErrorBox } from '../components/Status'
 import { buttonClass, inputClass, labelClass } from '../components/ui/styles'
@@ -18,6 +19,7 @@ export function Profile() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">{t('profile.title')}</h2>
       {farmer ? <Signed /> : <Guest />}
+      {farmer && <LoanList />}
     </div>
   )
 }

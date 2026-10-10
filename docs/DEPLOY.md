@@ -34,6 +34,10 @@ Free-plan limits to plan around:
    `https://farmsight-api.onrender.com`. It is baked in at build time, so redeploy after changing it.
 4. Deploy, and copy the URL (e.g. `https://farmsight.vercel.app`).
 
+> **Since 10 Oct, `vercel.json` forwards `/api/*` and `/health` to the Render API** (`farmsight-api-auat`). The
+> site works even if `VITE_API_BASE_URL` is missing from a build, and those requests need no CORS. If the Render
+> address changes, update both `vercel.json` files. The first request after Render's idle sleep can take about a minute.
+
 ## 3. Connect them
 
 1. In Render, set `FS_CORS_ORIGINS` to the Vercel URL (no trailing slash). For several, separate with commas, e.g.

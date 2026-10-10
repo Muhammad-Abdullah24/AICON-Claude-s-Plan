@@ -7,7 +7,7 @@ import type { Lang } from '../../i18n'
 import { formatDate } from '../../lib/format'
 import { ReplayBanner } from '../ReplayBanner'
 import { Icon } from '../ui/Icon'
-import { BOTTOM_COUNT, MORE_ITEMS, MORE_PATH, NAV } from './nav'
+import { BOTTOM, MORE_ITEMS, MORE_PATH, NAV } from './nav'
 
 /**
  * The responsive frame: on a desktop a fixed sidebar (left) and a slim top bar; on a phone a compact header and
@@ -163,7 +163,7 @@ function BottomNav() {
   const { t, i18n } = useTranslation()
   const { farmer } = useAppState()
   const { pathname } = useLocation()
-  const primary = NAV.slice(0, BOTTOM_COUNT)
+  const primary = NAV.filter((n) => BOTTOM.includes(n.to))
   // "More" is its own page; it stays marked while one of the screens it lists is open.
   const moreActive = pathname === MORE_PATH || MORE_ITEMS.some((i) => i.to === pathname)
 

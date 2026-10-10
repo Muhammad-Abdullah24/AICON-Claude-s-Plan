@@ -92,9 +92,9 @@ function LiquidityChart({ history }: { history: HoldHistory }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={c.line} vertical={false} />
-            <XAxis dataKey="year" tick={{ fill: c.slate, fontSize: 12 }} stroke={c.line} />
+            <XAxis dataKey="year" tick={{ fill: c.slate, fontSize: CHART_TICK_PX }} stroke={c.line} />
             <YAxis tickFormatter={(v: number) => formatNumber(v)} width={CHART_Y_AXIS_WIDTH}
-              tick={{ fill: c.slate, fontSize: 12, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
+              tick={{ fill: c.slate, fontSize: CHART_TICK_PX, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
             <Tooltip formatter={(v) => formatRs(Number(v))} />
             <Bar dataKey="net" name={t('why.liquidityTitle')} isAnimationActive={false}>
               {data.map((d) => (

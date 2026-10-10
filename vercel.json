@@ -4,5 +4,18 @@
   "installCommand": "npm --prefix frontend install",
   "buildCommand": "npm --prefix frontend run build",
   "outputDirectory": "frontend/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://farmsight-api-auat.onrender.com/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://farmsight-api-auat.onrender.com/health"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

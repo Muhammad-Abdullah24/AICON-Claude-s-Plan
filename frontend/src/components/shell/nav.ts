@@ -9,6 +9,7 @@ export interface NavItem {
 /** The app's eight existing screens, in their existing order. The shell only changes how they are reached. */
 export const NAV: NavItem[] = [
   { to: '/', key: 'home', icon: 'home' },
+  { to: '/loan', key: 'loan', icon: 'wallet' },
   { to: '/why', key: 'why', icon: 'why' },
   { to: '/compare', key: 'compare', icon: 'pin' },
   { to: '/grow', key: 'grow', icon: 'sprout' },
@@ -18,9 +19,9 @@ export const NAV: NavItem[] = [
   { to: '/profile', key: 'profile', icon: 'user' },
 ]
 
-/** On a phone the first four sit in the bottom bar; the rest are listed on the "More" page, so no screen is lost. */
-export const BOTTOM_COUNT = 4
+/** The phone's bottom bar (besides "More"); every other screen is listed on the "More" page, so none is lost. */
+export const BOTTOM: string[] = ['/', '/why', '/compare', '/grow']
 
 /** The "More" page: a list of the screens that are not in the phone's bottom bar. Navigation only. */
 export const MORE_PATH = '/more'
-export const MORE_ITEMS = NAV.slice(BOTTOM_COUNT)
+export const MORE_ITEMS = NAV.filter((n) => !BOTTOM.includes(n.to))

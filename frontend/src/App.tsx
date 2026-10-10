@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 
 import { api } from './api/client'
+import { ScreenBoundary } from './components/ScreenBoundary'
 import { AppShell } from './components/shell/AppShell'
 import { ErrorBox, Loading } from './components/Status'
 import { useAsync } from './lib/useAsync'
@@ -9,6 +10,7 @@ import { Chat } from './pages/Chat'
 import { Compare } from './pages/Compare'
 import { Grow } from './pages/Grow'
 import { Home } from './pages/Home'
+import { Loan } from './pages/Loan'
 import { Margin } from './pages/Margin'
 import { More } from './pages/More'
 import { Profile } from './pages/Profile'
@@ -23,6 +25,7 @@ const WIDE = new Set(['/', '/why'])
 
 export default function App() {
   const [meta, reload] = useAsync((signal) => api.meta(signal), 'meta')
+  const location = useLocation()
 
   if (meta.status !== 'ok') {
     return (
@@ -36,20 +39,23 @@ export default function App() {
     <AppStateProvider meta={meta.data}>
       <AppShell>
         <Main>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/why" element={<Why />} />
-              <Route path="/compare" element={<Compare />} />
-              <Route path="/grow" element={<Grow />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/margin" element={<Margin />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/more" element={<More />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <ScreenBoundary key={location.pathname}>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/loan" element={<Loan />} />
+                <Route path="/why" element={<Why />} />
+                <Route path="/compare" element={<Compare />} />
+                <Route path="/grow" element={<Grow />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/margin" element={<Margin />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/more" element={<More />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ScreenBoundary>
         </Main>
       </AppShell>
     </AppStateProvider>

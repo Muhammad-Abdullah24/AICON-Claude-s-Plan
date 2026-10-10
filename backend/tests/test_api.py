@@ -136,21 +136,75 @@ def test_history_shows_gaps_and_frozen_weeks(client):
     assert all(p["price"] is None or p["price"] > 0 for p in h["weekly"])
 
 
-def test_crop_plan_ranks_fresh_first_then_by_profit(client):
-    p = client.get("/api/crop-plan", params={"mandi": "rahim_yar_khan", "land_area_acres": 5}).json()
-    items = p["items"]
-    assert [i["rank"] for i in items] == list(range(1, len(items) + 1))
-    # F4: a stale starting price never ranks first. Fresh crops lead, then stale ones; by profit within each group.
-    assert not items[0]["is_stale"]
-    assert [i["is_stale"] for i in items] == sorted(i["is_stale"] for i in items)   # all fresh before any stale
-    fresh = [i["expected_profit"] for i in items if not i["is_stale"]]
-    assert fresh == sorted(fresh, reverse=True)
-    assert "irri" in p["not_available"] and p["is_estimate"] is True
-    for i in items:
+def _plan(client, mandi, **params):
+    p = client.get("/api/crop-plan", params={"mandi": mandi, "land_area_acres": 5, **params}).json()
+    return p, {i["crop"]: i for i in p["items"]}, {s["season"]: s for s in p["seasons"]}
+
+
+def test_crop_plan_estimates_stay_consistent(client):
+    p, _, _ = _plan(client, "bahawalpur")
+    assert p["is_estimate"] is True
+    for i in p["items"]:
         assert i["harvest_price_low"] <= i["harvest_price_estimate"] <= i["harvest_price_high"]
         # The engine rounds profit per acre to whole rupees, so the total can differ by up to half a rupee an acre.
         assert i["expected_profit"] == pytest.approx(i["profit_per_acre"] * 5, abs=0.5 * 5)
         assert i["profit_per_acre_low"] <= i["profit_per_acre"] <= i["profit_per_acre_high"]
+        assert (i["rank"] is None) or not i["evidence_issues"]      # a ranked crop always has reliable evidence
+
+
+def test_crop_plan_stale_candidate_is_not_ranked(client):
+    # F4 (1): at Bahawalpur, Super Basmati's last price is months old: it keeps its numbers but gets no rank.
+    _, items, seasons = _plan(client, "bahawalpur")
+    assert items["super_basmati"]["rank"] is None and "STALE_PRICE" in items["super_basmati"]["evidence_issues"]
+    assert seasons["KHARIF"]["status"] == "RANKED"
+    ranked = sorted((i for i in items.values() if i["rank"]), key=lambda i: i["rank"])
+    assert [i["rank"] for i in ranked] == [1, 2] and all(i["season"] == "KHARIF" for i in ranked)
+    assert ranked[0]["expected_profit"] >= ranked[1]["expected_profit"]
+
+
+def test_crop_plan_never_compares_across_seasons(client):
+    # F4 (3): wheat (Rabi) is never ranked against cotton or rice (Kharif); it is the only Rabi crop we track.
+    for mandi in ("bahawalpur", "vehari", "rahim_yar_khan"):
+        _, items, seasons = _plan(client, mandi)
+        assert items["wheat"]["season"] == "RABI" and items["wheat"]["rank"] is None
+        assert seasons["RABI"] == {**seasons["RABI"], "status": "TOO_FEW_CROPS", "n_crops": 1}
+
+
+def test_crop_plan_too_few_comparable_crops_means_no_ranking(client):
+    # F4 (2, 4): at Rahim Yar Khan only cotton has reliable Kharif evidence (no IRRI, Super Basmati stale): no winner.
+    p, items, seasons = _plan(client, "rahim_yar_khan")
+    assert seasons["KHARIF"]["status"] == "NOT_ENOUGH_CURRENT_EVIDENCE" and seasons["KHARIF"]["n_comparable"] == 1
+    assert all(i["rank"] is None for i in items.values())
+    assert "irri" in p["not_available"]
+
+
+def test_crop_plan_rice_water_note_only_for_rice_at_bahawalpur(client):
+    # F4 (5)
+    _, bwp, _ = _plan(client, "bahawalpur")
+    for crop, item in bwp.items():
+        ids = [n["id"] for n in item["notes"]]
+        assert ids == (["RICE_WATER_BAHAWALPUR"] if crop in ("irri", "super_basmati") else [])
+    note = bwp["irri"]["notes"][0]
+    assert note["url"].startswith("https://") and note["source"] and note["source_date"]
+    for mandi in ("vehari", "rahim_yar_khan"):
+        _, items, _ = _plan(client, mandi)
+        assert all(i["notes"] == [] for i in items.values())
+
+
+def test_crop_plan_wheat_support_price_context(client):
+    # F4 (6): policy context from the H3 timeline, never a mandi price; out of date in a May replay.
+    p, _, _ = _plan(client, "bahawalpur", as_of="2026-10-09")
+    ctx = p["support_price_context"]
+    assert ctx["state"] == "CURRENT" and ctx["event"]["tag"] == "SUPPORT_PRICE" and ctx["event"]["url"]
+    assert ctx["age_days"] <= ctx["max_age_days"]
+    assert ctx["uncertain"] is True                 # the "undecided" item is days old: flagged, not hidden
+    may, _, _ = _plan(client, "bahawalpur", as_of="2026-05-10")
+    assert may["support_price_context"]["state"] == "OUTDATED"
+    assert may["support_price_context"]["event"]["date"] <= "2026-05-10"
+    assert may["support_price_context"]["uncertain"] is True    # the 28 Apr price cap is 12 days old
+    early, _, _ = _plan(client, "bahawalpur", as_of="2025-12-01")
+    assert early["support_price_context"]["state"] == "UNAVAILABLE"
+    assert early["support_price_context"]["event"] is None
 
 
 def test_history_has_twelve_seasonal_months(client):
@@ -355,7 +409,10 @@ def test_wait_plan_cash_need_comes_from_a_logged_in_farmers_loans(client):
                              "due_date": "2027-01-31"}).json()   # due within the wait window of the latest data
     p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "wait_months": 6},
                    headers=headers).json()
-    assert p["loans_due_rs"] == 150000 and p["cash_need_rs"] >= 150000
+    # Owed at the due date = principal + simple interest from when it was recorded (66% a year here).
+    days = (dt.date(2027, 1, 31) - dt.date.fromisoformat(loan["created_at"][:10])).days
+    assert p["loans_due_rs"] == pytest.approx(150000 * (1 + 0.66 * days / 365), abs=1)
+    assert p["cash_need_rs"] >= p["loans_due_rs"] > 150000
     assert p["sell_now_maund"] > 0                                           # the loan forces some selling now
     client.delete(f"/api/farmers/me/loans/{loan['id']}", headers=headers)   # leave the shared db clean
 

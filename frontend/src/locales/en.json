@@ -5,6 +5,7 @@
   },
   "nav": {
     "home": "Advice",
+    "loan": "Loan",
     "why": "Why",
     "compare": "Mandis",
     "grow": "What to grow",
@@ -105,7 +106,7 @@
     "priceOf": "price of {{date}}"
   },
   "grow": {
-    "title": "What to grow: expected profit at harvest",
+    "title": "What to grow: crops of the same season, side by side",
     "land": "Your land",
     "acres": "acres",
     "profitTotal": "Expected profit on your land",
@@ -127,8 +128,36 @@
     "harvest": "Harvest",
     "sell": "Best sell",
     "notAvailable": "No price data at this mandi for: {{crops}}",
-    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee.",
-    "landInvalid": "Enter your land in acres, above 0"
+    "estimateNote": "Estimate from reference data: today's price times how prices usually move until harvest, minus the official cost of production. Crops are compared only with crops of the same season, and only when their prices are current. Not a guarantee.",
+    "landInvalid": "Enter your land in acres, above 0",
+    "seasons": {
+      "RABI": "Rabi (winter crops)",
+      "KHARIF": "Kharif (summer crops)"
+    },
+    "seasonStatus": {
+      "RANKED": "Eligible comparison: {{comparable}} of {{n}} crops have current reference prices, ordered by estimated profit.",
+      "TOO_FEW_CROPS": "No comparison: we track too few crops of this season here ({{n}}), so none is ranked.",
+      "NOT_ENOUGH_CURRENT_EVIDENCE": "Not enough comparable evidence: only {{comparable}} of {{n}} crops have current, reliable reference prices, so none is put first."
+    },
+    "notRanked": "Not ranked:",
+    "issues": {
+      "STALE_PRICE": "the reference price is old",
+      "FROZEN_PRICE": "AMIS showed the same price for weeks",
+      "FEW_YEARS": "too few years of price history"
+    },
+    "policy": {
+      "title": "Wheat support price: policy context",
+      "limit": "Policy news, not a mandi price, and not a price you are guaranteed to get.",
+      "CURRENT": "Latest: {{text}} ({{source}}, {{date}})",
+      "OUTDATED": "The latest we have is from {{date}} ({{source}}): {{text}}. It may have changed since.",
+      "UNAVAILABLE": "No current support-price information. Check with the agriculture department before relying on one.",
+      "link": "Read the source",
+      "uncertain": "Policy changed in the last {{days}} days: treat the support price as uncertain."
+    },
+    "notes": {
+      "RICE_WATER_BAHAWALPUR": "Water check: rice is a summer crop here (sown {{sow}}, harvested {{harvest}}), and canal water in Bahawalpur division has run short before ({{source}}, {{date}}). Before choosing rice, check that your canal turns or tubewell can water it through the season. A consideration, not advice against rice."
+    },
+    "noteSource": "Source"
   },
   "history": {
     "title": "Price history",
@@ -248,7 +277,14 @@
       "CASH_NEED_EXCEEDS_CROP": "Selling the whole crop still won't cover the cash you need.",
       "TOO_FEW_SEASONS": "Not enough past years to judge holding."
     },
-    "estimate": "Estimate from past AMIS prices, not a guarantee."
+    "estimate": "Estimate from past AMIS prices, not a guarantee.",
+    "household": "Household spending a month while you wait (Rs)",
+    "otherIncome": "Other income a month: milk, labour (Rs)",
+    "fromLoans": "Includes {{amount}} of your loans due before you'd sell.",
+    "cashUsed": "Cash needed now: {{amount}}",
+    "more": "Household and other income",
+    "whySellSmall": "Waiting gains only about {{gain}} a maund in a typical year, too little for the risk: in a bad year you lose about {{worst}} a maund.",
+    "whySellLoss": "With your money and store, waiting loses about {{loss}} a maund in a typical year."
   },
   "news": {
     "title": "Market news",
@@ -266,5 +302,57 @@
       "OTHER": "news"
     },
     "more": "Read"
+  },
+  "loan": {
+    "title": "How much should you borrow?",
+    "intro": "For wheat this season: what the crop really needs, and the cheapest money first.",
+    "acres": "Your wheat land (acres)",
+    "savings": "Money you already have for the crop (Rs)",
+    "age": "Your age (for the PM Youth loan)",
+    "planned": "What you were going to borrow (Rs)",
+    "plannedFrom": "From whom?",
+    "lender": {
+      "kissan_card": "Kissan Card",
+      "pm_youth": "PM Youth loan",
+      "akhuwat": "Akhuwat",
+      "zarkhez_e": "Zarkhez-e",
+      "bank": "Bank loan",
+      "arhti": "Arhti"
+    },
+    "needs": "Your wheat on {{acres}} acres needs, in cash",
+    "perAcre": "Cost per acre",
+    "costSource": "Official API cost table (2023-24), fertiliser at 2026 prices, the rest adjusted for inflation. An estimate.",
+    "borrowOnly": "After your own money, borrow only {{amount}}",
+    "ladder": "Borrow in this order: cheapest first",
+    "nothingToBorrow": "Your own money covers it: no loan needed.",
+    "free": "No interest",
+    "rate": "{{rate}}% a year: {{interest}} interest by harvest",
+    "verified": "Terms checked on the official page",
+    "unverified": "Source (confirm the terms before you apply)",
+    "uncovered": "{{amount}} is still not covered by the options you qualify for.",
+    "harvestDue": "Owed at harvest ({{months}} months)",
+    "yourPlan": "Your plan, compared",
+    "yourPlanLine": "{{amount}} from {{lender}} costs {{interest}} in interest over {{months}} months.",
+    "extraCost": "That is {{amount}} more than the cheapest way.",
+    "planCheaper": "Your plan costs {{amount}} less than this one.",
+    "overBorrow": "You planned {{amount}} more than the crop needs. Extra loan for the house still falls due at harvest.",
+    "notEligible": "Not for you right now",
+    "notSmall": "Over 12.5 acres: the Kissan Card and FarmSight are for small farmers.",
+    "loginToSave": "Log in to keep these loans and count them at harvest",
+    "save": "Keep these loans in my list",
+    "saved": "Saved. The wait plan will count them at harvest.",
+    "seeList": "See my loans",
+    "estimate": "An estimate to plan with, not a loan offer. Each lender decides.",
+    "sources": "Sources: Agriculture Policy Institute cost table; Punjab government, SBP and lender pages.",
+    "listTitle": "My loans",
+    "listIntro": "Loans due before you sell are counted as cash you need at harvest.",
+    "listEmpty": "No loans yet.",
+    "listLine": "{{rate}}% a year · due {{date}}",
+    "remove": "Remove loan",
+    "add": "Add a loan",
+    "from": "Lender",
+    "amount": "Amount (Rs)",
+    "due": "Due date",
+    "addButton": "Add"
   }
 }

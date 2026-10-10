@@ -6,8 +6,8 @@ how much, if any, to hold. The service layer (`backend/app/services.py`) gathers
 
 Rules (docs/PIVOT.md B1):
 - Sell now = ceil(cash need / best net price), capped at the quantity.
-- Hold the rest **only for wheat**, and only if holding paid in at least half of past seasons AND the median season
-  was positive, for this farmer's money and storage. Otherwise sell everything.
+- Hold the rest **only for wheat**, and only if holding paid in at least 60% of past seasons AND the median season
+  gained at least 1% of today's price, for this farmer's money and storage (E1). Otherwise sell everything.
 - The decision never comes from a forecast or a news item (rule 8); news and policy only add warnings and lower
   confidence.
 """
@@ -53,7 +53,7 @@ def wait_plan(
     holding_offered = is_wheat and hold is not None
     holding_pays = (holding_offered
                     and hold["wins"] / hold["n"] >= config.HOLD_MIN_WIN_RATE
-                    and hold["median_net_per_maund"] > 0)
+                    and hold["median_net_per_maund"] >= best_net_price * config.HOLD_MIN_MEDIAN_PCT / 100)
 
     need_maund = min(quantity_maund, math.ceil(cash_need_rs / best_net_price)) if cash_need_rs > 0 else 0
     sell_now = float(need_maund) if holding_pays else float(quantity_maund)

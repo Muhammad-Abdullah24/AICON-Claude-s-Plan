@@ -7,7 +7,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { BOTTOM_COUNT, MORE_ITEMS, MORE_PATH, NAV } from '../shell/nav'
+import { BOTTOM, MORE_ITEMS, MORE_PATH, NAV } from '../shell/nav'
 import { buttonClass, cardClass, STATUS, type StatusKind } from './styles'
 
 describe('visual primitives', () => {
@@ -41,8 +41,8 @@ describe('navigation', () => {
   })
 
   it('every screen is in the bottom bar or on the "More" page', () => {
-    const reachable = [...NAV.slice(0, BOTTOM_COUNT), ...MORE_ITEMS].map((n) => n.to)
+    const reachable = [...BOTTOM, ...MORE_ITEMS.map((n) => n.to)]
     expect(reachable.sort()).toEqual(NAV.map((n) => n.to).sort())
-    expect(MORE_ITEMS.map((n) => n.key)).toEqual(['history', 'margin', 'chat', 'profile'])
+    expect(MORE_ITEMS.map((n) => n.key)).toEqual(['loan', 'history', 'margin', 'chat', 'profile'])
   })
 })

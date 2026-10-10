@@ -8,6 +8,7 @@ import { useAsync } from '../lib/useAsync'
 import { ChipGroup } from './ChipGroup'
 import { DataLabel } from './DataLabel'
 import { ErrorBox, Loading } from './Status'
+import { Icon } from './ui/Icon'
 import { Badge, Callout, CardTitle } from './ui/primitives'
 import { cardClass, inputClass, labelClass } from './ui/styles'
 
@@ -29,10 +30,14 @@ export function WaitPlan() {
   const [money, setMoney] = useState<Money>('own')
   const [storage, setStorage] = useState<Storage>('godown')
   const [offer, setOffer] = useState('')
+  const [household, setHousehold] = useState('')
+  const [income, setIncome] = useState('')
 
   const cashRs = parseTypedNumber(cash) ?? 0
   const offerRs = offer === '' ? null : parseTypedNumber(offer)
-  const key = `${selection.crop}|${selection.mandi}|${quantity}|${cashRs}|${months}|${money}|${storage}|${offerRs}`
+  const householdRs = parseTypedNumber(household) ?? 0
+  const incomeRs = parseTypedNumber(income) ?? 0
+  const key = `${selection.crop}|${selection.mandi}|${quantity}|${cashRs}|${months}|${money}|${storage}|${offerRs}|${householdRs}|${incomeRs}`
   const [state, reload] = useAsync(
     (signal) =>
       api.waitPlan(
@@ -44,6 +49,8 @@ export function WaitPlan() {
           money,
           storage,
           offer: offerRs,
+          household_spend_rs_month: householdRs,
+          other_income_rs_month: incomeRs,
         },
         signal,
       ),
@@ -61,6 +68,25 @@ export function WaitPlan() {
         {t('wait.cashNeed')}
         <input inputMode="numeric" value={cash} onChange={(e) => setCash(e.target.value)} className={input} />
       </label>
+
+      {/* Leave "cash now" empty and the app works it out: loans due before the sale + household spending
+          not covered by other income (milk, labour) while waiting (docs/PIVOT.md 3.4). */}
+      <details className="group rounded-xl border border-line bg-cotton px-4">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-field [&::-webkit-details-marker]:hidden">
+          <span>{t('wait.more')}</span>
+          <Icon name="chevron" className="size-5 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="space-y-4 pb-4">
+          <label className={labelClass}>
+            {t('wait.household')}
+            <input inputMode="numeric" value={household} onChange={(e) => setHousehold(e.target.value)} className={input} />
+          </label>
+          <label className={labelClass}>
+            {t('wait.otherIncome')}
+            <input inputMode="numeric" value={income} onChange={(e) => setIncome(e.target.value)} className={input} />
+          </label>
+        </div>
+      </details>
 
       <ChipGroup
         label={t('wait.waitMonths')}
@@ -99,6 +125,12 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
       <h3 className={`text-2xl font-bold ${VERDICT_STYLE[plan.verdict] ?? ''}`}>
         {t(`wait.verdict.${plan.verdict}`)}
       </h3>
+      {plan.cash_need_rs > 0 && (
+        <p className="text-sm text-slate">
+          {t('wait.cashUsed', { amount: formatRs(plan.cash_need_rs) })}
+          {plan.loans_due_rs > 0 && <span className="block">{t('wait.fromLoans', { amount: formatRs(plan.loans_due_rs) })}</span>}
+        </p>
+      )}
       {plan.verdict === 'SPLIT' && (
         <p className="text-base">
           {t('wait.sellNow', { maund: plan.sell_now_maund })} · {t('wait.hold', { maund: plan.hold_maund })}
@@ -117,6 +149,17 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
       {plan.history && (
         <p className="text-sm">
           {t('wait.historyPaid', { wins: plan.history.wins, n: plan.history.n })}
+        </p>
+      )}
+      {/* Selling everything while "hold" shows a bigger total reads as a contradiction: say why (E1). */}
+      {plan.verdict === 'SELL_ALL' && plan.history && (
+        <p className="text-sm">
+          {plan.history.median_net_per_maund > 0
+            ? t('wait.whySellSmall', {
+                gain: formatRs(plan.history.median_net_per_maund),
+                worst: formatRs(Math.abs(plan.history.worst_p10_net_per_maund)),
+              })
+            : t('wait.whySellLoss', { loss: formatRs(Math.abs(plan.history.median_net_per_maund)) })}
         </p>
       )}
       <p className="text-sm text-slate">{t('wait.confidence', { level: t(`signal.confidenceLevels.${plan.confidence}`) })}</p>
@@ -147,6 +190,9 @@ function ExitRow({ exit: e }: { exit: WaitExit }) {
         <span className="figures text-lg font-semibold">{formatRs(e.total_rs)}</span>
         {e.kind === 'HOLD' && e.worst_total_rs != null && (
           <span className="block text-sm text-slate">{t('wait.holdWorst', { amount: formatRs(e.worst_total_rs) })}</span>
+        )}
+        {e.kind === 'HOLD' && e.cost_rs != null && (
+          <span className="block text-sm text-slate">{t('wait.holdCost', { amount: formatRs(e.cost_rs) })}</span>
         )}
       </span>
     </div>

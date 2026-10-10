@@ -11,7 +11,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.11.9"
       # The Vercel URL of the front end, e.g. https://farmsight.vercel.app (comma-separate several).
       - key: FS_CORS_ORIGINS
         sync: false
