@@ -97,13 +97,48 @@ def _llm_batch(items: list[dict], llm) -> list[dict]:
         # extract_price keeps a price only when the headline is about the raw grain and gives it per 40 kg / maund.
         out.append({
             **item,
-            "tag": tag["tag"] if tag.get("tag") in config.TAGS else "OTHER",
+            "tag": _checked_tag(tag.get("tag"), item["title"]),
             "crop": tag["crop"] if tag.get("crop") in config.CROP_IDS else None,
             "summary_en": (tag.get("summary_en") or item["title"]).strip(),
             "summary_ur": (tag.get("summary_ur") or item["title"]).strip(),
             "price_rs_per_40kg": extract_price(item["title"]),
         })
     return out
+
+
+# Tags that change the advice (POLICY_UNCERTAIN lowers confidence). Gemini's call on these must be backed by the
+# headline's own words: it tagged "Punjab approves Rs 10bn subsidy for affordable flour" as SUPPORT_PRICE (10 Oct).
+_POLICY_TAGS = ("SUPPORT_PRICE", "CAP_OR_BAN", "IMPORT", "PROCUREMENT")
+
+
+def _checked_tag(llm_tag: str | None, title: str) -> str:
+    """Gemini's tag, unless it claims a policy tag the headline's words don't support: then the keyword rules'."""
+    if llm_tag not in config.TAGS:
+        return tag_by_rules(title)[0]
+    if llm_tag in _POLICY_TAGS and not any(w in title.lower() for w in config.TAG_KEYWORDS[llm_tag]):
+        return tag_by_rules(title)[0]
+    return llm_tag
+
+
+_STOP = {"the", "and", "for", "with", "from", "into", "over", "per", "has", "have", "are", "was", "will", "its"}
+
+
+def _words(title: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9]+", title.lower()) if len(w) > 2 and w not in _STOP}
+
+
+def dedupe(items: list[dict], overlap: float = 0.5) -> list[dict]:
+    """Drop a headline that shares at least `overlap` of its words with an earlier (newer) one: the same story from
+    several outlets fills the banner otherwise (four 'Rs 10bn flour subsidy' items on 10 Oct)."""
+    kept: list[dict] = []
+    seen: list[set[str]] = []
+    for item in items:
+        w = _words(item["title"])
+        duplicate = w and any(len(w & s) / min(len(w), len(s)) >= overlap for s in seen if s)
+        seen.append(w)   # compare with every earlier headline, so a chain of rewordings of one story collapses
+        if not duplicate:
+            kept.append(item)
+    return kept
 
 
 def tag_items(items: list[dict], get_llm) -> tuple[list[dict], str]:
@@ -121,4 +156,4 @@ def tag_items(items: list[dict], get_llm) -> tuple[list[dict], str]:
             used_llm = True
         except Exception:  # noqa: BLE001 (any LLM/JSON issue falls back to rules for this batch)
             out.extend(tag_with_rules(batch))
-    return out, ("llm" if used_llm else "rules")
+    return dedupe(out), ("llm" if used_llm else "rules")

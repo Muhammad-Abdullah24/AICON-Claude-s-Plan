@@ -142,3 +142,20 @@ def test_get_news_accepts_the_data_name_and_limits(fresh_db, monkeypatch):
     monkeypatch.setattr(service.tag, "tag_items", lambda items, _get: (service.tag.tag_with_rules(items), "rules"))
     out = service.get_news("Wheat", limit=2)      # data name, not the API id
     assert len(out["items"]) == 2
+
+
+def test_gemini_cannot_call_a_flour_subsidy_a_support_price():
+    # 10 Oct review: Gemini tagged flour-subsidy headlines SUPPORT_PRICE, which lowers confidence via POLICY_UNCERTAIN.
+    subsidy = "Punjab govt approves Rs10 Billion subsidy to ensure affordable flour"
+    assert tag._checked_tag("SUPPORT_PRICE", subsidy) != "SUPPORT_PRICE"
+    assert tag._checked_tag("SUPPORT_PRICE", "Punjab sets wheat support price at Rs 3,500 per 40 kg") == "SUPPORT_PRICE"
+    assert tag._checked_tag("NONSENSE", "Wheat import of 1m tonnes approved") == "IMPORT"
+
+
+def test_the_same_story_from_several_outlets_shows_once():
+    items = [{"title": t} for t in ("Punjab approves Rs10bn subsidy to keep flour prices affordable",
+                                    "Punjab govt approves Rs10 Billion subsidy to ensure affordable flour",
+                                    "Punjab Approves Rs. 10 Billion Subsidy for Sasta Atta and Wheat",
+                                    "Kissan Ittehad demands Rs 5,000 wheat support price")]
+    kept = [i["title"] for i in tag.dedupe(items)]
+    assert kept[0].startswith("Punjab approves Rs10bn") and kept[-1].startswith("Kissan Ittehad") and len(kept) == 2
