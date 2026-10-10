@@ -81,7 +81,7 @@ function Guest() {
         name: reg.name,
         phone: reg.phone,
         language: i18n.language === 'en' ? 'en' : 'ur',
-        alerts_enabled: true,
+        alerts_enabled: false, // opt-in: turned on afterwards with the alerts switch on this page
         district: reg.district as MandiId,
         land_area_acres: parseTypedNumber(reg.land),
         arhti_commission_pct: reg.arhti === '' ? null : parseTypedNumber(reg.arhti),

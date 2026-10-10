@@ -207,9 +207,12 @@ def test_chat_route_validates_and_rate_limits(client):
 # ---------------------------------------------------------------- WhatsApp hand-off
 
 def test_whatsapp_free_question_after_a_query_goes_to_chat():
-    memory, provider = whatsapp.Memory(), FakeProvider()
+    from backend.app import db
+
+    db.reset()   # the WhatsApp session (the last query) is kept in the database
+    provider = FakeProvider()
     msg = {"from": "92300", "id": "1", "type": "text", "text": {"body": "gandum bahawalpur 100"}}
-    whatsapp.respond(msg, provider, memory)
+    whatsapp.respond(msg, provider)
     asked = {"from": "92300", "id": "2", "type": "text", "text": {"body": "kal ka mausam kaisa hoga"}}
-    out = whatsapp.respond(asked, provider, memory, chat=lambda text, q, phone: f"chat:{q.crop_option}:{q.mandi}")
-    assert out["interactive"]["body"]["text"] == "chat:Wheat:BahawalPur"
+    out = whatsapp.respond(asked, provider, chat=lambda text, crop, mandi, qty, phone: f"chat:{crop}:{mandi}:{qty:g}")
+    assert out["interactive"]["body"]["text"].startswith("chat:Wheat:BahawalPur:100\n1 ")

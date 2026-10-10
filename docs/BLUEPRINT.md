@@ -813,7 +813,7 @@ Layered monolith (one FastAPI service) with a separate **offline ML pipeline**. 
 | `site_lon` | DECIMAL(9,6) | | Farm location |
 | `land_area_acres` | DECIMAL(8,2) | | Used for crop profit |
 | `arhti_commission_pct` | DECIMAL(5,2) | NULL | Entered by the farmer; NULL means none applied |
-| `alerts_enabled` | BOOLEAN | DEFAULT TRUE | Alert opt-in |
+| `alerts_enabled` | BOOLEAN | DEFAULT FALSE | Alert opt-in: off until the farmer turns it on (the demo farmer is seeded with it on) |
 | `created_at` | TIMESTAMP | DEFAULT NOW() | |
 
 ### Entity: `crops` [offline]

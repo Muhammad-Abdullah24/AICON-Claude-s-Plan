@@ -17,7 +17,8 @@ class AdviceProvider(Protocol):
     def advice(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
     def explain(self, crop_option: str, mandi: str, phone: str) -> list[dict]: ...
     def compare(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> list[dict]: ...
-    def set_alerts(self, phone: str, enabled: bool) -> None: ...
+    def set_alerts(self, phone: str, enabled: bool) -> bool | None: ...   # False: not a registered farmer
+    def alerts_enabled(self, phone: str) -> bool | None: ...             # None: not a registered farmer
 
 
 class ServicesProvider:
@@ -27,7 +28,8 @@ class ServicesProvider:
     services.get_explanation(crop_option, mandi)                         -> [{text_ur, direction}]
     services.compare_mandis(crop_option, mandi, quantity_maund)          -> [{mandi, net_price, transport_cost,
                                                                              gain_vs_preferred, has_data}]
-    services.set_alerts(phone, enabled)
+    services.set_alerts(phone, enabled)                                  -> False if the phone is not registered
+    services.alerts_status(phone)                                        -> True / False, None if not registered
     A LookupError means "no price data for this crop at this mandi".
     """
 
@@ -51,7 +53,10 @@ class ServicesProvider:
         return self._fn("compare_mandis")(crop_option, mandi, quantity_maund)
 
     def set_alerts(self, phone, enabled):
-        self._fn("set_alerts")(phone, enabled)
+        return self._fn("set_alerts")(phone, enabled)
+
+    def alerts_enabled(self, phone):
+        return self._fn("alerts_status")(phone)
 
 
 def get_provider() -> AdviceProvider:

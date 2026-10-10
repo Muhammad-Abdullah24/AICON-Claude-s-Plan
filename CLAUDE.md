@@ -56,6 +56,9 @@ Ask the human before touching any other path.
 - Evaluation gate (NFR-01): .venv/Scripts/python -m ml.eval.gate [--predictions preds.csv --model name]   (test split: --split test --final, once)
 - Demo data checks (Owner A): .venv/Scripts/python -m ml.eval.demo_check
 - WhatsApp channel (Owner A): backend/app/channels/whatsapp.py; needs FS_WA_* in .env (see the module docstring); tests run with the rest of pytest
+- WhatsApp/SMS conversation (Owner A): backend/app/channels/conversation.py is the numbered menu both channels share (session in SQLite, 30 min); a bare number is read only against the farmer's current step. Never add channel-specific decision logic: change the engine or the service layer
+- SMS (Owner A): backend/app/channels/sms.py (vendor-neutral; POST /webhooks/sms is 503 until a vendor adapter is registered in sms.ADAPTERS and FS_SMS_PROVIDER names it), Roman Urdu replies in sms_reply.py
+- Voice notes (Owner A): backend/app/channels/voice.py, off; FS_VOICE_NOTES=1 does nothing until a fetcher and transcriber are registered. Never answer from an unconfirmed transcript
 - Chat (Owner A): backend/app/chat/ (POST /api/chat); needs FS_LLM_API_KEY; the prompt lives word for word in docs/PROMPTS.md
 - Service layer (Owner C): backend/app/services.py answers web, WhatsApp and chat alike; every price function takes as_of (time machine). API ids are lowercase (wheat, super_basmati, rahim_yar_khan); backend/app/ids.py maps them to the data names
 - Demo login: phone +920000000001 (invented farmer "Ahmed", seeded by backend/app/db.py). The SQLite file is var/farmsight.sqlite (FS_DB_PATH); tests use ":memory:" via the root conftest.py

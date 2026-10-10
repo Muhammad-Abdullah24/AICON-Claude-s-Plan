@@ -12,7 +12,10 @@ are recorded as SUPPRESSED. The first check for a crop records its signal silent
 can be noticed. Dates are the check's as-of date, so replaying past weeks with `as_of` (the demo time machine)
 behaves as those weeks did: Owner B's `alert_candidate` uses only data up to `as_of`.
 
-SMS fallback: when WhatsApp fails and an SMS sender is given (task A11), the same text goes by SMS.
+SMS fallback (task A11): only for farmers with alerts on, only when WhatsApp delivery failed, and only when an SMS
+provider is configured (backend/app/channels/sms.py; none is yet, so today there is no fallback). The SMS carries
+the same alert in short Roman Urdu (sms_reply.alert_sms). The weekly limit, opt-out and the no-spike-on-stale-or-
+frozen-price rules apply before any channel is chosen, so SMS adds no alert WhatsApp would not have sent.
 
 Scheduling: FS_ALERTS_EVERY_HOURS > 0 runs the check in the background while the server is up (off by default).
 `POST /api/alerts/run` runs it on demand (needs FS_ADMIN_TOKEN), with `dry_run` to see the result without sending.
@@ -30,7 +33,7 @@ from collections.abc import Callable
 from datetime import date
 
 from backend.app import db, services
-from backend.app.channels import reply
+from backend.app.channels import reply, sms_reply
 from backend.app.ids import CROP_FROM_DATA, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_TO_DATA
 from ml import decision
 from ml.decision import inputs as engine_inputs
@@ -111,6 +114,9 @@ def run(send: SendFn | None = None, as_of: date | None = None, dry_run: bool = F
     """One alert check for every farmer with alerts on. Returns what was (or, with dry_run, would be) sent."""
     today = as_of or date.today()
     send = send or whatsapp_send
+    if sms is None and not dry_run:
+        from backend.app.channels import sms as sms_channel  # noqa: PLC0415
+        sms = sms_channel.alert_sender()   # None unless an SMS provider is configured
     results = []
     for farmer in db.list_alert_farmers():
         c = check_farmer(farmer, today, as_of)
@@ -125,6 +131,7 @@ def run(send: SendFn | None = None, as_of: date | None = None, dry_run: bool = F
             if not dry_run:
                 channel, ok = "whatsapp", bool(send(farmer["phone"], text, summary))
                 if not ok and sms is not None:
+                    text = sms_reply.alert_sms(event, a)
                     channel, ok = "sms", bool(sms(farmer["phone"], text, summary))
                 status = "SENT" if ok else "FAILED"
                 alert_id = _record(farmer["id"], event, a, today, status, text)

@@ -1437,6 +1437,25 @@
         }
       }
     },
+    "/webhooks/sms": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Receive",
+        "operationId": "receive_webhooks_sms_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat": {
       "post": {
         "tags": [
@@ -2799,7 +2818,7 @@
           "alerts_enabled": {
             "type": "boolean",
             "title": "Alerts Enabled",
-            "default": true
+            "default": false
           },
           "crops": {
             "items": {
