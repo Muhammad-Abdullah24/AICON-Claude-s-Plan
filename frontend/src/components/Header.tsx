@@ -11,7 +11,7 @@ export function Header() {
   const nav = useRef<HTMLElement>(null)
   const { pathname } = useLocation()
   // True while tabs are hidden past the row's end edge (right in English, left in Urdu): the edge then fades,
-  // so a farmer can see the row scrolls. scrollLeft runs negative in right-to-left layout, hence Math.abs.
+  // so a farmer can see the row scrolls. scrollLeft runs negative when the page reads from right to left, hence Math.abs.
   const [moreAtEnd, setMoreAtEnd] = useState(false)
   const measure = useCallback(() => {
     const el = nav.current
