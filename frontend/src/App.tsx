@@ -11,7 +11,6 @@ import { Compare } from './pages/Compare'
 import { Grow } from './pages/Grow'
 import { Home } from './pages/Home'
 import { Loan } from './pages/Loan'
-import { Margin } from './pages/Margin'
 import { More } from './pages/More'
 import { Profile } from './pages/Profile'
 import { AppStateProvider } from './state'
@@ -46,7 +45,6 @@ export default function App() {
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/grow" element={<Grow />} />
                 <Route path="/history" element={<History />} />
-                <Route path="/margin" element={<Margin />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/more" element={<More />} />

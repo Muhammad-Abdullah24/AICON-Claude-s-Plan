@@ -13,7 +13,6 @@ export const NAV: NavItem[] = [
   { to: '/compare', key: 'compare', icon: 'pin' },
   { to: '/grow', key: 'grow', icon: 'sprout' },
   { to: '/history', key: 'history', icon: 'trend' },
-  { to: '/margin', key: 'margin', icon: 'receipt' },
   { to: '/chat', key: 'chat', icon: 'chat' },
   { to: '/profile', key: 'profile', icon: 'user' },
 ]
