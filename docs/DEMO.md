@@ -12,6 +12,10 @@ that the app doesn't show.
 
 ## 1. Before we walk in (by 10:30)
 
+**Live:** web app **https://aicon-claude-s-plan-bay.vercel.app** (share this one) · API
+https://farmsight-api-auat.onrender.com/health. Not `aicon-claude-s-plan.vercel.app`: that's an old copy in
+Hamza's Vercel account. Open the API's `/health` first; the free plan sleeps and takes about a minute to wake.
+
 - [ ] Backend and front end running on the laptop (README "Start the app"), **and** the deployed link opened on a
       phone over mobile data (the free host sleeps; opening it wakes it, which takes up to a minute). Open the API's
       `/health` again at 11:15. Deploy steps: `docs/DEPLOY.md`.
