@@ -6,11 +6,10 @@ import { useAppState } from '../appState'
 import { formatRs, parseTypedNumber } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
 import { ChipGroup } from './ChipGroup'
-import { DataLabel } from './DataLabel'
 import { HelpTip } from './HelpTip'
 import { ErrorBox, Loading } from './Status'
 import { Icon } from './ui/Icon'
-import { Badge, Callout, CardTitle } from './ui/primitives'
+import { Callout, CardTitle } from './ui/primitives'
 import { cardClass, inputClass, labelClass } from './ui/styles'
 
 const MONEY: Money[] = ['own', 'bank', 'arhti']
@@ -61,7 +60,7 @@ export function WaitPlan() {
   const input = `${inputClass} figures mt-2 block w-full max-w-xs text-lg font-semibold`
   return (
     <section className={cardClass('surface', 'space-y-5')}>
-      <CardTitle icon="clock" sub={t('wait.intro')}>
+      <CardTitle icon="clock">
         {t('wait.title')}
       </CardTitle>
 
@@ -165,9 +164,12 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
       <div className="space-y-2">
         <p className="text-sm font-semibold text-slate">{t('wait.ways', { qty: plan.quantity_maund })}</p>
         <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
-          {plan.exits.map((e) => (
-            <ExitRow key={e.kind} exit={e} />
-          ))}
+          {/* "Sell all" means holding does not pay here: its row would only add a confusing number. */}
+          {plan.exits
+            .filter((e) => !(plan.verdict === 'SELL_ALL' && e.kind === 'HOLD'))
+            .map((e) => (
+              <ExitRow key={e.kind} exit={e} />
+            ))}
         </div>
       </div>
 
@@ -177,29 +179,11 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
           <HelpTip text={t('help.history')} />
         </p>
       )}
-      {/* Selling everything while "hold" shows a bigger total reads as a contradiction: say why (E1). */}
-      {plan.verdict === 'SELL_ALL' && plan.history && (
-        <p className="text-sm">
-          {plan.history.median_net_per_maund > 0
-            ? t('wait.whySellSmall', {
-                gain: formatRs(plan.history.median_net_per_maund),
-                worst: formatRs(Math.abs(plan.history.worst_p10_net_per_maund)),
-              })
-            : t('wait.whySellLoss', { loss: formatRs(Math.abs(plan.history.median_net_per_maund)) })}
-        </p>
-      )}
-      <p className="text-sm text-slate">
-        {t('wait.confidence', { level: t(`signal.confidenceLevels.${plan.confidence}`) })}
-      </p>
-
-      {plan.warnings.map((w) => (
-        <Warning key={w} code={w} check={plan.news_check} />
-      ))}
-
-      <p>
-        <Badge kind="estimate">{t('wait.estimate')}</Badge>
-      </p>
-      <DataLabel isSynthetic={plan.is_synthetic} asOf={plan.prices_as_of} stale={plan.is_stale} />
+      {plan.warnings
+        .filter((w) => w === 'CASH_NEED_EXCEEDS_CROP')
+        .map((w) => (
+          <Warning key={w} code={w} check={plan.news_check} />
+        ))}
     </div>
   )
 }

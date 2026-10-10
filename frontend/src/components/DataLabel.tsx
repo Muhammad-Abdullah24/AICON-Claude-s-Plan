@@ -22,24 +22,16 @@ export function DataLabel({
 }) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language as Lang
+  // One short line: real or synthetic, and the price date (amber when old). The source and unit sit behind the badge.
   return (
-    <div className="space-y-2 border-t border-line pt-3 text-sm text-slate">
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Badge kind={isSynthetic ? 'synthetic' : 'fresh'}>{isSynthetic ? t('data.synthetic') : t('data.real')}</Badge>
-        <span>{t('data.source')}</span>
-        <span>· {t('data.per40kg')}</span>
-      </p>
+    <p className="flex flex-wrap items-center gap-2 text-sm text-slate" title={`${t('data.source')} · ${t('data.per40kg')}`}>
+      <Badge kind={isSynthetic ? 'synthetic' : 'fresh'}>{isSynthetic ? t('data.synthetic') : t('data.real')}</Badge>
       {asOf &&
-        (stale ? (
-          <Badge kind="stale">{t('data.stale', { date: formatDate(asOf, lang) })}</Badge>
+        (stale || unchangedSince ? (
+          <Badge kind="stale">{formatDate(asOf, lang)}</Badge>
         ) : (
-          <p>{t('data.asOf', { date: formatDate(asOf, lang) })}</p>
+          <span>AMIS · {formatDate(asOf, lang)}</span>
         ))}
-      {unchangedSince && (
-        <p>
-          <Badge kind="frozen">{t('data.unchanged', { date: formatDate(unchangedSince, lang) })}</Badge>
-        </p>
-      )}
-    </div>
+    </p>
   )
 }

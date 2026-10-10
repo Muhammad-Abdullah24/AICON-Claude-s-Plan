@@ -75,7 +75,6 @@ export function History() {
               <li><span className="me-1 inline-block h-2.5 w-3 rounded-sm bg-ink align-middle" />{t('history.sowing')}</li>
               <li><span className="me-1 inline-block h-2.5 w-3 rounded-sm bg-wheat align-middle" />{t('history.harvest')}</li>
             </ul>
-            <p className="text-xs text-slate">{t('history.seasonalNote')}</p>
           </section>
         </>
       )}

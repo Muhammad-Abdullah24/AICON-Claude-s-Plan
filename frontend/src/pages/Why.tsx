@@ -51,9 +51,6 @@ export function Why() {
                 </li>
               ))}
             </ul>
-            <p className="border-t border-line pt-3 text-sm text-slate">
-              {explain.data.source === 'shap' ? t('why.sourceShap') : t('why.sourceFacts')}
-            </p>
           </>
         )}
       </section>
@@ -63,7 +60,6 @@ export function Why() {
             {t('why.liquidityTitle')}
             <HelpTip text={t('help.liquidity')} />
           </h2>
-          <p className="text-sm text-slate">{t('why.liquidityNote', { months: wait.data.wait_months })}</p>
           <LiquidityChart history={wait.data.history} />
           <ul className="flex flex-wrap gap-x-4 text-xs text-slate">
             <li><span className="me-1 inline-block h-2.5 w-3 rounded-sm bg-field align-middle" />{t('why.legendPaid')}</li>
