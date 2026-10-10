@@ -24,20 +24,28 @@ export function Home() {
   // One column on a phone, in reading order. On a desktop the news sits beside the plan; the items are placed on
   // the grid rather than reordered, so the reading and keyboard order stay the same as on a phone.
   return (
-    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:grid-rows-[auto_auto_auto_1fr] lg:items-start lg:gap-x-6">
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:grid-rows-[auto_auto_auto_auto_1fr] lg:items-start lg:gap-x-6">
       <div className="lg:col-start-1 lg:row-start-1">
         <SelectionBar withQuantity />
       </div>
-      <div className="empty:hidden lg:sticky lg:top-24 lg:col-start-2 lg:row-span-4 lg:row-start-1">
+      {/* The WhatsApp-style voice demo (KASHT): a full-page reload into a self-contained screen. */}
+      <a
+        href="/kasht"
+        className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#075e54] px-4 py-3 text-center text-lg font-bold text-white hover:opacity-90 lg:col-start-1 lg:row-start-2"
+      >
+        <span aria-hidden>🎤</span>
+        {t('actions.voice')}
+      </a>
+      <div className="empty:hidden lg:sticky lg:top-24 lg:col-start-2 lg:row-span-5 lg:row-start-1">
         <NewsBanner crop={selection.crop} mandi={selection.mandi} />
       </div>
-      <div className="lg:col-start-1 lg:row-start-2">
+      <div className="lg:col-start-1 lg:row-start-3">
         <WaitPlan />
       </div>
-      <div className="empty:hidden lg:col-start-1 lg:row-start-3">
+      <div className="empty:hidden lg:col-start-1 lg:row-start-4">
         <WeatherLine mandi={selection.mandi} />
       </div>
-      <nav className="grid grid-cols-2 gap-3 lg:col-start-1 lg:row-start-4" aria-label={t('app.name')}>
+      <nav className="grid grid-cols-2 gap-3 lg:col-start-1 lg:row-start-5" aria-label={t('app.name')}>
         {actions.map((a) => (
           <Link key={a.to} to={a.to} className={buttonClass('outline', 'min-h-14 text-center')}>
             <Icon name={a.icon} />

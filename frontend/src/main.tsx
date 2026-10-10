@@ -8,14 +8,19 @@ import './i18n'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
+import { BrowserRouter, Route, Routes } from 'react-router'
 
 import App from './App'
+import { Kasht } from './pages/Kasht'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <Routes>
+        {/* KASHT is a self-contained WhatsApp-style demo: no backend, so it sits outside the app shell. */}
+        <Route path="/kasht" element={<Kasht />} />
+        <Route path="/*" element={<App />} />
+      </Routes>
     </BrowserRouter>
   </StrictMode>,
 )
