@@ -460,3 +460,17 @@ def test_loan_rejects_bad_input(client):
     assert client.post("/api/farmers/me/loans", headers=headers,
                        json={"lender": "bank", "amount_rs": -5, "annual_rate_pct": 0,
                              "due_date": "2027-04-30"}).status_code == 422
+
+
+def test_wait_plan_week_by_week_after_harvest(client):
+    # Demo, 10 Oct: harvest week and weeks 1-4 after it, learned from past seasons' AMIS weekly prices.
+    p = client.get("/api/wait-plan", params={"crop": "cotton", "mandi": "vehari", "quantity_maund": 100}).json()
+    assert [w["week"] for w in p["weeks"]] == [0, 1, 2, 3, 4] and p["weeks_n_years"] >= 3
+    assert p["weeks"][0]["gain_rs"] == 0 and p["best_week"] in range(5)
+    assert all(w["low"] <= w["price"] <= w["high"] for w in p["weeks"])
+    arhti = client.get("/api/wait-plan", params={"crop": "cotton", "mandi": "vehari", "quantity_maund": 100,
+                                                 "money": "arhti", "storage": "bags"}).json()
+    assert all(a["gain_rs"] <= o["gain_rs"] for a, o in zip(arhti["weeks"], p["weeks"], strict=True))
+    old = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "as_of": "2018-06-01"}).json()
+    new = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur"}).json()
+    assert old["weeks_n_years"] < new["weeks_n_years"]                      # no peeking past as_of

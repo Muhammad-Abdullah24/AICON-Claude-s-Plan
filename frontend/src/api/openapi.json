@@ -3581,6 +3581,50 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HarvestWeek": {
+        "properties": {
+          "week": {
+            "type": "integer",
+            "title": "Week"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          },
+          "net_per_maund": {
+            "type": "number",
+            "title": "Net Per Maund"
+          },
+          "total_rs": {
+            "type": "integer",
+            "title": "Total Rs"
+          },
+          "gain_rs": {
+            "type": "integer",
+            "title": "Gain Rs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "week",
+          "price",
+          "low",
+          "high",
+          "net_per_maund",
+          "total_rs",
+          "gain_rs"
+        ],
+        "title": "HarvestWeek"
+      },
       "Health": {
         "properties": {
           "status": {
@@ -5431,6 +5475,41 @@
           "is_stale": {
             "type": "boolean",
             "title": "Is Stale"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/HarvestWeek"
+            },
+            "type": "array",
+            "title": "Weeks",
+            "default": []
+          },
+          "weeks_n_years": {
+            "type": "integer",
+            "title": "Weeks N Years",
+            "default": 0
+          },
+          "best_week": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Week"
+          },
+          "harvest_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harvest Month"
           }
         },
         "additionalProperties": false,

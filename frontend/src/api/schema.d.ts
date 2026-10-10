@@ -1025,6 +1025,23 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HarvestWeek */
+        HarvestWeek: {
+            /** Week */
+            week: number;
+            /** Price */
+            price: number;
+            /** Low */
+            low: number;
+            /** High */
+            high: number;
+            /** Net Per Maund */
+            net_per_maund: number;
+            /** Total Rs */
+            total_rs: number;
+            /** Gain Rs */
+            gain_rs: number;
+        };
         /** Health */
         Health: {
             /**
@@ -1729,6 +1746,20 @@ export interface components {
             prices_as_of: string;
             /** Is Stale */
             is_stale: boolean;
+            /**
+             * Weeks
+             * @default []
+             */
+            weeks: components["schemas"]["HarvestWeek"][];
+            /**
+             * Weeks N Years
+             * @default 0
+             */
+            weeks_n_years: number;
+            /** Best Week */
+            best_week?: number | null;
+            /** Harvest Month */
+            harvest_month?: number | null;
         };
         /** WeatherNow */
         WeatherNow: {

@@ -523,6 +523,7 @@ def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_ne
         annual_rate_pct=rate, storage=storage, loss_pct=loss, offer=offer, is_stale=stale,
         news_conflict=news_check is not None, policy_recent=_policy_recent(crop_option, as_of))
     return {**plan, "data_source": "amis", "is_synthetic": False, "prices_as_of": price_date, "is_stale": stale,
+            **_weeks_or_empty(crop_option, mandi, quantity_maund, money, annual_rate, storage, as_of),
             "news_check": news_check, "household_spend_rs_month": household_spend_rs_month,
             "other_income_rs_month": other_income_rs_month, "loans_due_rs": float(loans_due)}
 
@@ -665,3 +666,61 @@ def policy_events(crop_option: str, as_of: date | None = None) -> dict:
     from backend.app.news.policy import get_policy_events  # noqa: PLC0415
     return {"data_source": "curated", "is_synthetic": False,
             "events": get_policy_events(CROP_FROM_DATA.get(crop_option), as_of)}
+
+# ---------------------------------------------------------------- week by week after harvest (demo, 10 Oct)
+
+HARVEST_WEEKS = 4          # harvest week, then weeks 1..4: the month after harvest begins
+MIN_WEEK_YEARS = 3
+
+
+def harvest_weeks(crop_option: str, mandi: str, quantity_maund: float, money: str = "own",
+                  annual_rate: float | None = None, storage: str = "godown", as_of: date | None = None) -> dict:
+    """Sell in harvest week, or 1, 2, 3 or 4 weeks later? Learned from AMIS weekly prices: for every past season,
+    the price in each week after harvest begins as a share of the harvest-week price (supply falls, price usually
+    rises). The median share, applied to today's price, gives each week's expected price; interest on the money
+    tied up and storage loss come off pro rata. Only seasons that ended on or before as_of are used."""
+    from ml.decision import config as dcfg  # noqa: PLC0415
+    series = _series(crop_option, mandi)
+    start_month = int(_data()["calendar"][crop_option]["harvest_start_month"])
+    points = _upto(_data()["weekly"][series], as_of)
+    rate = dcfg.DEFAULT_RATE_PCT[money] if annual_rate is None else annual_rate
+    loss_per_week = dcfg.LOSS_PCT[storage] / 100 / 21.7          # the loss figures are for about 5 months
+    ratios: list[list[float]] = [[] for _ in range(HARVEST_WEEKS + 1)]
+    years = sorted({d[:4] for d, _ in points})
+    for y in years:
+        idx = next((i for i, (d, _) in enumerate(points) if d[:4] == y and int(d[5:7]) == start_month), None)
+        if idx is None or idx + HARVEST_WEEKS >= len(points):
+            continue
+        p0 = points[idx][1]
+        if p0 <= 0:
+            continue
+        for k in range(HARVEST_WEEKS + 1):
+            ratios[k].append(points[idx + k][1] / p0)
+    n = len(ratios[0])
+    base, prices_as_of = latest_price(crop_option, mandi, as_of)
+    if n < MIN_WEEK_YEARS:
+        return {"weeks": [], "weeks_n_years": n, "best_week": None, "harvest_month": start_month}
+
+    def q(vals: list[float], frac: float) -> float:
+        v = sorted(vals)
+        return v[min(len(v) - 1, max(0, round(frac * (len(v) - 1))))]
+
+    weeks = []
+    for k in range(HARVEST_WEEKS + 1):
+        price = base * q(ratios[k], 0.5)
+        net = price * (1 - loss_per_week * k) - base * (rate / 100 * k / 52)
+        weeks.append({"week": k, "price": round(price, 2), "low": round(base * q(ratios[k], 0.25), 2),
+                      "high": round(base * q(ratios[k], 0.75), 2), "net_per_maund": round(net, 2),
+                      "total_rs": _round(net * quantity_maund)})
+    for w in weeks:
+        w["gain_rs"] = w["total_rs"] - weeks[0]["total_rs"]
+    best = max(weeks, key=lambda w: w["total_rs"])["week"]
+    return {"weeks": weeks, "weeks_n_years": n, "best_week": best, "harvest_month": start_month}
+
+
+def _weeks_or_empty(*args) -> dict:
+    try:
+        return harvest_weeks(*args)
+    except (LookupError, KeyError, ValueError):
+        return {"weeks": [], "weeks_n_years": 0, "best_week": None, "harvest_month": None}
+

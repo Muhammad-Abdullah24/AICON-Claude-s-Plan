@@ -288,7 +288,12 @@
     "more": "Household and other income",
     "whySellSmall": "Waiting gains only about {{gain}} a maund in a typical year, too little for the risk: in a bad year you lose about {{worst}} a maund.",
     "whySellLoss": "With your money and store, waiting loses about {{loss}} a maund in a typical year.",
-    "yourSituation": "Your situation (tap to change)"
+    "yourSituation": "Your situation (tap to change)",
+    "weeksTitle": "When to sell after harvest ({{qty}} maund)",
+    "weekHarvest": "Harvest week",
+    "weekN": "Week {{n}}",
+    "best": "Best",
+    "weeksFrom": "From {{n}} years of AMIS weekly prices"
   },
   "news": {
     "title": "Market news",
