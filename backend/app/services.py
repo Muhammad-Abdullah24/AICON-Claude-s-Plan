@@ -468,10 +468,18 @@ def _policy_recent(crop_option: str, as_of: date | None) -> bool:
 
 
 def _loans_due_rs(loans: list[dict], as_of: date | None, wait_months: int) -> int:
-    """Rupees of loans (principal) falling due on or before the later sale (`wait_months` out)."""
+    """Rupees owed (principal + simple interest from when the loan was recorded to its due date) on loans falling
+    due on or before the later sale (`wait_months` out). A 0% loan owes its principal only."""
     later = reference_date(as_of) + timedelta(days=round(wait_months * 365 / 12))
-    return _round(sum(loan["amount_rs"] for loan in loans
-                      if date.fromisoformat(loan["due_date"]) <= later))
+    total = 0.0
+    for loan in loans:
+        due = date.fromisoformat(loan["due_date"])
+        if due > later:
+            continue
+        taken = date.fromisoformat(str(loan.get("created_at") or due)[:10])
+        days = max(0, (due - taken).days)
+        total += loan["amount_rs"] * (1 + loan.get("annual_rate_pct", 0) / 100 * days / 365)
+    return _round(total)
 
 
 def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_need_rs: float = 0,

@@ -355,7 +355,10 @@ def test_wait_plan_cash_need_comes_from_a_logged_in_farmers_loans(client):
                              "due_date": "2027-01-31"}).json()   # due within the wait window of the latest data
     p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "wait_months": 6},
                    headers=headers).json()
-    assert p["loans_due_rs"] == 150000 and p["cash_need_rs"] >= 150000
+    # Owed at the due date = principal + simple interest from when it was recorded (66% a year here).
+    days = (dt.date(2027, 1, 31) - dt.date.fromisoformat(loan["created_at"][:10])).days
+    assert p["loans_due_rs"] == pytest.approx(150000 * (1 + 0.66 * days / 365), abs=1)
+    assert p["cash_need_rs"] >= p["loans_due_rs"] > 150000
     assert p["sell_now_maund"] > 0                                           # the loan forces some selling now
     client.delete(f"/api/farmers/me/loans/{loan['id']}", headers=headers)   # leave the shared db clean
 

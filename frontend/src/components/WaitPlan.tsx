@@ -27,10 +27,14 @@ export function WaitPlan() {
   const [money, setMoney] = useState<Money>('own')
   const [storage, setStorage] = useState<Storage>('godown')
   const [offer, setOffer] = useState('')
+  const [household, setHousehold] = useState('')
+  const [income, setIncome] = useState('')
 
   const cashRs = parseTypedNumber(cash) ?? 0
   const offerRs = offer === '' ? null : parseTypedNumber(offer)
-  const key = `${selection.crop}|${selection.mandi}|${quantity}|${cashRs}|${months}|${money}|${storage}|${offerRs}`
+  const householdRs = parseTypedNumber(household) ?? 0
+  const incomeRs = parseTypedNumber(income) ?? 0
+  const key = `${selection.crop}|${selection.mandi}|${quantity}|${cashRs}|${months}|${money}|${storage}|${offerRs}|${householdRs}|${incomeRs}`
   const [state, reload] = useAsync(
     (signal) =>
       api.waitPlan(
@@ -42,13 +46,15 @@ export function WaitPlan() {
           money,
           storage,
           offer: offerRs,
+          household_spend_rs_month: householdRs,
+          other_income_rs_month: incomeRs,
         },
         signal,
       ),
     key,
   )
 
-  const input = 'figures w-40 rounded-xl border-2 border-line bg-paper px-3 py-2 text-lg focus:border-ink focus:outline-none'
+  const input = 'figures min-h-12 w-40 rounded-xl border-2 border-line bg-paper px-3 py-2 text-lg focus:border-ink focus:outline-none'
   return (
     <section className="space-y-4 rounded-2xl bg-paper p-4 shadow-sm">
       <div>
@@ -60,6 +66,22 @@ export function WaitPlan() {
         {t('wait.cashNeed')}
         <input inputMode="numeric" value={cash} onChange={(e) => setCash(e.target.value)} className={`${input} mt-1 block`} />
       </label>
+
+      {/* Leave "cash now" empty and the app works it out: loans due before the sale + household spending
+          not covered by other income (milk, labour) while waiting (docs/PIVOT.md 3.4). */}
+      <details className="rounded-xl border-2 border-line px-3">
+        <summary className="flex min-h-12 cursor-pointer items-center text-sm text-slate">{t('wait.more')}</summary>
+        <div className="space-y-3 pb-3">
+          <label className="block text-sm text-slate">
+            {t('wait.household')}
+            <input inputMode="numeric" value={household} onChange={(e) => setHousehold(e.target.value)} className={`${input} mt-1 block`} />
+          </label>
+          <label className="block text-sm text-slate">
+            {t('wait.otherIncome')}
+            <input inputMode="numeric" value={income} onChange={(e) => setIncome(e.target.value)} className={`${input} mt-1 block`} />
+          </label>
+        </div>
+      </details>
 
       <ChipGroup
         label={t('wait.waitMonths')}
@@ -98,6 +120,12 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
       <h3 className={`text-2xl font-bold ${VERDICT_STYLE[plan.verdict] ?? ''}`}>
         {t(`wait.verdict.${plan.verdict}`)}
       </h3>
+      {plan.cash_need_rs > 0 && (
+        <p className="text-sm text-slate">
+          {t('wait.cashUsed', { amount: formatRs(plan.cash_need_rs) })}
+          {plan.loans_due_rs > 0 && <span className="block">{t('wait.fromLoans', { amount: formatRs(plan.loans_due_rs) })}</span>}
+        </p>
+      )}
       {plan.verdict === 'SPLIT' && (
         <p className="text-base">
           {t('wait.sellNow', { maund: plan.sell_now_maund })} · {t('wait.hold', { maund: plan.hold_maund })}
@@ -142,6 +170,9 @@ function ExitRow({ exit: e }: { exit: WaitExit }) {
         <span className="figures font-medium">{formatRs(e.total_rs)}</span>
         {e.kind === 'HOLD' && e.worst_total_rs != null && (
           <span className="block text-xs text-slate">{t('wait.holdWorst', { amount: formatRs(e.worst_total_rs) })}</span>
+        )}
+        {e.kind === 'HOLD' && e.cost_rs != null && (
+          <span className="block text-xs text-slate">{t('wait.holdCost', { amount: formatRs(e.cost_rs) })}</span>
         )}
       </span>
     </div>

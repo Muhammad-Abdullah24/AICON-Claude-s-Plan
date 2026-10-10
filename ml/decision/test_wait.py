@@ -60,3 +60,13 @@ def test_stale_news_and_policy_lower_confidence_and_add_warnings():
     assert wait.wait_plan(cash_need_rs=0, hold=GOOD_HOLD, is_stale=True, **BASE)["confidence"] == "LOW"
     p = wait.wait_plan(cash_need_rs=0, hold=GOOD_HOLD, news_conflict=True, policy_recent=True, **BASE)
     assert p["confidence"] == "LOW" and "NEWS_PRICE_CONFLICT" in p["warnings"] and "POLICY_UNCERTAIN" in p["warnings"]
+
+
+def test_noise_level_gain_or_a_coin_flip_is_not_enough_to_hold():
+    # E1: +Rs 13/maund on Rs 3,655 (0.4%) is noise; 5 wins in 10 is a coin flip. Both mean sell.
+    noise = {**GOOD_HOLD, "median_net_per_maund": 13}
+    coin = {**GOOD_HOLD, "n": 10, "wins": 5}
+    for hold in (noise, coin):
+        assert wait.wait_plan(cash_need_rs=0, hold=hold, **BASE)["verdict"] == "SELL_ALL"
+    edge = {**GOOD_HOLD, "n": 10, "wins": 6, "median_net_per_maund": 37}   # 60% and 1.01% of the price: hold
+    assert wait.wait_plan(cash_need_rs=0, hold=edge, **BASE)["verdict"] == "HOLD_ALL"

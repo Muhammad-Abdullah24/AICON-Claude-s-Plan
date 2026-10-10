@@ -255,6 +255,11 @@ def loan_plan(acres: float, input_items: list[dict], savings_rs: float, options:
 
 ## 5. Task cards (each one session)
 
+> **Status, 10 Oct evening.** Everything in waves 1–3 is merged: Hamza did L2a, D1, D2, H2, N1, B2 and B3; Usman did L1;
+> Abd did L3 (the loan planner screen, the loan list in Profile, and household spending / other income on the wait
+> screen) and E1 (hold only on at least 60% wins and a median of at least 1% of the price). Loans owed now include
+> interest to the due date. Left: deploy and rehearsal (DP); D4 skipped.
+>
 > **Status, 10 Oct 15:30 (Abd's review of `main`).** Hamza merged batches 1–3 of the earlier plan this morning, before
 > v3 was written. **Already done, don't redo:** H1, H2, H3, the D2 rates (in `FACTS.md`), B1, B2, B3, B4, F1, F2, F3, F4.
 > The full suite is green on `main`.

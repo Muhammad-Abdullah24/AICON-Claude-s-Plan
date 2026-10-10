@@ -66,6 +66,7 @@ export function Header() {
       >
         {[
           { to: '/', label: t('nav.home') },
+          { to: '/loan', label: t('nav.loan') },
           { to: '/why', label: t('nav.why') },
           { to: '/compare', label: t('nav.compare') },
           { to: '/grow', label: t('nav.grow') },
