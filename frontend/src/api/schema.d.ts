@@ -229,6 +229,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/loan-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Loan Plan
+         * @description What the crop actually needs, the cheapest money first, and what over-borrowing costs. Placeholder numbers
+         *     until D1/D2/B2 (docs/PIVOT.md 3.4): the shape and labelling are final.
+         */
+        get: operations["loan_plan_api_loan_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/farmers/me/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Loans */
+        get: operations["my_loans_api_farmers_me_loans_get"];
+        put?: never;
+        /** Add My Loan */
+        post: operations["add_my_loan_api_farmers_me_loans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/farmers/me/loans/{loan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete My Loan */
+        delete: operations["delete_my_loan_api_farmers_me_loans__loan_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/alerts/run": {
         parameters: {
             query?: never;
@@ -970,6 +1026,144 @@ export interface components {
             /** Paid */
             paid: boolean;
         };
+        /** Loan */
+        Loan: {
+            /** Id */
+            id: string;
+            /** Lender */
+            lender: string;
+            /** Amount Rs */
+            amount_rs: number;
+            /** Annual Rate Pct */
+            annual_rate_pct: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** LoanIn */
+        LoanIn: {
+            /** Lender */
+            lender: string;
+            /** Amount Rs */
+            amount_rs: number;
+            /** Annual Rate Pct */
+            annual_rate_pct: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+        };
+        /** LoanInputItem */
+        LoanInputItem: {
+            /** Item */
+            item: string;
+            /** Name Ur */
+            name_ur: string;
+            /** Name En */
+            name_en: string;
+            /** Rs Per Acre */
+            rs_per_acre: number;
+        };
+        /** LoanLadderSlice */
+        LoanLadderSlice: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "kissan_card" | "pm_youth" | "akhuwat" | "zarkhez_e" | "bank" | "arhti";
+            /** Amount Rs */
+            amount_rs: number;
+            /** Interest Rs */
+            interest_rs: number;
+        };
+        /** LoanOption */
+        LoanOption: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "kissan_card" | "pm_youth" | "akhuwat" | "zarkhez_e" | "bank" | "arhti";
+            /** Name Ur */
+            name_ur: string;
+            /** Name En */
+            name_en: string;
+            /** Annual Rate Pct */
+            annual_rate_pct: number;
+            /** Max Rs */
+            max_rs: number | null;
+            /** Eligible */
+            eligible: boolean;
+            /** Why Not Ur */
+            why_not_ur?: string | null;
+            /** Why Not En */
+            why_not_en?: string | null;
+            /** Conditions Ur */
+            conditions_ur: string;
+            /** Conditions En */
+            conditions_en: string;
+            /** Source Url */
+            source_url: string;
+            /** Verified */
+            verified: boolean;
+        };
+        /** LoanPlanResponse */
+        LoanPlanResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /** Acres */
+            acres: number;
+            /** Savings Rs */
+            savings_rs: number;
+            /** Age */
+            age?: number | null;
+            /** Months To Harvest */
+            months_to_harvest: number;
+            /** Input Items */
+            input_items: components["schemas"]["LoanInputItem"][];
+            /** Input Cost Note */
+            input_cost_note: string;
+            /** Input Need Rs */
+            input_need_rs: number;
+            /** Borrow Needed Rs */
+            borrow_needed_rs: number;
+            /** Options */
+            options: components["schemas"]["LoanOption"][];
+            /** Ladder */
+            ladder: components["schemas"]["LoanLadderSlice"][];
+            /** Ladder Interest Rs */
+            ladder_interest_rs: number;
+            /** Harvest Due Rs */
+            harvest_due_rs: number;
+            /** Uncovered Rs */
+            uncovered_rs: number;
+            /** Planned Borrow Rs */
+            planned_borrow_rs?: number | null;
+            /** Planned Lender */
+            planned_lender?: ("kissan_card" | "pm_youth" | "akhuwat" | "zarkhez_e" | "bank" | "arhti") | null;
+            /** Planned Interest Rs */
+            planned_interest_rs?: number | null;
+            /** Over Borrow Rs */
+            over_borrow_rs?: number | null;
+            /** Extra Cost Rs */
+            extra_cost_rs?: number | null;
+            /** Warnings */
+            warnings: ("OVER_BORROWING" | "NOT_SMALL_FARMER" | "COST_ESTIMATE" | "UNCOVERED")[];
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Phone */
@@ -1365,6 +1559,12 @@ export interface components {
             quantity_maund: number;
             /** Cash Need Rs */
             cash_need_rs: number;
+            /** Household Spend Rs Month */
+            household_spend_rs_month: number;
+            /** Other Income Rs Month */
+            other_income_rs_month: number;
+            /** Loans Due Rs */
+            loans_due_rs: number;
             /** Wait Months */
             wait_months: number;
             /**
@@ -1804,6 +2004,10 @@ export interface operations {
                 storage?: "godown" | "bags";
                 /** @description Arhti's offer per 40 kg. */
                 offer?: number | null;
+                /** @description Household spending a month. */
+                household_spend_rs_month?: number;
+                /** @description Other steady income a month. */
+                other_income_rs_month?: number;
                 /** @description Use only data on or before this date. Omit for the latest. */
                 as_of?: string | null;
             };
@@ -1886,6 +2090,131 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PolicyResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    loan_plan_api_loan_plan_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                /** @description Land under this crop. */
+                acres: number;
+                /** @description Money in hand. */
+                savings_rs?: number;
+                /** @description For PM Youth eligibility. */
+                age?: number | null;
+                /** @description What they planned to borrow. */
+                planned_borrow_rs?: number | null;
+                /** @description Who they planned to borrow from. */
+                planned_lender?: ("kissan_card" | "pm_youth" | "akhuwat" | "zarkhez_e" | "bank" | "arhti") | null;
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_loans_api_farmers_me_loans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Loan"][];
+                };
+            };
+        };
+    };
+    add_my_loan_api_farmers_me_loans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Loan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_my_loan_api_farmers_me_loans__loan_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

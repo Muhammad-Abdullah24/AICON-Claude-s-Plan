@@ -930,6 +930,34 @@
             "description": "Arhti's offer per 40 kg."
           },
           {
+            "name": "household_spend_rs_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100000000,
+              "minimum": 0,
+              "description": "Household spending a month.",
+              "default": 0,
+              "title": "Household Spend Rs Month"
+            },
+            "description": "Household spending a month."
+          },
+          {
+            "name": "other_income_rs_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100000000,
+              "minimum": 0,
+              "description": "Other steady income a month.",
+              "default": 0,
+              "title": "Other Income Rs Month"
+            },
+            "description": "Other steady income a month."
+          },
+          {
             "name": "as_of",
             "in": "query",
             "required": false,
@@ -1103,6 +1131,284 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-plan": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Loan Plan",
+        "description": "What the crop actually needs, the cheapest money first, and what over-borrowing costs. Placeholder numbers\nuntil D1/D2/B2 (docs/PIVOT.md 3.4): the shape and labelling are final.",
+        "operationId": "loan_plan_api_loan_plan_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "acres",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 100000,
+              "exclusiveMinimum": 0,
+              "description": "Land under this crop.",
+              "title": "Acres"
+            },
+            "description": "Land under this crop."
+          },
+          {
+            "name": "savings_rs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100000000,
+              "minimum": 0,
+              "description": "Money in hand.",
+              "default": 0,
+              "title": "Savings Rs"
+            },
+            "description": "Money in hand."
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 120,
+                  "minimum": 14
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "For PM Youth eligibility.",
+              "title": "Age"
+            },
+            "description": "For PM Youth eligibility."
+          },
+          {
+            "name": "planned_borrow_rs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 100000000,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "What they planned to borrow.",
+              "title": "Planned Borrow Rs"
+            },
+            "description": "What they planned to borrow."
+          },
+          {
+            "name": "planned_lender",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "kissan_card",
+                    "pm_youth",
+                    "akhuwat",
+                    "zarkhez_e",
+                    "bank",
+                    "arhti"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Who they planned to borrow from.",
+              "title": "Planned Lender"
+            },
+            "description": "Who they planned to borrow from."
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/farmers/me/loans": {
+      "get": {
+        "tags": [
+          "api",
+          "auth"
+        ],
+        "summary": "My Loans",
+        "operationId": "my_loans_api_farmers_me_loans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Loan"
+                  },
+                  "type": "array",
+                  "title": "Response My Loans Api Farmers Me Loans Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "api",
+          "auth"
+        ],
+        "summary": "Add My Loan",
+        "operationId": "add_my_loan_api_farmers_me_loans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Loan"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/farmers/me/loans/{loan_id}": {
+      "delete": {
+        "tags": [
+          "api",
+          "auth"
+        ],
+        "summary": "Delete My Loan",
+        "operationId": "delete_my_loan_api_farmers_me_loans__loan_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loan Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3281,6 +3587,427 @@
         ],
         "title": "HoldSeason"
       },
+      "Loan": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "lender": {
+            "type": "string",
+            "title": "Lender"
+          },
+          "amount_rs": {
+            "type": "number",
+            "title": "Amount Rs"
+          },
+          "annual_rate_pct": {
+            "type": "number",
+            "title": "Annual Rate Pct"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "lender",
+          "amount_rs",
+          "annual_rate_pct",
+          "due_date",
+          "created_at"
+        ],
+        "title": "Loan"
+      },
+      "LoanIn": {
+        "properties": {
+          "lender": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Lender"
+          },
+          "amount_rs": {
+            "type": "number",
+            "maximum": 100000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Rs"
+          },
+          "annual_rate_pct": {
+            "type": "number",
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Annual Rate Pct"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lender",
+          "amount_rs",
+          "annual_rate_pct",
+          "due_date"
+        ],
+        "title": "LoanIn"
+      },
+      "LoanInputItem": {
+        "properties": {
+          "item": {
+            "type": "string",
+            "title": "Item"
+          },
+          "name_ur": {
+            "type": "string",
+            "title": "Name Ur"
+          },
+          "name_en": {
+            "type": "string",
+            "title": "Name En"
+          },
+          "rs_per_acre": {
+            "type": "number",
+            "title": "Rs Per Acre"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item",
+          "name_ur",
+          "name_en",
+          "rs_per_acre"
+        ],
+        "title": "LoanInputItem"
+      },
+      "LoanLadderSlice": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "kissan_card",
+              "pm_youth",
+              "akhuwat",
+              "zarkhez_e",
+              "bank",
+              "arhti"
+            ],
+            "title": "Id"
+          },
+          "amount_rs": {
+            "type": "number",
+            "title": "Amount Rs"
+          },
+          "interest_rs": {
+            "type": "number",
+            "title": "Interest Rs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "amount_rs",
+          "interest_rs"
+        ],
+        "title": "LoanLadderSlice"
+      },
+      "LoanOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "kissan_card",
+              "pm_youth",
+              "akhuwat",
+              "zarkhez_e",
+              "bank",
+              "arhti"
+            ],
+            "title": "Id"
+          },
+          "name_ur": {
+            "type": "string",
+            "title": "Name Ur"
+          },
+          "name_en": {
+            "type": "string",
+            "title": "Name En"
+          },
+          "annual_rate_pct": {
+            "type": "number",
+            "title": "Annual Rate Pct"
+          },
+          "max_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rs"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "why_not_ur": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why Not Ur"
+          },
+          "why_not_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why Not En"
+          },
+          "conditions_ur": {
+            "type": "string",
+            "title": "Conditions Ur"
+          },
+          "conditions_en": {
+            "type": "string",
+            "title": "Conditions En"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name_ur",
+          "name_en",
+          "annual_rate_pct",
+          "max_rs",
+          "eligible",
+          "conditions_ur",
+          "conditions_en",
+          "source_url",
+          "verified"
+        ],
+        "title": "LoanOption"
+      },
+      "LoanPlanResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "acres": {
+            "type": "number",
+            "title": "Acres"
+          },
+          "savings_rs": {
+            "type": "number",
+            "title": "Savings Rs"
+          },
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "months_to_harvest": {
+            "type": "integer",
+            "title": "Months To Harvest"
+          },
+          "input_items": {
+            "items": {
+              "$ref": "#/components/schemas/LoanInputItem"
+            },
+            "type": "array",
+            "title": "Input Items"
+          },
+          "input_cost_note": {
+            "type": "string",
+            "title": "Input Cost Note"
+          },
+          "input_need_rs": {
+            "type": "number",
+            "title": "Input Need Rs"
+          },
+          "borrow_needed_rs": {
+            "type": "number",
+            "title": "Borrow Needed Rs"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/LoanOption"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "ladder": {
+            "items": {
+              "$ref": "#/components/schemas/LoanLadderSlice"
+            },
+            "type": "array",
+            "title": "Ladder"
+          },
+          "ladder_interest_rs": {
+            "type": "number",
+            "title": "Ladder Interest Rs"
+          },
+          "harvest_due_rs": {
+            "type": "number",
+            "title": "Harvest Due Rs"
+          },
+          "uncovered_rs": {
+            "type": "number",
+            "title": "Uncovered Rs"
+          },
+          "planned_borrow_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Borrow Rs"
+          },
+          "planned_lender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "kissan_card",
+                  "pm_youth",
+                  "akhuwat",
+                  "zarkhez_e",
+                  "bank",
+                  "arhti"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Lender"
+          },
+          "planned_interest_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Interest Rs"
+          },
+          "over_borrow_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Over Borrow Rs"
+          },
+          "extra_cost_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Cost Rs"
+          },
+          "warnings": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "OVER_BORROWING",
+                "NOT_SMALL_FARMER",
+                "COST_ESTIMATE",
+                "UNCOVERED"
+              ]
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "acres",
+          "savings_rs",
+          "months_to_harvest",
+          "input_items",
+          "input_cost_note",
+          "input_need_rs",
+          "borrow_needed_rs",
+          "options",
+          "ladder",
+          "ladder_interest_rs",
+          "harvest_due_rs",
+          "uncovered_rs",
+          "warnings"
+        ],
+        "title": "LoanPlanResponse"
+      },
       "LoginRequest": {
         "properties": {
           "phone": {
@@ -4270,6 +4997,18 @@
             "type": "number",
             "title": "Cash Need Rs"
           },
+          "household_spend_rs_month": {
+            "type": "number",
+            "title": "Household Spend Rs Month"
+          },
+          "other_income_rs_month": {
+            "type": "number",
+            "title": "Other Income Rs Month"
+          },
+          "loans_due_rs": {
+            "type": "number",
+            "title": "Loans Due Rs"
+          },
           "wait_months": {
             "type": "integer",
             "title": "Wait Months"
@@ -4387,6 +5126,9 @@
           "unit",
           "quantity_maund",
           "cash_need_rs",
+          "household_spend_rs_month",
+          "other_income_rs_month",
+          "loans_due_rs",
           "wait_months",
           "money",
           "annual_rate_pct",

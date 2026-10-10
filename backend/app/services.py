@@ -470,10 +470,15 @@ def _policy_recent(crop_option: str, as_of: date | None) -> bool:
 def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_need_rs: float = 0,
               wait_months: int = 4, money: str = "own", annual_rate: float | None = None,
               storage: str = "godown", offer: float | None = None, phone: str | None = None,
-              as_of: date | None = None) -> dict:
+              as_of: date | None = None, household_spend_rs_month: float = 0,
+              other_income_rs_month: float = 0) -> dict:
     """Can this farmer afford to wait? Sell enough now for the cash they need; hold the rest only if, with their
     money and their storage, holding paid in most past seasons (ml/backtest + ml/decision/wait.py). Returns the
-    WaitPlanResponse fields except crop and mandi (`exits[].mandi` is a data name)."""
+    WaitPlanResponse fields except crop and mandi (`exits[].mandi` is a data name).
+
+    `household_spend_rs_month`, `other_income_rs_month` and `loans_due_rs` are echoed for the screens. Deriving
+    the cash need from a logged-in farmer's loans and household budget is card B2 (docs/PIVOT.md 3.4); until then
+    `cash_need_rs` is taken as given and `loans_due_rs` is 0."""
     from ml.backtest.hold import hold_history  # noqa: PLC0415
     from ml.decision import wait as wait_engine  # noqa: PLC0415
     _series(crop_option, mandi)
@@ -494,7 +499,118 @@ def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_ne
         annual_rate_pct=rate, storage=storage, loss_pct=loss, offer=offer, is_stale=stale,
         news_conflict=news_check is not None, policy_recent=_policy_recent(crop_option, as_of))
     return {**plan, "data_source": "amis", "is_synthetic": False, "prices_as_of": price_date, "is_stale": stale,
-            "news_check": news_check}
+            "news_check": news_check, "household_spend_rs_month": household_spend_rs_month,
+            "other_income_rs_month": other_income_rs_month, "loans_due_rs": 0.0}
+
+
+# ---------------------------------------------------------------- loan planner (docs/PIVOT.md 3.4)
+# L2a: a clearly-labelled placeholder so the screens (L3) and WhatsApp (B3) can build against the contract.
+# The real per-acre costs (data/processed/input_costs.json, card D1), the verified options
+# (data/processed/loan_options.json, card D2) and the ml.decision.loan engine (card L1) are wired in by B2.
+
+_PLACEHOLDER_INPUT_ITEMS = [
+    {"item": "seed", "name_ur": "بیج", "name_en": "Seed", "rs_per_acre": 6000.0},
+    {"item": "fertilizer", "name_ur": "کھاد", "name_en": "Fertiliser", "rs_per_acre": 21000.0},
+    {"item": "sprays", "name_ur": "دوائی", "name_en": "Sprays", "rs_per_acre": 3000.0},
+    {"item": "land_prep", "name_ur": "زمین کی تیاری", "name_en": "Land preparation", "rs_per_acre": 7000.0},
+    {"item": "irrigation", "name_ur": "آبپاشی", "name_en": "Irrigation", "rs_per_acre": 8000.0},
+    {"item": "harvest", "name_ur": "کٹائی اور گہائی", "name_en": "Harvesting and threshing", "rs_per_acre": 5000.0},
+]
+# id, name_ur, name_en, rate %, per-acre cap, overall cap, conditions (ur, en), source
+_PLACEHOLDER_OPTIONS = [
+    ("kissan_card", "کسان کارڈ", "Kissan Card", 0.0, 30000.0, 150000.0,
+     "صرف اِن پٹ؛ 1 سے 12.5 ایکڑ", "Inputs only; 1–12.5 acres", "https://punjab.gov.pk/node/5690"),
+    ("pm_youth", "پی ایم یوتھ قرض", "PM Youth Loan", 0.0, None, 500000.0,
+     "عمر 21 سے 45 سال", "Age 21–45", "https://ztbl.com.pk"),
+    ("akhuwat", "اخوت قرض", "Akhuwat Loan", 0.0, None, 80000.0,
+     "دو ضامن؛ شاخ پر درخواست", "Two guarantors; apply at a branch", "https://akhuwat.org.pk"),
+    ("zarkhez_e", "زرخیز-ای", "Zarkhez-e", 18.0, 100000.0, 1000000.0,
+     "12.5 ایکڑ تک", "Up to 12.5 acres", "https://ztbl.com.pk"),
+    ("bank", "بینک قرض", "Bank loan", 16.5, None, None,
+     "عام زرعی قرض", "Ordinary agri loan", "https://www.sbp.org.pk"),
+    ("arhti", "آڑھتی", "Arhti", 66.0, None, None,
+     "فصل بیچنے کی شرط", "Tied to selling the crop", "https://www.sbp.org.pk/research"),
+]
+SMALL_FARMER_MAX_ACRES = 12.5
+
+
+def months_to_harvest(crop_option: str, as_of: date | None = None) -> int:
+    """Whole months from the reference date to the crop's next harvest start (crop calendar), at least 1."""
+    start = calendar(crop_option)["harvest_months"][0]
+    gap = (start - reference_date(as_of).month) % 12
+    return gap or 12
+
+
+def loan_plan(crop_option: str, acres: float, savings_rs: float = 0, age: int | None = None,
+              planned_borrow_rs: float | None = None, planned_lender: str | None = None,
+              as_of: date | None = None) -> dict:
+    """Placeholder loan plan (L2a): the full LoanPlanResponse shape with clearly labelled, not-yet-verified
+    numbers. Real costs, verified options and the ladder engine arrive in D1, D2 and B2."""
+    months = months_to_harvest(crop_option, as_of)
+    items = [dict(i) for i in _PLACEHOLDER_INPUT_ITEMS]
+    input_need = _round(sum(i["rs_per_acre"] for i in items) * acres)
+    borrow_needed = max(0.0, input_need - savings_rs)
+    small = acres <= SMALL_FARMER_MAX_ACRES
+
+    options = []
+    for oid, ur, en, rate, per_acre_cap, overall_cap, cond_ur, cond_en, url in _PLACEHOLDER_OPTIONS:
+        cap = None
+        if per_acre_cap is not None or overall_cap is not None:
+            cap = min(c for c in (per_acre_cap * acres if per_acre_cap else None, overall_cap) if c is not None)
+        eligible, why_ur, why_en = True, None, None
+        if oid in ("kissan_card", "zarkhez_e") and not small:
+            eligible, why_ur, why_en = False, "12.5 ایکڑ سے زیادہ", "Over 12.5 acres"
+        elif oid == "pm_youth" and age is None:
+            eligible, why_ur, why_en = False, "عمر درکار ہے", "Age needed"
+        elif oid == "pm_youth" and not (21 <= age <= 45):
+            eligible, why_ur, why_en = False, "عمر 21 سے 45 سال ہونی چاہیے", "Must be aged 21–45"
+        options.append({"id": oid, "name_ur": ur, "name_en": en, "annual_rate_pct": rate, "max_rs": cap,
+                        "eligible": eligible, "why_not_ur": why_ur, "why_not_en": why_en,
+                        "conditions_ur": cond_ur, "conditions_en": cond_en, "source_url": url, "verified": False})
+
+    # Ladder: fill borrow_needed from the cheapest eligible option up (ties keep the table order).
+    ladder, remaining = [], borrow_needed
+    for o in sorted([o for o in options if o["eligible"]], key=lambda o: o["annual_rate_pct"]):
+        if remaining <= 0:
+            break
+        room = remaining if o["max_rs"] is None else min(remaining, o["max_rs"])
+        if room <= 0:
+            continue
+        interest = _round(room * o["annual_rate_pct"] / 100 * months / 12)
+        ladder.append({"id": o["id"], "amount_rs": float(_round(room)), "interest_rs": float(interest)})
+        remaining -= room
+    ladder_interest = float(sum(s["interest_rs"] for s in ladder))
+    uncovered = max(0.0, remaining)
+
+    warnings = ["COST_ESTIMATE"]
+    if not small:
+        warnings.append("NOT_SMALL_FARMER")
+    if uncovered > 0:
+        warnings.append("UNCOVERED")
+
+    planned_interest = over_borrow = extra_cost = None
+    if planned_borrow_rs is not None:
+        rate = next((o["annual_rate_pct"] for o in options if o["id"] == planned_lender), None)
+        if rate is not None:
+            planned_interest = float(_round(planned_borrow_rs * rate / 100 * months / 12))
+            extra_cost = planned_interest - ladder_interest
+        over_borrow = max(0.0, planned_borrow_rs - borrow_needed)
+        if over_borrow > 0:
+            warnings.append("OVER_BORROWING")
+
+    return {
+        "data_source": "placeholder", "is_synthetic": True,
+        "acres": acres, "savings_rs": savings_rs, "age": age, "months_to_harvest": months,
+        "input_items": items,
+        "input_cost_note": "Placeholder figures. Real per-acre costs come from the official wheat cost table "
+                            "(data/processed/input_costs.json, card D1).",
+        "input_need_rs": float(input_need), "borrow_needed_rs": float(borrow_needed),
+        "options": options, "ladder": ladder, "ladder_interest_rs": ladder_interest,
+        "harvest_due_rs": float(_round(borrow_needed + ladder_interest)), "uncovered_rs": uncovered,
+        "planned_borrow_rs": planned_borrow_rs, "planned_lender": planned_lender,
+        "planned_interest_rs": planned_interest, "over_borrow_rs": over_borrow, "extra_cost_rs": extra_cost,
+        "warnings": warnings,
+    }
 
 
 def news(crop_option: str | None = None, mandi: str | None = None) -> dict:

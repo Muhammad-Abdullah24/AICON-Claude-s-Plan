@@ -41,6 +41,10 @@ from backend.app.schemas import (
     ForecastResponse,
     Health,
     HistoryResponse,
+    LenderId,
+    Loan,
+    LoanIn,
+    LoanPlanResponse,
     LoginRequest,
     MandiId,
     MarginResponse,
@@ -81,7 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST", "PUT"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type", "Authorization"],
     )
     app.include_router(router)
@@ -257,11 +261,15 @@ def wait_plan(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None,
               annual_rate: Annotated[float | None, Query(ge=0, le=200, description="% a year.")] = None,
               storage: Storage = "godown",
               offer: Annotated[float | None, Query(gt=0, le=1_000_000, description="Arhti's offer per 40 kg.")] = None,
+              household_spend_rs_month: Annotated[float, Query(ge=0, le=100_000_000,
+                                                               description="Household spending a month.")] = 0,
+              other_income_rs_month: Annotated[float, Query(ge=0, le=100_000_000,
+                                                            description="Other steady income a month.")] = 0,
               as_of: AsOf = None,
               farmer: dict | None = Depends(optional_farmer)) -> WaitPlanResponse:  # noqa: B008
     qty = _quantity(farmer, crop, quantity_maund)
     p = _guard(services.wait_plan, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, cash_need_rs, wait_months,
-               money, annual_rate, storage, offer, None, as_of)
+               money, annual_rate, storage, offer, None, as_of, household_spend_rs_month, other_income_rs_month)
     exits = [{**e, "mandi": MANDI_FROM_DATA[e["mandi"]] if e.get("mandi") else None} for e in p["exits"]]
     return WaitPlanResponse(**{**p, "exits": exits}, crop=crop, mandi=mandi)
 
@@ -278,6 +286,40 @@ def news(crop: CropId | None = None, mandi: MandiId | None = None) -> NewsRespon
 @router.get("/policy", response_model=PolicyResponse)
 def policy(crop: CropId, as_of: AsOf = None) -> PolicyResponse:
     return PolicyResponse(**services.policy_events(CROP_TO_DATA[crop], as_of), crop=crop)
+
+
+# ---------------------------------------------------------------- loan planner and loan list (docs/PIVOT.md 3.4)
+
+@router.get("/loan-plan", response_model=LoanPlanResponse)
+def loan_plan(crop: CropId,
+              acres: Annotated[float, Query(gt=0, le=100_000, description="Land under this crop.")],
+              savings_rs: Annotated[float, Query(ge=0, le=100_000_000, description="Money in hand.")] = 0,
+              age: Annotated[int | None, Query(ge=14, le=120, description="For PM Youth eligibility.")] = None,
+              planned_borrow_rs: Annotated[float | None, Query(ge=0, le=100_000_000,
+                                                               description="What they planned to borrow.")] = None,
+              planned_lender: Annotated[LenderId | None, Query(description="Who they planned to borrow from.")] = None,
+              as_of: AsOf = None) -> LoanPlanResponse:
+    """What the crop actually needs, the cheapest money first, and what over-borrowing costs. Placeholder numbers
+    until D1/D2/B2 (docs/PIVOT.md 3.4): the shape and labelling are final."""
+    p = _guard(services.loan_plan, CROP_TO_DATA[crop], acres, savings_rs, age, planned_borrow_rs,
+               planned_lender, as_of)
+    return LoanPlanResponse(**p, crop=crop)
+
+
+@router.get("/farmers/me/loans", response_model=list[Loan], tags=["auth"])
+def my_loans(farmer: dict = Depends(current_farmer)) -> list[Loan]:  # noqa: B008
+    return [Loan(**loan) for loan in db.list_loans(farmer["id"])]
+
+
+@router.post("/farmers/me/loans", response_model=Loan, status_code=201, tags=["auth"])
+def add_my_loan(body: LoanIn, farmer: dict = Depends(current_farmer)) -> Loan:  # noqa: B008
+    return Loan(**db.add_loan(farmer["id"], body.model_dump(mode="json")))
+
+
+@router.delete("/farmers/me/loans/{loan_id}", status_code=204, tags=["auth"])
+def delete_my_loan(loan_id: str, farmer: dict = Depends(current_farmer)) -> None:  # noqa: B008
+    if not db.delete_loan(farmer["id"], loan_id):
+        raise HTTPException(404, "No such loan.")
 
 
 # ---------------------------------------------------------------- alerts (C9)
