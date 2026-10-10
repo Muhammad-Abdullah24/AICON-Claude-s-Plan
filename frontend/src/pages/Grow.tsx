@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { api, type CropPlanItem } from '../api/client'
+import { api, type CropPlanItem, type CropPlanResponse } from '../api/client'
 import { useAppState } from '../appState'
 import { ChipGroup } from '../components/ChipGroup'
 import { HelpTip } from '../components/HelpTip'
@@ -12,6 +12,7 @@ import { formatDate, formatMonth, formatRs, parseTypedNumber } from '../lib/form
 import { inSeason } from '../lib/months'
 import { useAsync } from '../lib/useAsync'
 import {
+  bestPick,
   noteLine,
   notRankedKeys,
   policyLine,
@@ -94,6 +95,7 @@ export function Grow() {
       </h2>
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
+      {state.status === 'ok' && <BestPick plan={state.data} />}
       {state.status === 'ok' && (
         <>
           {seasonSections(state.data).map((section) => (
@@ -112,6 +114,27 @@ export function Grow() {
         </>
       )}
     </div>
+  )
+}
+
+/** The headline recommendation: the highest-profit ranked crop, stated plainly. Nothing when nothing ranked, so
+ * the app never shows a headline pick it is not confident in (stale or thin-history crops are left to their cards). */
+function BestPick({ plan }: { plan: CropPlanResponse }) {
+  const { t } = useTranslation()
+  const { cropName } = useAppState()
+  const best = bestPick(plan)
+  if (!best) return null
+  return (
+    <aside className="space-y-1 rounded-2xl border-2 border-field bg-field/10 p-4">
+      <p className="text-sm font-semibold text-field">{t('grow.bestPick.title')}</p>
+      <p className="text-2xl font-bold">{cropName(best.crop)}</p>
+      <p className="figures text-2xl text-field">
+        +{formatRs(best.profit_per_acre)} <span className="text-base text-slate">/ {t('grow.acres')}</span>
+      </p>
+      <p className="text-sm text-slate">
+        {t('grow.bestPick.line', { risk: t(`grow.riskLevels.${best.risk_level}`) })}
+      </p>
+    </aside>
   )
 }
 

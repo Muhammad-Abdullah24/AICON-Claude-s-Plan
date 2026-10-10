@@ -21,6 +21,17 @@ export function seasonSections(plan: Pick<CropPlanResponse, 'items' | 'seasons'>
   return (plan.seasons ?? []).map((s) => ({ ...s, items: plan.items.filter((i) => i.season === s.season) }))
 }
 
+/**
+ * The single crop to recommend: the ranked crop with the highest expected profit (rank 1 of whichever season has
+ * the best estimate). Null when nothing ranked — the app then stays cautious and shows no headline pick, so this
+ * is only ever a crop with current prices and enough history, never a guess.
+ */
+export function bestPick(plan: Pick<CropPlanResponse, 'items'>): CropPlanItem | null {
+  const ranked = plan.items.filter((i) => i.rank != null)
+  if (ranked.length === 0) return null
+  return ranked.reduce((best, i) => (i.expected_profit > best.expected_profit ? i : best))
+}
+
 export interface Line {
   key: string
   params: Record<string, string | number>

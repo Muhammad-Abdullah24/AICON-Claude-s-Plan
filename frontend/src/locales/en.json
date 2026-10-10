@@ -109,6 +109,10 @@
   },
   "grow": {
     "title": "What to grow: crops of the same season, side by side",
+    "bestPick": {
+      "title": "Our suggestion",
+      "line": "Highest expected profit this season · {{risk}} price risk"
+    },
     "land": "Your land",
     "acres": "acres",
     "profitTotal": "Expected profit on your land",
