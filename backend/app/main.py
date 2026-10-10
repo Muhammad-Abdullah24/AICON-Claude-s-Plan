@@ -45,9 +45,14 @@ from backend.app.schemas import (
     MandiId,
     MarginResponse,
     Meta,
+    Money,
+    NewsResponse,
     OfferCheckRequest,
     OfferCheckResponse,
+    PolicyResponse,
+    Storage,
     TokenResponse,
+    WaitPlanResponse,
     WeatherResponse,
 )
 
@@ -240,6 +245,39 @@ def crop_plan(mandi: MandiId | None = None,
              for i in p["items"]]
     return CropPlanResponse(**LABEL, mandi=where, land_area_acres=acres, items=items,
                             not_available=[CROP_FROM_DATA[c] for c in p["not_available"]], is_estimate=True)
+
+
+# ---------------------------------------------------------------- wait plan, news, policy (docs/PIVOT.md)
+
+@router.get("/wait-plan", response_model=WaitPlanResponse)
+def wait_plan(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None,
+              cash_need_rs: Annotated[float, Query(ge=0, le=100_000_000, description="Rs needed now.")] = 0,
+              wait_months: Annotated[int, Query(ge=1, le=6, description="How long the rest could wait.")] = 4,
+              money: Annotated[Money, Query(description="Whose money pays for waiting.")] = "own",
+              annual_rate: Annotated[float | None, Query(ge=0, le=200, description="% a year.")] = None,
+              storage: Storage = "godown",
+              offer: Annotated[float | None, Query(gt=0, le=1_000_000, description="Arhti's offer per 40 kg.")] = None,
+              as_of: AsOf = None,
+              farmer: dict | None = Depends(optional_farmer)) -> WaitPlanResponse:  # noqa: B008
+    qty = _quantity(farmer, crop, quantity_maund)
+    p = _guard(services.wait_plan, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, cash_need_rs, wait_months,
+               money, annual_rate, storage, offer, None, as_of)
+    exits = [{**e, "mandi": MANDI_FROM_DATA[e["mandi"]] if e.get("mandi") else None} for e in p["exits"]]
+    return WaitPlanResponse(**{**p, "exits": exits}, crop=crop, mandi=mandi)
+
+
+@router.get("/news", response_model=NewsResponse)
+def news(crop: CropId | None = None, mandi: MandiId | None = None) -> NewsResponse:
+    """Today's Pakistan farm news (not replayed with as_of: like weather, it is always today's). News never
+    changes the advice; it can only add a warning or lower confidence (docs/PIVOT.md rule 8)."""
+    n = services.news(CROP_TO_DATA[crop] if crop else None, MANDI_TO_DATA[mandi] if mandi else None)
+    items = [{**i, "crop": CROP_FROM_DATA[i["crop"]] if i.get("crop") else None} for i in n["items"]]
+    return NewsResponse(**{**n, "items": items})
+
+
+@router.get("/policy", response_model=PolicyResponse)
+def policy(crop: CropId, as_of: AsOf = None) -> PolicyResponse:
+    return PolicyResponse(**services.policy_events(CROP_TO_DATA[crop], as_of), crop=crop)
 
 
 # ---------------------------------------------------------------- alerts (C9)

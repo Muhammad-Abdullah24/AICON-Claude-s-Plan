@@ -58,7 +58,7 @@ export function SignalCard({ advice }: { advice: AdviceResponse }) {
       </p>
       {advice.model.startsWith('baseline') && <p className="mt-1 text-xs text-slate">{t('signal.baseline')}</p>}
       <div className="mt-2">
-        <DirectionLine direction={advice.direction} />
+        <DirectionLine direction={advice.direction} signal={advice.signal} />
       </div>
 
       <div className="mt-3 space-y-1">

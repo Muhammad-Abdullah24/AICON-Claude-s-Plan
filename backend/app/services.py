@@ -412,3 +412,34 @@ def model_available() -> bool:
     except ImportError:
         return False
     return True
+
+
+# ---------------------------------------------------------------- pivot: wait plan, news, policy (docs/PIVOT.md)
+# Placeholders until U3/U4 (the wait engine) and H2/H3 (Hamza's news package) land. The signatures are the
+# contract (PIVOT.md section 3): WhatsApp (H6) and the screens (U5-U7) build against them now.
+
+def wait_plan(crop_option: str, mandi: str, quantity_maund: float = 100, cash_need_rs: float = 0,
+              wait_months: int = 4, money: str = "own", annual_rate: float | None = None,
+              storage: str = "godown", offer: float | None = None, phone: str | None = None,
+              as_of: date | None = None) -> dict:
+    """Can this farmer afford to wait? Sell enough now for the cash they need; hold the rest only if, with their
+    money and their storage, holding paid in most past seasons. Returns the WaitPlanResponse fields except
+    crop and mandi (`exits[].mandi` is a data name). Placeholder answer for now (is_synthetic: True)."""
+    from backend.app import placeholders  # noqa: PLC0415
+    _series(crop_option, mandi)
+    return placeholders.wait_plan(crop_option, mandi, quantity_maund, cash_need_rs, wait_months, money,
+                                  annual_rate, storage, offer)
+
+
+def news(crop_option: str | None = None, mandi: str | None = None) -> dict:
+    """Today's Pakistan farm news (NewsResponse fields; `items[].crop` is a data name or None). With crop and
+    mandi, `price_check` says when a news price is more than 10% away from AMIS. Placeholder for now."""
+    from backend.app import placeholders  # noqa: PLC0415
+    return placeholders.news()
+
+
+def policy_events(crop_option: str, as_of: date | None = None) -> dict:
+    """Dated, sourced policy events for the crop, newest first, none after as_of, with their data label
+    (the PolicyResponse fields except crop). Placeholder for now."""
+    from backend.app import placeholders  # noqa: PLC0415
+    return {**placeholders.PLACEHOLDER, "events": placeholders.policy_events(as_of)}
