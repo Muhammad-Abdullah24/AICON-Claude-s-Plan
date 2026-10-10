@@ -34,30 +34,29 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 }
 
-function Brand({ compact = false }: { compact?: boolean }) {
+/** The KASHT logo: white lettering on a transparent background, so it always sits on the green title bar. */
+function Logo() {
   const { t } = useTranslation()
   return (
-    <Link to="/" className="flex items-center gap-2.5 rounded-xl text-ink">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-field-soft text-field sm:size-10">
-        <Icon name="wheat" className="size-6" />
-      </span>
-      <span className="leading-tight">
-        <span className="block text-xl font-bold whitespace-nowrap">{t('app.name')}</span>
-        {!compact && <span className="block text-sm text-slate">{t('app.tagline')}</span>}
-      </span>
+    <Link to="/" className="flex min-h-[44px] shrink-0 items-center rounded-lg focus-visible:outline-paper">
+      <img src="/kasht-logo.webp" alt={t('app.name')} width={480} height={141} className="h-8 w-auto sm:h-9" />
     </Link>
   )
 }
 
 /** The language switch as a two-part toggle. Pressing the other language is the same switch as before. */
-function LanguageToggle() {
+function LanguageToggle({ onGreen = false }: { onGreen?: boolean }) {
   const { t, i18n } = useTranslation()
   const current = i18n.language === 'en' ? 'en' : 'ur'
   const other: Lang = current === 'ur' ? 'en' : 'ur'
   // Each locale names the *other* language in lang.switchTo, so a language's own name comes from the other file.
   const nameOf = (lang: Lang) => i18n.getFixedT(lang === 'ur' ? 'en' : 'ur')('lang.switchTo')
   return (
-    <div className="inline-flex rounded-xl bg-mist p-1" role="group" aria-label={t('lang.switchLabel')}>
+    <div
+      className={`inline-flex rounded-xl p-1 ${onGreen ? 'bg-paper/15' : 'bg-mist'}`}
+      role="group"
+      aria-label={t('lang.switchLabel')}
+    >
       {(['ur', 'en'] as const).map((lang) => (
         <button
           key={lang}
@@ -67,7 +66,11 @@ function LanguageToggle() {
           aria-label={lang === other ? t('lang.switchLabel') : nameOf(lang)}
           onClick={() => lang === other && void i18n.changeLanguage(other)}
           className={`min-h-[44px] min-w-[44px] rounded-lg px-2 text-sm font-semibold sm:px-3 ${
-            lang === current ? 'bg-paper text-ink shadow-sm' : 'text-slate hover:text-ink'
+            onGreen
+              ? `focus-visible:outline-paper ${lang === current ? 'bg-paper text-field shadow-sm' : 'text-paper/85 hover:text-paper'}`
+              : lang === current
+                ? 'bg-paper text-ink shadow-sm'
+                : 'text-slate hover:text-ink'
           }`}
         >
           {lang === 'en' ? (
@@ -93,11 +96,11 @@ function Sidebar() {
   const { t } = useTranslation()
   const { farmer } = useAppState()
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto border-e border-line bg-paper px-4 py-6 lg:flex">
-      <div className="px-2">
-        <Brand />
+    <aside className="sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto border-e border-line bg-paper pb-6 lg:flex">
+      <div className="flex min-h-16 items-center bg-field px-6">
+        <Logo />
       </div>
-      <nav aria-label={t('app.name')} className="flex flex-col gap-1">
+      <nav aria-label={t('app.name')} className="flex flex-col gap-1 px-4">
         {NAV.map((item) => (
           <NavLink
             key={item.to}
@@ -114,7 +117,7 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto border-t border-line px-2 pt-4">
+      <div className="mx-4 mt-auto border-t border-line px-2 pt-4">
         <LanguageToggle />
       </div>
     </aside>
@@ -125,24 +128,24 @@ function TopBar() {
   const { t, i18n } = useTranslation()
   const { meta, farmer } = useAppState()
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
+    <header className="sticky top-0 z-20 bg-field text-paper shadow-sm">
       <div className="flex min-h-16 items-center justify-between gap-2 px-3 sm:px-4 lg:px-8">
         <div className="lg:hidden">
-          <Brand compact />
+          <Logo />
         </div>
-        <p className="hidden text-sm text-slate lg:block">
+        <p className="hidden text-sm text-paper/90 lg:block">
           {t('data.asOf', { date: formatDate(meta.prices_as_of, i18n.language as Lang) })}
         </p>
         <div className="flex items-center gap-2">
           <div className="lg:hidden">
-            <LanguageToggle />
+            <LanguageToggle onGreen />
           </div>
           <NavLink
             to="/profile"
             aria-label={farmer ? farmer.name : t('nav.profile')}
             className={({ isActive }) =>
-              `flex size-[44px] shrink-0 items-center justify-center rounded-full ${
-                isActive ? 'bg-field-soft text-field' : 'bg-cotton text-ink hover:bg-mist'
+              `flex size-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-paper ${
+                isActive ? 'bg-paper text-field' : 'bg-paper/15 text-paper hover:bg-paper/25'
               }`
             }
           >

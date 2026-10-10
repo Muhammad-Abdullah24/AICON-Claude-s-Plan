@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "FarmSight",
+    "name": "KASHT",
     "tagline": "When to sell, where to sell, what to grow"
   },
   "nav": {
@@ -162,7 +162,7 @@
   },
   "profile": {
     "title": "Your profile",
-    "guest": "You are using FarmSight as a guest.",
+    "guest": "You are using KASHT as a guest.",
     "loggedInAs": "Logged in as {{name}}",
     "login": "Log in with your phone number",
     "phone": "Phone number",

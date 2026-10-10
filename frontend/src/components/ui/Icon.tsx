@@ -1,5 +1,5 @@
 /**
- * The app's small line-icon set, drawn for FarmSight on a 24px grid (no icon library: docs/PIVOT.md rule 4).
+ * The app's small line-icon set, drawn for KASHT on a 24px grid (no icon library: docs/PIVOT.md rule 4).
  * Icons are decorative by default (aria-hidden): every status and action they sit beside also says it in words.
  */
 const PATHS = {
