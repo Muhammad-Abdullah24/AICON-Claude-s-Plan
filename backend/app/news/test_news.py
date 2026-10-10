@@ -39,12 +39,21 @@ def test_tag_by_rules(title, tag_, crop):
     assert tag.tag_by_rules(title) == (tag_, crop)
 
 
-def test_extract_price_only_takes_a_plausible_per_maund_figure():
+def test_extract_price_takes_a_crop_per_maund_figure_only():
     assert tag.extract_price("wheat support price at Rs 3,500 per 40 kg") == 3500
-    assert tag.extract_price("open market reaches Rs 5,300 a maund") == 5300
-    assert tag.extract_price("prefers Rs 4,200 over Rs 5,000 per 40 kg") == 5000   # the one by the unit wins
+    assert tag.extract_price("open market wheat reaches Rs 5,300 per maund") == 5300
+    assert tag.extract_price("gandum rate Rs 5,000 per 40 kg at the mandi") == 5000
     assert tag.extract_price("inflation rose 11.97pc") is None
-    assert tag.extract_price("fine worth Rs 650 imposed") is None                  # below the mandi-price floor
+    assert tag.extract_price("fine worth Rs 650 per 40 kg") is None                # below the mandi-price floor
+
+
+def test_a_flour_price_is_not_read_as_a_wheat_price():
+    # N1 (demo-critical): the flour headline that raised a false NEWS_PRICE_CONFLICT. No grain word -> no crop price.
+    assert tag.extract_price("Flour price hits Rs 5,200 per 40 kg across Punjab") is None
+    assert tag.extract_price("Flour Rs 5,200 per 40 kg as wheat cost surges") is None   # flour is the price's subject
+    assert tag.extract_price("Onion Rs 80 per kg; wheat steady") is None                # per-kg, not wheat's price
+    assert tag.extract_price("Rice exports rise, no price given") is None               # no figure
+    assert tag.extract_price("Sugar Rs 3,500 per 40 kg") is None                        # not one of our crops
 
 
 def test_rules_tagging_a_whole_batch():
