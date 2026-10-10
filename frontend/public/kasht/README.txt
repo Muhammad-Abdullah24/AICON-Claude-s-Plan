@@ -1,11 +1,10 @@
 KASHT voice-note demo — drop your recorded replies here.
 
-Record the FOUR KASHT answers (in your own voice, reading the scripts you were given) and save them here as:
+The THREE KASHT answers asked on stage (added 10 Oct) (in your own voice, reading the scripts you were given) and save them here as:
 
   reply-1.mp3   (answer to: where to sell + hold, Vehari wheat)
   reply-2.mp3   (answer to: loan — 3 acres wheat, planned 4 lakh from arhti)
   reply-3.mp3   (answer to: what to grow at Vehari, 2 acres)
-  reply-4.mp3   (answer to: is the arhti's Rs 3,500 offer fair)
 
 Notes:
 - Exact filenames and .mp3 format. They are served at /kasht/reply-N.mp3 .
