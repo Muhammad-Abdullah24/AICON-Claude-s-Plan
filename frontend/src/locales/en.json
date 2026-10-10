@@ -4,18 +4,46 @@
     "tagline": "Check a buyer's offer before you sell"
   },
   "nav": {
-    "home": "Check offer",
-    "why": "Why",
-    "compare": "Mandis",
+    "home": "Check an offer",
+    "why": "Why / data details",
+    "compare": "Compare mandis",
     "grow": "What to grow",
     "history": "History",
     "margin": "Margin",
     "chat": "Ask",
+    "profile": "Profile & alerts",
+    "outlook": "Market outlook",
+    "channels": "WhatsApp / SMS",
+    "more": "More"
+  },
+  "navShort": {
+    "home": "Offer",
+    "compare": "Compare",
+    "outlook": "Outlook",
     "profile": "Profile"
   },
+  "shell": {
+    "productLine": "Before you sell, check once.",
+    "descriptor": "South Punjab · Your crop, your decision",
+    "navLabel": "Main navigation",
+    "dataContext": "AMIS prices up to {{date}}",
+    "replayContext": "Replaying {{date}}",
+    "guest": "Guest farmer",
+    "note": "Prices are AMIS mandi reports. Estimates, old prices and limits are labelled on every screen."
+  },
+  "badge": {
+    "fresh": "Recent report",
+    "limited": "Data limited",
+    "stale": "Old report",
+    "frozen": "Price not updated",
+    "samePrice": "Same price reported",
+    "fewDays": "Few reports",
+    "estimate": "Estimate",
+    "illustrative": "Illustrative",
+    "error": "Error"
+  },
   "lang": {
-    "switchTo": "اردو",
-    "switchLabel": "اردو میں دیکھیں"
+    "label": "Language"
   },
   "data": {
     "synthetic": "Synthetic data",
@@ -133,7 +161,9 @@
   },
   "outlook": {
     "title": "Market outlook",
-    "note": "The price estimate and our model's signal, as background. Our forecasts were tested and are not reliable enough to tell you to hold your crop."
+    "note": "The price estimate and our model's signal, as background. Our forecasts were tested and are not reliable enough to tell you to hold your crop.",
+    "context": "This is context, not a guaranteed future price. To decide on an offer, use the offer check.",
+    "whyLink": "Why this outlook, and how good is the data?"
   },
   "why": {
     "title": "Why this advice",

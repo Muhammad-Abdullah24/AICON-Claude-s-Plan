@@ -215,8 +215,8 @@ Tools used for the data, outside this repo: Node.js scripts (built-in `http`) to
 - Backend: FastAPI, Pydantic, Uvicorn, python-dotenv, python-multipart, SQLite (Python standard library); tests with pytest and httpx2; lint with Ruff.
 - Forecast model: XGBoost (with its SHAP contributions) and NumPy (SciPy comes with XGBoost), for the wheat direction call and its reasons (`ml/forecast/`, `docs/MODEL_CARD.md`).
 - Live services: Open-Meteo forecast API (weather), Meta WhatsApp Cloud API (messages), Google Gemini API (`gemini-3.5-flash-lite`, free tier) for rephrasing chat answers; prompts word for word in `docs/PROMPTS.md`, and every number in an answer is checked against the farmer's own advice before it is shown.
-- Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint.
-- Fonts (bundled): Noto Nastaliq Urdu, IBM Plex Sans, IBM Plex Mono, all under the SIL Open Font License.
+- Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint, Lucide icons (`lucide-react`, ISC licence).
+- Fonts (bundled with `@fontsource`, never fetched at runtime): Noto Sans Arabic (Urdu interface text) and IBM Plex Sans (English, prices, dates and numbers), both under the SIL Open Font License.
 
 ### AI assistance
 

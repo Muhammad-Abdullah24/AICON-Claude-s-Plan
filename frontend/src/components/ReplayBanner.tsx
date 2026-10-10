@@ -9,8 +9,8 @@ export function ReplayBanner() {
   const { t, i18n } = useTranslation()
   if (!replayDate) return null
   return (
-    <div role="status" className="bg-wheat px-4 py-2 text-sm text-ink">
-      <p className="mx-auto flex max-w-xl flex-wrap items-baseline justify-between gap-x-3">
+    <div role="status" className="border-b border-wheat/40 bg-wheat-soft px-5 py-2 text-sm text-wheat-deep lg:px-8">
+      <p className="mx-auto flex max-w-6xl flex-wrap items-baseline justify-between gap-x-3">
         <span>{t('status.replay', { date: formatDate(replayDate, i18n.language as Lang) })}</span>
         {/* A full page load, so the replay date is cleared everywhere at once. */}
         <a href="/?as_of=" className="font-semibold underline">

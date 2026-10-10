@@ -50,4 +50,12 @@ export function alternativeVerdict(a: OfferAlternative): 'noData' | 'unknown' | 
 }
 
 /** Words the offer check must never show: the reference is not a fair, true or guaranteed price. */
-export const FORBIDDEN_WORDS = [/fair (price|range)/i, /true price/i, /guaranteed/i, /\bscam\b/i, /unfair/i, /exploit/i]
+// "guaranteed" is allowed only when negated ("not a guaranteed future price"), never as a claim.
+export const FORBIDDEN_WORDS = [
+  /fair (price|range)/i,
+  /true price/i,
+  /(?<!\bnot (a )?)guaranteed/i,
+  /\bscam\b/i,
+  /unfair/i,
+  /exploit/i,
+]

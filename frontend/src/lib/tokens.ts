@@ -2,7 +2,7 @@
  * Reads colour tokens from index.css at runtime, so charts (which need plain
  * colour strings, not CSS variables) stay in step with the design system.
  */
-const NAMES = ['ink', 'wheat', 'wheat-soft', 'madder', 'field', 'slate', 'line'] as const
+const NAMES = ['ink', 'wheat', 'wheat-soft', 'wheat-deep', 'madder', 'field', 'slate', 'line'] as const
 export type TokenName = (typeof NAMES)[number]
 
 export function readTokens(): Record<TokenName, string> {
