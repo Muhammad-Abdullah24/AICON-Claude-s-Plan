@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Google News</title>
+    <item>
+      <title>Punjab sets wheat support price at Rs 3,500 per 40 kg - Dawn</title>
+      <link>https://news.google.com/rss/articles/AAA</link>
+      <pubDate>Mon, 05 Oct 2026 00:09:05 GMT</pubDate>
+      <source url="https://www.dawn.com">Dawn</source>
+    </item>
+    <item>
+      <title>Open market wheat surges to Rs 5,300 as flour prices rise - ARY News</title>
+      <link>https://news.google.com/rss/articles/BBB</link>
+      <pubDate>Wed, 07 Oct 2026 09:57:00 GMT</pubDate>
+      <source url="https://arynews.tv">ARY News</source>
+    </item>
+    <item>
+      <title>Punjab bans wheat movement, declares overpricing a crime - The News</title>
+      <link>https://news.google.com/rss/articles/CCC</link>
+      <pubDate>Tue, 06 Oct 2026 02:07:37 GMT</pubDate>
+      <source url="https://www.thenews.pk">The News</source>
+    </item>
+    <item>
+      <title>Cotton phutti arrivals pick up in south Punjab mandis - Business Recorder</title>
+      <link>https://news.google.com/rss/articles/DDD</link>
+      <pubDate>Sun, 04 Oct 2026 21:47:00 GMT</pubDate>
+      <source url="https://www.brecorder.com">Business Recorder</source>
+    </item>
+  </channel>
+</rss>
