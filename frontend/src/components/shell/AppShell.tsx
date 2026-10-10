@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, useLocation } from 'react-router'
 
@@ -7,7 +7,7 @@ import type { Lang } from '../../i18n'
 import { formatDate } from '../../lib/format'
 import { ReplayBanner } from '../ReplayBanner'
 import { Icon } from '../ui/Icon'
-import { BOTTOM_COUNT, NAV } from './nav'
+import { BOTTOM_COUNT, MORE_ITEMS, MORE_PATH, NAV } from './nav'
 
 /**
  * The responsive frame: on a desktop a fixed sidebar (left) and a slim top bar; on a phone a compact header and
@@ -158,29 +158,9 @@ function BottomNav() {
   const { t } = useTranslation()
   const { farmer } = useAppState()
   const { pathname } = useLocation()
-  // The panel remembers the screen it was opened on, so moving to another screen closes it without an effect.
-  const [openOn, setOpenOn] = useState<string | null>(null)
-  const open = openOn === pathname
-  const setOpen = (next: boolean | ((o: boolean) => boolean)) =>
-    setOpenOn((typeof next === 'function' ? next(open) : next) ? pathname : null)
-  const panelId = useId()
-  const moreRef = useRef<HTMLButtonElement>(null)
   const primary = NAV.slice(0, BOTTOM_COUNT)
-  const rest = NAV.slice(BOTTOM_COUNT)
-  const restActive = rest.some((i) => i.to === pathname)
-
-  // Escape closes the panel and gives focus back to the button.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setOpenOn(null)
-        moreRef.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  // "More" is its own page; it stays marked while one of the screens it lists is open.
+  const moreActive = pathname === MORE_PATH || MORE_ITEMS.some((i) => i.to === pathname)
 
   const tab = (active: boolean) =>
     `flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-center text-sm leading-tight ${
@@ -188,59 +168,26 @@ function BottomNav() {
     }`
 
   return (
-    <div className="lg:hidden">
-      <div
-        id={panelId}
-        hidden={!open}
-        className="fixed inset-x-3 bottom-24 z-40 rounded-2xl border border-line bg-paper p-2 shadow-(--shadow-card)"
-      >
-          <ul className="grid grid-cols-2 gap-1">
-            {rest.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end
-                  className={({ isActive }) =>
-                    `flex min-h-12 items-center gap-2 rounded-xl px-3 ${
-                      isActive ? 'bg-field-soft font-semibold text-field' : 'text-ink hover:bg-cotton'
-                    }`
-                  }
-                >
-                  <Icon name={item.icon} />
-                  <span>{navLabel(t, item.key, farmer?.name)}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-      </div>
-      <nav
-        aria-label={t('app.name')}
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur"
-      >
-        <ul className="flex gap-0.5">
-          {primary.map((item) => (
-            <li key={item.to} className="flex min-w-0 flex-1">
-              <NavLink to={item.to} end className={({ isActive }) => tab(isActive)}>
-                <Icon name={item.icon} />
-                <span className="max-w-full break-words">{navLabel(t, item.key, farmer?.name)}</span>
-              </NavLink>
-            </li>
-          ))}
-          <li className="flex min-w-0 flex-1">
-            <button
-              ref={moreRef}
-              type="button"
-              aria-expanded={open}
-              aria-controls={panelId}
-              onClick={() => setOpen((o) => !o)}
-              className={tab(open || restActive)}
-            >
-              <Icon name={open ? 'close' : 'more'} />
-              <span>{t('nav.more')}</span>
-            </button>
+    <nav
+      aria-label={t('app.name')}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+    >
+      <ul className="flex gap-0.5">
+        {primary.map((item) => (
+          <li key={item.to} className="flex min-w-0 flex-1">
+            <NavLink to={item.to} end className={({ isActive }) => tab(isActive)}>
+              <Icon name={item.icon} />
+              <span className="max-w-full break-words">{navLabel(t, item.key, farmer?.name)}</span>
+            </NavLink>
           </li>
-        </ul>
-      </nav>
-    </div>
+        ))}
+        <li className="flex min-w-0 flex-1">
+          <Link to={MORE_PATH} aria-current={moreActive ? 'page' : undefined} className={tab(moreActive)}>
+            <Icon name="more" />
+            <span>{t('nav.more')}</span>
+          </Link>
+        </li>
+      </ul>
+    </nav>
   )
 }

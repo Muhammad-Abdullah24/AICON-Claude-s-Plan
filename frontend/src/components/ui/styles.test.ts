@@ -7,7 +7,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { BOTTOM_COUNT, NAV } from '../shell/nav'
+import { BOTTOM_COUNT, MORE_ITEMS, MORE_PATH, NAV } from '../shell/nav'
 import { buttonClass, cardClass, STATUS, type StatusKind } from './styles'
 
 describe('visual primitives', () => {
@@ -35,8 +35,14 @@ describe('navigation', () => {
   it('reaches exactly the routes App.tsx defines, each once', () => {
     const app = readFileSync(join(import.meta.dirname, '..', '..', 'App.tsx'), 'utf8')
     const routes = [...app.matchAll(/<Route path="([^"*]+)"/g)].map((m) => m[1])
-    expect(NAV.map((n) => n.to).sort()).toEqual([...routes].sort())
+    // Every screen, plus the phone's "More" page that lists the screens not in the bottom bar.
+    expect([...NAV.map((n) => n.to), MORE_PATH].sort()).toEqual([...routes].sort())
     expect(new Set(NAV.map((n) => n.to)).size).toBe(NAV.length)
-    expect(BOTTOM_COUNT).toBeLessThan(NAV.length)   // the rest stay reachable from "More"
+  })
+
+  it('every screen is in the bottom bar or on the "More" page', () => {
+    const reachable = [...NAV.slice(0, BOTTOM_COUNT), ...MORE_ITEMS].map((n) => n.to)
+    expect(reachable.sort()).toEqual(NAV.map((n) => n.to).sort())
+    expect(MORE_ITEMS.map((n) => n.key)).toEqual(['history', 'margin', 'chat', 'profile'])
   })
 })

@@ -18,5 +18,9 @@ export const NAV: NavItem[] = [
   { to: '/profile', key: 'profile', icon: 'user' },
 ]
 
-/** On a phone the first four sit in the bottom bar; the rest open from "More", so no screen is lost. */
+/** On a phone the first four sit in the bottom bar; the rest are listed on the "More" page, so no screen is lost. */
 export const BOTTOM_COUNT = 4
+
+/** The "More" page: a list of the screens that are not in the phone's bottom bar. Navigation only. */
+export const MORE_PATH = '/more'
+export const MORE_ITEMS = NAV.slice(BOTTOM_COUNT)
