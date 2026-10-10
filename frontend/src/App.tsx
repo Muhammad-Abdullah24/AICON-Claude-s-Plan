@@ -10,6 +10,7 @@ import { Chat } from './pages/Chat'
 import { Compare } from './pages/Compare'
 import { Grow } from './pages/Grow'
 import { Home } from './pages/Home'
+import { Loan } from './pages/Loan'
 import { Margin } from './pages/Margin'
 import { Profile } from './pages/Profile'
 import { AppStateProvider } from './state'
@@ -37,6 +38,7 @@ export default function App() {
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/loan" element={<Loan />} />
             <Route path="/why" element={<Why />} />
             <Route path="/compare" element={<Compare />} />
             <Route path="/grow" element={<Grow />} />
