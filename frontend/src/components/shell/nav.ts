@@ -10,7 +10,6 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   { to: '/', key: 'home', icon: 'home' },
   { to: '/loan', key: 'loan', icon: 'wallet' },
-  { to: '/why', key: 'why', icon: 'why' },
   { to: '/compare', key: 'compare', icon: 'pin' },
   { to: '/grow', key: 'grow', icon: 'sprout' },
   { to: '/history', key: 'history', icon: 'trend' },

@@ -16,7 +16,6 @@ export function Home() {
 
   const actions: { to: string; label: string; icon: IconName }[] = [
     { to: '/loan', label: t('actions.loan'), icon: 'wallet' },
-    { to: '/why', label: t('actions.why'), icon: 'why' },
     { to: '/compare', label: t('actions.compare'), icon: 'pin' },
     { to: '/grow', label: t('actions.grow'), icon: 'sprout' },
     { to: '/chat', label: t('actions.ask'), icon: 'chat' },

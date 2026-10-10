@@ -17,11 +17,10 @@ import { Profile } from './pages/Profile'
 import { AppStateProvider } from './state'
 
 // The chart library is large: load it only when a chart screen opens, so Home stays fast on mobile data.
-const Why = lazy(() => import('./pages/Why').then((m) => ({ default: m.Why })))
 const History = lazy(() => import('./pages/History').then((m) => ({ default: m.History })))
 
 // Screens laid out in two columns on a desktop get the wide frame; the rest stay at a comfortable reading width.
-const WIDE = new Set(['/', '/why'])
+const WIDE = new Set(['/'])
 
 export default function App() {
   const [meta, reload] = useAsync((signal) => api.meta(signal), 'meta')
@@ -44,7 +43,6 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/loan" element={<Loan />} />
-                <Route path="/why" element={<Why />} />
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/grow" element={<Grow />} />
                 <Route path="/history" element={<History />} />

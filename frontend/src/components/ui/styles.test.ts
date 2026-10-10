@@ -43,6 +43,6 @@ describe('navigation', () => {
   it('every screen is in the bottom bar or on the "More" page', () => {
     const reachable = [...BOTTOM, ...MORE_ITEMS.map((n) => n.to)]
     expect(reachable.sort()).toEqual(NAV.map((n) => n.to).sort())
-    expect(MORE_ITEMS.map((n) => n.key)).toEqual(['why', 'history', 'margin', 'chat', 'profile'])
+    expect(MORE_ITEMS.map((n) => n.key)).toEqual(['history', 'margin', 'chat', 'profile'])
   })
 })
