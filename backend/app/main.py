@@ -24,7 +24,7 @@ from fastapi.responses import RedirectResponse
 
 from backend.app import alerts, db, services, weather
 from backend.app.auth import current_farmer, make_token, optional_farmer
-from backend.app.channels import textbee, whatsapp
+from backend.app.channels import simpapp, textbee, whatsapp
 from backend.app.chat import router as chat_router
 from backend.app.config import Settings, get_settings
 from backend.app.ids import CROP_FROM_DATA, CROP_NAMES, CROP_TO_DATA, MANDI_FROM_DATA, MANDI_NAMES, MANDI_TO_DATA
@@ -91,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.include_router(whatsapp.router)      # GET/POST /webhooks/whatsapp (Meta Cloud API)
     app.include_router(textbee.router)       # POST /api/channels/sms/textbee/webhook (TextBee SMS gateway)
+    app.include_router(simpapp.router)       # POST /api/channels/sms/simpapp/webhook (SMS Gateway API app)
     app.include_router(chat_router.router)   # POST /api/chat
 
     @app.get("/", include_in_schema=False)

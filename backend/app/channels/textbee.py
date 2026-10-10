@@ -155,20 +155,7 @@ class ReceivedSms(BaseModel):
 
 def reply_to(event: ReceivedSms, phone: str, provider: AdviceProvider, outbound: sms.SmsProvider) -> sms.SendResult:
     """One SMS reply from the shared WhatsApp/SMS conversation. `phone` is the sender in E.164."""
-    from backend.app.channels import whatsapp  # noqa: PLC0415 (whatsapp imports the chat stack)
-
-    key = event.idempotencyKey
-    msg = {"from": db.digits(phone), "id": key, "type": "text", "text": {"body": event.message}}
-    try:
-        text = sms.render(whatsapp.respond(msg, provider, chat=whatsapp.default_chat(provider)))
-    except Exception as e:  # noqa: BLE001 (the farmer gets no stack trace, and the event is not retried)
-        log.warning("TextBee event %s: no reply built (%s)", key[:8], type(e).__name__)
-        db.finish_sms_event(key, "ERROR")
-        return sms.SendResult("FAILED")
-    result = outbound.send(phone, text)
-    db.finish_sms_event(key, result.status)
-    log.info("TextBee event %s: reply to %s %s", key[:8], sms.mask_phone(phone), result.status)
-    return result
+    return sms.answer(event.idempotencyKey, phone, event.message, provider, outbound)
 
 
 def get_outbound() -> sms.SmsProvider | None:

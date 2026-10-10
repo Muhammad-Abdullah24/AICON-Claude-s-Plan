@@ -73,7 +73,9 @@ def signed(payload, secret=SECRET):
 @pytest.fixture
 def gateway(monkeypatch):
     db.reset()
-    monkeypatch.setattr(whatsapp, "MEMORY", whatsapp.Memory())
+    fresh = whatsapp.Memory()   # respond() binds MEMORY as a default argument, so empty that object
+    monkeypatch.setattr(whatsapp.MEMORY, "last", fresh.last)
+    monkeypatch.setattr(whatsapp.MEMORY, "seen", fresh.seen)
     outbox, provider, app = Outbox(), FakeProvider(), FastAPI()
     app.include_router(textbee.router)
     app.dependency_overrides[textbee.get_textbee_settings] = lambda: SETTINGS
