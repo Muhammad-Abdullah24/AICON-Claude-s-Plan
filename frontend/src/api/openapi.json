@@ -3961,6 +3961,26 @@
             ],
             "title": "Over Borrow Rs"
           },
+          "plan_comparison": {
+            "type": "string",
+            "enum": [
+              "NOT_REQUESTED",
+              "COMPARED",
+              "INSUFFICIENT_INFORMATION"
+            ],
+            "title": "Plan Comparison"
+          },
+          "net_impact_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Impact Rs"
+          },
           "extra_cost_rs": {
             "anyOf": [
               {
@@ -3971,6 +3991,39 @@
               }
             ],
             "title": "Extra Cost Rs"
+          },
+          "saving_rs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saving Rs"
+          },
+          "unpriced_options": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "kissan_card",
+                "pm_youth",
+                "akhuwat",
+                "zarkhez_e",
+                "bank",
+                "arhti"
+              ]
+            },
+            "type": "array",
+            "title": "Unpriced Options"
+          },
+          "missing_inputs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Inputs"
           },
           "warnings": {
             "items": {
@@ -4004,6 +4057,9 @@
           "ladder_interest_rs",
           "harvest_due_rs",
           "uncovered_rs",
+          "plan_comparison",
+          "unpriced_options",
+          "missing_inputs",
           "warnings"
         ],
         "title": "LoanPlanResponse"

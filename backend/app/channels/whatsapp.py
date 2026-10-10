@@ -200,6 +200,13 @@ def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY, chat: 
                 return text_message(reply.NEED_QUERY_FIRST)
             ctx = q
             return buttons_message(reply.wait_text(provider.wait_plan(q.crop_option, q.mandi, q.quantity_maund, phone)))
+        if p.kind == "loan":
+            q = memory.last.get(phone)
+            crop = (q.crop_option if q else None) or "Wheat"   # the loan planner needs only the crop (+ profile acres)
+            try:
+                return buttons_message(reply.loan_text(provider.loan_plan(crop, phone)))
+            except LookupError:
+                return text_message(reply.NEED_LAND_AREA)   # not registered, or no land area on file
         if p.kind in ("why", "compare"):
             q = memory.last.get(phone)
             if q is None:

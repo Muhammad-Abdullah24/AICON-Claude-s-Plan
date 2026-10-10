@@ -413,6 +413,7 @@ LoanWarning = Literal[
     "COST_ESTIMATE",        # always: input costs are escalated from the official table, not quoted today
     "UNCOVERED",            # the eligible options cannot cover everything the crop needs
 ]
+PlanComparison = Literal["NOT_REQUESTED", "COMPARED", "INSUFFICIENT_INFORMATION"]
 
 
 class LoanInputItem(Strict):
@@ -462,7 +463,12 @@ class LoanPlanResponse(Labelled):
     planned_lender: LenderId | None = None
     planned_interest_rs: float | None = None    # planned x planned rate x months / 12
     over_borrow_rs: float | None = None         # max(0, planned - borrow_needed)
-    extra_cost_rs: float | None = None          # planned_interest - ladder_interest
+    plan_comparison: PlanComparison             # NOT_REQUESTED | COMPARED | INSUFFICIENT_INFORMATION
+    net_impact_rs: float | None = None          # planned interest - ladder interest; None unless COMPARED
+    extra_cost_rs: float | None = None          # max(0, net_impact): the plan costs more
+    saving_rs: float | None = None              # max(0, -net_impact): the plan costs less; never a negative cost
+    unpriced_options: list[LenderId]            # options left out of the ladder because they carry no rate
+    missing_inputs: list[str]                   # what a complete answer would still need; empty = complete
     warnings: list[LoanWarning]
 
 

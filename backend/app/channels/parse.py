@@ -38,6 +38,7 @@ COMMANDS = {
     "compare": ["منڈیاں", "منڈی", "موازنہ", "mandiyan", "mandian", "compare", "2"],
     "stop": ["بند", "روکو", "stop", "band", "3"],
     "wait": ["رکھیں", "رکھنا", "رکنا", "انتظار", "wait", "hold", "rakhna", "rakho", "intezaar"],
+    "loan": ["قرض", "قرضہ", "ادھار", "loan", "qarza", "qarz", "udhaar", "udhar"],
     "start": ["شروع", "start", "shuru"],
     "help": ["مدد", "help", "hi", "hello", "salam", "سلام", "السلام علیکم", "aoa"],
 }
@@ -48,7 +49,7 @@ KG_PER_MAUND = 40
 
 @dataclass
 class Parsed:
-    kind: str                     # query | why | compare | wait | stop | start | help | unknown
+    kind: str                     # query | why | compare | wait | loan | stop | start | help | unknown
     crop_option: str | None = None
     mandi: str | None = None
     quantity_maund: float | None = None

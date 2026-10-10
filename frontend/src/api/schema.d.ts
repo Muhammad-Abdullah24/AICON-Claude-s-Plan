@@ -1159,8 +1159,21 @@ export interface components {
             planned_interest_rs?: number | null;
             /** Over Borrow Rs */
             over_borrow_rs?: number | null;
+            /**
+             * Plan Comparison
+             * @enum {string}
+             */
+            plan_comparison: "NOT_REQUESTED" | "COMPARED" | "INSUFFICIENT_INFORMATION";
+            /** Net Impact Rs */
+            net_impact_rs?: number | null;
             /** Extra Cost Rs */
             extra_cost_rs?: number | null;
+            /** Saving Rs */
+            saving_rs?: number | null;
+            /** Unpriced Options */
+            unpriced_options: ("kissan_card" | "pm_youth" | "akhuwat" | "zarkhez_e" | "bank" | "arhti")[];
+            /** Missing Inputs */
+            missing_inputs: string[];
             /** Warnings */
             warnings: ("OVER_BORROWING" | "NOT_SMALL_FARMER" | "COST_ESTIMATE" | "UNCOVERED")[];
         };

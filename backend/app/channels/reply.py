@@ -28,6 +28,8 @@ ASK = {
 }
 NOT_UNDERSTOOD = "معاف کیجیے، بات سمجھ نہیں آئی۔\n" + HELP
 NEED_QUERY_FIRST = "پہلے فصل اور منڈی بتائیں، مثلاً: گندم بہاولپور 100 من"
+NEED_LAND_AREA = ("قرض کا منصوبہ بنانے کے لیے اپنی زمین کا رقبہ (ایکڑ) درکار ہے۔\n"
+                  "پہلے ایپ میں رجسٹر ہو کر اپنی زمین کا رقبہ درج کریں۔")
 NO_DATA = "{mandi} منڈی میں {crop} کا ریٹ ہمارے پاس موجود نہیں۔ کوئی اور منڈی آزمائیں۔"
 NOT_READY = "یہ سروس ابھی تیار ہو رہی ہے۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔"
 STOPPED = "الرٹس بند کر دیے گئے۔ دوبارہ شروع کرنے کے لیے 'شروع' لکھیں۔"
@@ -137,5 +139,42 @@ def wait_text(plan: Mapping) -> str:
     if h and h.get("n"):
         lines.append(f"پچھلے {h['n']} سالوں میں رکنا {h['wins']} بار فائدہ مند رہا")
     lines += [WAIT_WARNING_UR[w] for w in plan.get("warnings", []) if w in WAIT_WARNING_UR]
+    lines.append(DISCLAIMER)
+    return clip("\n".join(lines))
+
+
+# ---------------------------------------------------------------- loan plan (task B3; docs/PIVOT.md 3.4)
+
+LOAN_WARNING_UR = {
+    "OVER_BORROWING": "⚠️ آپ ضرورت سے زیادہ قرض لے رہے ہیں",
+    "NOT_SMALL_FARMER": "یہ منصوبہ چھوٹے کسان (12.5 ایکڑ تک) کے لیے ہے",
+    "COST_ESTIMATE": "لاگت کا اندازہ سرکاری جدول سے لگایا گیا ہے",
+    "UNCOVERED": "⚠️ دستیاب قرضے پوری ضرورت پوری نہیں کرتے",
+}
+
+
+def loan_text(plan: Mapping) -> str:
+    """One WhatsApp reply from the loan plan (docs/PIVOT.md 3.4): what the crop needs, the cheapest money first,
+    what falls due at harvest, and any over-borrowing. Every number comes from the plan; this only lays it out.
+    `plan` carries `crop_option` (a data name, added by the provider) and the option names for the ladder."""
+    crop = CROP_UR.get(plan["crop_option"], plan["crop_option"])
+    names = {o["id"]: o["name_ur"] for o in plan.get("options", [])}
+    lines = [f"{crop}: قرض کا منصوبہ ({plan['acres']:g} ایکڑ)",
+             f"فصل کو چاہیے: {rs(plan['input_need_rs'])}"]
+    if plan.get("savings_rs"):
+        lines.append(f"آپ کے پاس: {rs(plan['savings_rs'])}")
+    lines.append(f"قرض درکار: {rs(plan['borrow_needed_rs'])}")
+    if plan.get("ladder"):
+        lines.append("سستا قرض پہلے:")
+        for s in plan["ladder"]:
+            cost = "بلا سود" if s["interest_rs"] == 0 else f"{rs(s['interest_rs'])} سود"
+            lines.append(f"• {names.get(s['id'], s['id'])}: {rs(s['amount_rs'])} ({cost})")
+    if plan.get("uncovered_rs"):
+        lines.append(f"ابھی کمی: {rs(plan['uncovered_rs'])}")
+    lines.append(f"کٹائی پر واپسی: {rs(plan['harvest_due_rs'])}")
+    if plan.get("over_borrow_rs"):
+        extra = f"، {rs(plan['extra_cost_rs'])} زیادہ لاگت" if plan.get("extra_cost_rs") else ""
+        lines.append(f"آپ کے منصوبے میں {rs(plan['over_borrow_rs'])} فالتو قرض{extra}")
+    lines += [LOAN_WARNING_UR[w] for w in plan.get("warnings", []) if w in LOAN_WARNING_UR]
     lines.append(DISCLAIMER)
     return clip("\n".join(lines))
