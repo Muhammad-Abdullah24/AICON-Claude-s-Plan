@@ -255,6 +255,19 @@ def loan_plan(acres: float, input_items: list[dict], savings_rs: float, options:
 
 ## 5. Task cards (each one session)
 
+> **Status, 10 Oct 15:30 (Abd's review of `main`).** Hamza merged batches 1–3 of the earlier plan this morning, before
+> v3 was written. **Already done, don't redo:** H1, H2, H3, the D2 rates (in `FACTS.md`), B1, B2, B3, B4, F1, F2, F3, F4.
+> The full suite is green on `main`.
+>
+> **Still open:** L2a, D1, D2 (loan options only), L1, L3, the wait-plan additions in 3.4 (household spending, other
+> income, cash need from loans), the fixes below, and D4 (optional).
+>
+> | Card | Who | Fix found in review |
+> |---|---|---|
+> | **N1** | Hamza | **Demo-critical.** The news price check read a **flour** headline ("Flour price hits Rs5,...", Daily Pakistan, 10 Oct) as a wheat price of Rs 5,200, which raises a false `NEWS_PRICE_CONFLICT`. Extract a price only when the text is about wheat/gandum **and** gives it per 40 kg / maund; skip atta/flour, bags and per-kg prices. Add a test with that headline. |
+> | **E1** | Usman | HOLD_ALL fires on a median of **+Rs 13/maund** (wheat, Bahawalpur, own money, today), which is noise. Proposal: hold only if `wins/n >= 0.6` **and** median net is at least 1% of today's price; otherwise SELL_ALL, with the history still shown. Team call: say yes or no in chat. |
+> | **DM** | Abd | The replay date moves to **10 May 2026**. On 27 Apr the Bahawalpur backtest starts in April and says SELL_ALL. On 10 May, own money in a godown with 5 months gives HOLD (7 of 9 seasons) and arhti money in bags gives SELL, which is the contrast we want. |
+
 Do the waves in order. Within a wave, the three people work in parallel on different files. One PR per card, named
 `<name>/P-<card>`. Abd reviews and merges (rule 2).
 
