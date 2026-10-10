@@ -244,6 +244,9 @@ def crop_plan(crops: Iterable[Mapping], land_area_acres: float) -> dict:
             "years_of_history": ratio.get("n_years"),
             "prices_as_of": c.get("prices_as_of"),
             "is_stale": bool(c.get("is_stale")),
+            "is_frozen": bool(c.get("is_frozen")),
+            "enough_years": bool(ratio.get("enough_years")),
+            "season": c.get("season"),
             "is_estimate": True,
         })
     ranked.sort(key=lambda r: r["profit_per_acre"], reverse=True)

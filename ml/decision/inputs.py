@@ -184,14 +184,19 @@ def post_harvest_ratios(crop_option: str, mandi: str) -> list[dict]:
 def crop_plan_inputs(mandi: str, as_of: date | None = None) -> list[dict]:
     """Everything crop_plan() needs for every crop option at one mandi, using prices on or before `as_of`."""
     out = []
-    for crop_option in sorted({r["crop_option"] for r in _rows("crops.csv")}):
+    seasons = {r["crop_option"]: r["season"] for r in _rows("crops.csv")}
+    for crop_option in sorted(seasons):
         latest = latest_price(crop_option, mandi, as_of)
         ratio = harvest_ratio(crop_option, mandi, int(latest[1][5:7])) if latest else None
         out.append({
             "crop_option": crop_option,
+            "season": seasons[crop_option],   # RABI / KHARIF: What to Grow compares crops within one season (F4)
             "latest_price": latest[0] if latest else None,
             "prices_as_of": latest[1] if latest else None,
             "is_stale": is_stale(crop_option, mandi, as_of),
+            # The latest price sits in a stretch where AMIS repeated one price for 28+ days (A12), so it may not
+            # be a real quote. Only stretches already in frozen_stretches.csv are known.
+            "is_frozen": bool(latest) and _in_frozen_stretch(crop_option, amis_name(mandi), latest[1]),
             "harvest_ratio": ratio,
             **crop_economics(crop_option),
         })
