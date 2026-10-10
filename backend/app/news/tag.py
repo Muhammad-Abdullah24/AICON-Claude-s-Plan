@@ -92,19 +92,16 @@ def _llm_batch(items: list[dict], llm) -> list[dict]:
         raise ValueError("LLM returned the wrong number of tags")
     out = []
     for item, tag in zip(items, parsed, strict=True):
-        price = tag.get("price_rs_per_40kg")
-        # Trust the model's price only if it is really in the headline (no invented numbers) and in the sane band.
-        in_text = isinstance(price, int) and str(price) in item["title"].replace(",", "")
-        in_band = isinstance(price, int) and config.PRICE_MIN_RS_PER_40KG <= price <= config.PRICE_MAX_RS_PER_40KG
-        if not (in_text and in_band):
-            price = extract_price(item["title"])
+        # The price is always the flour-safe rules extractor's (N1), never the model's own number. Gemini reads a
+        # flour/atta price ("...as flour hits Rs 5,200 per 40 kg") as the crop's and raises a false conflict;
+        # extract_price keeps a price only when the headline is about the raw grain and gives it per 40 kg / maund.
         out.append({
             **item,
             "tag": tag["tag"] if tag.get("tag") in config.TAGS else "OTHER",
             "crop": tag["crop"] if tag.get("crop") in config.CROP_IDS else None,
             "summary_en": (tag.get("summary_en") or item["title"]).strip(),
             "summary_ur": (tag.get("summary_ur") or item["title"]).strip(),
-            "price_rs_per_40kg": price,
+            "price_rs_per_40kg": extract_price(item["title"]),
         })
     return out
 

@@ -76,21 +76,26 @@ def test_tag_items_falls_back_to_rules_when_the_llm_is_down():
     assert tagged_by == "rules" and len(tagged) == len(items)
 
 
-def test_tag_items_trusts_the_llm_only_for_a_price_in_the_text():
+def test_tag_items_takes_the_price_from_the_rules_not_the_llms_own_number():
+    # N1: the price always comes from the flour-safe extractor, never the model. The model here mis-reads a
+    # flour price as wheat (5,200) and invents a number (9999); neither must become a crop price.
     import json as _json
 
     class Fake:
         def generate(self, system, user):
-            # One object per headline in the batch; claims a price that is NOT in the text.
             n = user.count("\n") + 1
-            return _json.dumps([{"tag": "PRICE_REPORT", "crop": "wheat", "summary_en": "x",
-                                 "summary_ur": "ایکس", "price_rs_per_40kg": 9999} for _ in range(n)])
+            prices = [9999, 5200]
+            return _json.dumps([{"tag": "PRICE_REPORT", "crop": "wheat", "summary_en": "x", "summary_ur": "ایکس",
+                                 "price_rs_per_40kg": prices[i % len(prices)]} for i in range(n)])
 
     items = [{"title": "Wheat support price at Rs 3,500 per 40 kg", "url": "u", "source": "s",
-              "published": "2026-10-05"}]
+              "published": "2026-10-05"},
+             {"title": "CM approves subsidy as Flour price hits Rs 5,200 per 40 kg", "url": "u2", "source": "s",
+              "published": "2026-10-10"}]
     tagged, tagged_by = tag.tag_items(items, lambda: Fake())
     assert tagged_by == "llm"
-    assert tagged[0]["price_rs_per_40kg"] == 3500   # 9999 wasn't in the headline, so it was dropped for the real one
+    assert tagged[0]["price_rs_per_40kg"] == 3500    # real wheat price, kept
+    assert tagged[1]["price_rs_per_40kg"] is None     # flour, not wheat: no false crop price
 
 
 # ---------------------------------------------------------------- service (cache + snapshot)
