@@ -230,10 +230,13 @@ def offer_text(crop_option: str, mandi: str, r: Mapping) -> str:
 
 
 def offer_compare_text(crop_option: str, r: Mapping) -> str:
-    """Other mandis after estimated transport, against the buyer's offer."""
-    lines = [f"{CROP_UR.get(crop_option, crop_option)}: آفر {rs(r['buyer_offer_price'])} کے مقابلے میں دوسری منڈیاں"]
+    """Every mandi after estimated transport (the farmer's own first), against the buyer's offer."""
+    crop = CROP_UR.get(crop_option, crop_option)
+    lines = [f"{crop}: آفر {rs(r['buyer_offer_price'])} کے مقابلے میں منڈیاں (کرایہ نکال کر)"]
     for a in r["alternative_mandis"]:
         name, v = MANDI_UR.get(a["mandi"], a["mandi"]), alternative_verdict(a)
+        if a.get("is_own_mandi"):
+            name += " (آپ کی منڈی)"
         if v == "noData":
             lines.append(f"• {name}: {ALT_VERDICT_UR[v]}")
             continue

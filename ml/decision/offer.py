@@ -69,16 +69,16 @@ def _position(offer: float, low: float, high: float) -> tuple[str, float]:
     return WITHIN, 0.0
 
 
-def _alternative(alt: Mapping, offer: float, quantity: float, min_days: int) -> dict:
+def _alternative(alt: Mapping, offer: float, quantity: float, min_days: int, own: bool = False) -> dict:
     if alt.get("reference_price") is None:
-        return {"mandi": alt["mandi"], "has_data": False}
+        return {"mandi": alt["mandi"], "has_data": False, "is_own_mandi": own}
     price, transport = float(alt["reference_price"]), float(alt.get("transport_cost") or 0.0)
     net = price - transport
     window = alt.get("window_prices") or [price]   # the same rules as the farmer's own mandi
     strength, _ = reference_strength(window, bool(alt.get("is_stale")), alt.get("price_unchanged_since"), min_days)
     per = net - offer
     return {
-        "mandi": alt["mandi"], "has_data": True,
+        "mandi": alt["mandi"], "has_data": True, "is_own_mandi": own,
         "reference_price": round(price, 2), "prices_as_of": alt.get("prices_as_of"),
         "is_stale": bool(alt.get("is_stale")), "price_unchanged_since": alt.get("price_unchanged_since"),
         "reference_days": len(window), "transport_cost": round(transport, 2), "net_after_transport": round(net, 2),
@@ -94,13 +94,15 @@ def _alternative(alt: Mapping, offer: float, quantity: float, min_days: int) -> 
 def offer_reference(offer_price: float, quantity_maund: float, window_prices: Sequence[float],
                     reference_price: float, *, is_stale: bool, price_unchanged_since: str | None = None,
                     is_synthetic: bool = False, own_transport_cost: float = 0.0, arhti_pct: float | None = None,
-                    alternatives: Iterable[Mapping] = (),
+                    alternatives: Iterable[Mapping] = (), mandi: str | None = None,
+                    prices_as_of: str | None = None,
                     min_days: int = config.OFFER_MIN_REFERENCE_DAYS) -> dict:
     """The offer against recent reference prices at the farmer's mandi, plus the other mandis after transport.
 
     window_prices: every AMIS price reported at this mandi in the window (one per reported day).
     reference_price: the latest of them. alternatives: other mandis as {mandi, reference_price (None if no data),
-    prices_as_of, is_stale, price_unchanged_since, transport_cost, window_prices}.
+    prices_as_of, is_stale, price_unchanged_since, transport_cost, window_prices}. When `mandi` is given, the
+    farmer's own mandi is the first row of `alternative_mandis` (is_own_mandi), worked out the same way.
     """
     offer = _positive("offer_price", offer_price)
     qty = _positive("quantity_maund", quantity_maund)
@@ -112,6 +114,11 @@ def offer_reference(offer_price: float, quantity_maund: float, window_prices: Se
     position, gap = _position(offer, low, high)
 
     alts = [_alternative(a, offer, qty, min_days) for a in alternatives]
+    if mandi is not None:
+        own = {"mandi": mandi, "reference_price": ref, "prices_as_of": prices_as_of, "is_stale": is_stale,
+               "price_unchanged_since": price_unchanged_since, "transport_cost": own_transport_cost,
+               "window_prices": list(window_prices)}
+        alts.insert(0, _alternative(own, offer, qty, min_days, own=True))
     limitations = [_STRENGTH_LIMITATION[w] for w in weaknesses]
     commission = None
     if arhti_pct is not None:
@@ -120,7 +127,7 @@ def offer_reference(offer_price: float, quantity_maund: float, window_prices: Se
         limitations.append("COMMISSION_FARMER_ESTIMATE")
     else:
         limitations.append("COMMISSION_NOT_INCLUDED")
-    if alts:
+    if any(not a.get("is_own_mandi") for a in alts):
         limitations.append("TRANSPORT_IS_ESTIMATE")
     if is_synthetic:
         limitations.append("SYNTHETIC_DATA")

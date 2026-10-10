@@ -205,6 +205,11 @@ class CompareRow(Strict):
     gain_vs_preferred: int | None = None
     prices_as_of: dt.date | None = None
     is_stale: bool | None = None
+    price_unchanged_since: dt.date | None = None
+    reference_days: int | None = None             # AMIS reported days in the last 14
+    reference_strength: Literal["STRONG", "LIMITED_STALE", "LIMITED_FROZEN", "LIMITED_FEW_DAYS",
+                                "LIMITED_SAME_PRICE"] | None = None
+    is_best: bool = False                         # only the top row, and only on a strong reference
 
 
 class CompareResponse(Labelled):
@@ -242,6 +247,7 @@ class OfferCommission(Strict):
 class OfferAlternative(Strict):
     mandi: MandiId
     has_data: bool
+    is_own_mandi: bool = False                    # the farmer's own mandi (first row; transport from the table)
     reference_price: float | None = None
     prices_as_of: dt.date | None = None
     is_stale: bool | None = None
@@ -283,7 +289,7 @@ class OfferCheckResponse(Labelled):
     total_difference_vs_range: int
     estimated_transport_cost: float         # to the farmer's own mandi (estimate)
     estimated_commission: OfferCommission | None
-    alternative_mandis: list[OfferAlternative]
+    alternative_mandis: list[OfferAlternative]   # the farmer's own mandi first, then the others
     limitations: list[OfferLimitation]
     # Deprecated aliases for older clients; do not show the word "fair" to farmers.
     offer_price: float = Field(json_schema_extra={"deprecated": True})
@@ -293,6 +299,43 @@ class OfferCheckResponse(Labelled):
     difference_per_maund: float = Field(json_schema_extra={"deprecated": True})
     difference_total: int = Field(json_schema_extra={"deprecated": True})
     prices_as_of: dt.date = Field(json_schema_extra={"deprecated": True})
+
+
+class ReferenceResponse(Labelled):
+    """The recent reported AMIS reference at a mandi, without any offer (what an offer check compares with)."""
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    reference_price: float
+    reference_price_as_of: dt.date
+    reference_range_low: float
+    reference_range_high: float
+    reference_days: int
+    window_days: int
+    is_stale: bool
+    price_unchanged_since: dt.date | None
+    reference_strength: ReferenceStrength
+    limitations: list[Literal["STALE_REFERENCE", "FROZEN_REFERENCE", "FEW_REFERENCE_DAYS", "SAME_PRICE_ALL_WINDOW"]]
+
+
+class ChannelStatus(Strict):
+    """Whether each channel is set up on this server. Flags only: no number, token or setting value."""
+    whatsapp_configured: bool
+    sms_provider_configured: bool
+    voice_notes_enabled: bool
+
+
+class ChannelPreview(Strict):
+    """What WhatsApp and SMS would send, rendered by the channels' own code. Nothing is sent."""
+    whatsapp_menu: str
+    sms_menu: str
+    menu_choices: list[str]                   # codes in menu order: offer, compare, why, alerts_on, alerts_off, menu
+    whatsapp_offer: str | None = None
+    whatsapp_offer_buttons: list[str] = Field(default_factory=list)
+    sms_offer: str | None = None
+    sms_offer_parts: int | None = None        # SMS parts the offer reply takes
+    prices_as_of: dt.date | None = None
+    status: ChannelStatus
 
 
 class MarginResponse(Labelled):

@@ -39,11 +39,11 @@ function wheatBahawalpur(over: Partial<Result> = {}): Result {
     total_difference_vs_reference: -30600, difference_vs_range_per_maund: -306, total_difference_vs_range: -30600,
     estimated_transport_cost: 0, estimated_commission: null,
     alternative_mandis: [
-      { mandi: 'vehari', has_data: true, reference_price: 3475.2, prices_as_of: '2026-07-17', is_stale: true,
+      { mandi: 'vehari', has_data: true, is_own_mandi: false, reference_price: 3475.2, prices_as_of: '2026-07-17', is_stale: true,
         price_unchanged_since: null, reference_days: 1, transport_cost: 165.1, net_after_transport: 3310.1,
         difference_vs_offer_per_maund: -203.9, difference_vs_offer_total: -20390, reference_strength: 'LIMITED_STALE',
         better_after_transport: null, higher_quote_not_better: false },
-      { mandi: 'rahim_yar_khan', has_data: true, reference_price: 3475.2, prices_as_of: '2026-10-02', is_stale: false,
+      { mandi: 'rahim_yar_khan', has_data: true, is_own_mandi: false, reference_price: 3475.2, prices_as_of: '2026-10-02', is_stale: false,
         price_unchanged_since: null, reference_days: 11, transport_cost: 291.2, net_after_transport: 3184,
         difference_vs_offer_per_maund: -330, difference_vs_offer_total: -33000,
         reference_strength: 'LIMITED_SAME_PRICE', better_after_transport: null, higher_quote_not_better: false },
@@ -99,7 +99,7 @@ describe('display helpers', () => {
     expect(alternativeVerdict({ ...vehari, better_after_transport: false, higher_quote_not_better: true })).toBe(
       'higherNotBetter',
     )
-    expect(alternativeVerdict({ mandi: 'vehari', has_data: false })).toBe('noData')
+    expect(alternativeVerdict({ mandi: 'vehari', has_data: false, is_own_mandi: false })).toBe('noData')
   })
 })
 

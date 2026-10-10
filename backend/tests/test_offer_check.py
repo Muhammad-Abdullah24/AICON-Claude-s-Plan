@@ -81,7 +81,10 @@ def test_alternatives_use_the_same_transport_and_prices_as_compare_mandis(client
     offer = post(client, offer_price=3514, quantity_maund=100).json()
     compare = client.get("/api/compare-mandis", params={**WHEAT_BWP, "quantity_maund": 100}).json()
     rows = {r["mandi"]: r for r in compare["rows"]}
-    assert {a["mandi"] for a in offer["alternative_mandis"]} == set(rows) - {"bahawalpur"}
+    own, *others = offer["alternative_mandis"]
+    assert own["is_own_mandi"] is True and own["mandi"] == "bahawalpur"
+    assert not any(a["is_own_mandi"] for a in others)
+    assert {a["mandi"] for a in offer["alternative_mandis"]} == set(rows)   # every mandi, the farmer's own first
     for a in offer["alternative_mandis"]:
         r = rows[a["mandi"]]
         assert a["reference_price"] == r["price"] and a["transport_cost"] == r["transport_cost"]

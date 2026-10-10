@@ -27,15 +27,15 @@ export function Compare() {
         {state.status === 'loading' && <Loading />}
         {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
         {state.status === 'ok' &&
-          state.data.rows.map((r, i) => (
+          state.data.rows.map((r) => (
             <article
               key={r.mandi}
-              className={`rounded-2xl bg-paper p-4 shadow-sm ${i === 0 && r.has_data ? 'border-2 border-field' : ''}`}
+              className={`rounded-2xl bg-paper p-4 shadow-sm ${r.is_best ? 'border-2 border-field' : ''}`}
             >
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="text-lg font-bold">
                   {mandiName(r.mandi)}
-                  {i === 0 && r.has_data && (
+                  {r.is_best && (
                     <span className="ms-2 rounded bg-field px-2 text-sm text-paper">{t('compare.best')}</span>
                   )}
                 </h3>

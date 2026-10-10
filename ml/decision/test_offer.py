@@ -101,7 +101,7 @@ def test_a_weak_alternative_is_never_called_better(kw, strength):
 
 def test_mandi_without_a_price():
     [a] = check(3600, alternatives=[{"mandi": "RahimYarKhan", "reference_price": None}])["alternative_mandis"]
-    assert a == {"mandi": "RahimYarKhan", "has_data": False}
+    assert a == {"mandi": "RahimYarKhan", "has_data": False, "is_own_mandi": False}
 
 
 # ---------------------------------------------------------------- commission and assumptions

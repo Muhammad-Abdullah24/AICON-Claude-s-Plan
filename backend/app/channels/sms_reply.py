@@ -254,7 +254,8 @@ def offer_compare_sms(crop_option: str, r: Mapping, choices=()) -> str:
             items.append(f"{SHORT_RU.get(a['mandi'], a['mandi'])} {ALT_RU[v]};")
             continue
         old = " (purana)" if a.get("is_stale") else ""
-        items.append(f"{SHORT_RU.get(a['mandi'], a['mandi'])} net {rs(a['net_after_transport'])}, "
+        own = " (apni)" if a.get("is_own_mandi") else ""
+        items.append(f"{SHORT_RU.get(a['mandi'], a['mandi'])}{own} net {rs(a['net_after_transport'])}, "
                      f"{signed_rs(a['difference_vs_offer_total'])}{old}, {ALT_RU[v]};")
     crop = SHORT_RU.get(crop_option, crop_option)
     head = f"{BRAND} {crop} offer {rs(r['buyer_offer_price'])} vs mandiyan (kiraya andaza):"

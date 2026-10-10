@@ -595,6 +595,206 @@
         }
       }
     },
+    "/api/reference": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Reference",
+        "operationId": "reference_api_reference_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/preview": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Channels Preview",
+        "operationId": "channels_preview_api_channels_preview_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "quantity_maund",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maund. Default: profile, else 100.",
+              "title": "Quantity Maund"
+            },
+            "description": "Maund. Default: profile, else 100."
+          },
+          {
+            "name": "offer_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Offer Price"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/margin": {
       "get": {
         "tags": [
@@ -1538,6 +1738,115 @@
         ],
         "title": "AlertRunResponse"
       },
+      "ChannelPreview": {
+        "properties": {
+          "whatsapp_menu": {
+            "type": "string",
+            "title": "Whatsapp Menu"
+          },
+          "sms_menu": {
+            "type": "string",
+            "title": "Sms Menu"
+          },
+          "menu_choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Menu Choices"
+          },
+          "whatsapp_offer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Offer"
+          },
+          "whatsapp_offer_buttons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Whatsapp Offer Buttons"
+          },
+          "sms_offer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sms Offer"
+          },
+          "sms_offer_parts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sms Offer Parts"
+          },
+          "prices_as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices As Of"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChannelStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "whatsapp_menu",
+          "sms_menu",
+          "menu_choices",
+          "status"
+        ],
+        "title": "ChannelPreview",
+        "description": "What WhatsApp and SMS would send, rendered by the channels' own code. Nothing is sent."
+      },
+      "ChannelStatus": {
+        "properties": {
+          "whatsapp_configured": {
+            "type": "boolean",
+            "title": "Whatsapp Configured"
+          },
+          "sms_provider_configured": {
+            "type": "boolean",
+            "title": "Sms Provider Configured"
+          },
+          "voice_notes_enabled": {
+            "type": "boolean",
+            "title": "Voice Notes Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "whatsapp_configured",
+          "sms_provider_configured",
+          "voice_notes_enabled"
+        ],
+        "title": "ChannelStatus",
+        "description": "Whether each channel is set up on this server. Flags only: no number, token or setting value."
+      },
       "ChatRequest": {
         "properties": {
           "question": {
@@ -1830,6 +2139,52 @@
               }
             ],
             "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Days"
+          },
+          "reference_strength": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STRONG",
+                  "LIMITED_STALE",
+                  "LIMITED_FROZEN",
+                  "LIMITED_FEW_DAYS",
+                  "LIMITED_SAME_PRICE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Strength"
+          },
+          "is_best": {
+            "type": "boolean",
+            "title": "Is Best",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -3107,6 +3462,11 @@
             "type": "boolean",
             "title": "Has Data"
           },
+          "is_own_mandi": {
+            "type": "boolean",
+            "title": "Is Own Mandi",
+            "default": false
+          },
           "reference_price": {
             "anyOf": [
               {
@@ -3686,6 +4046,128 @@
           "direction"
         ],
         "title": "Reason"
+      },
+      "ReferenceResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "reference_price": {
+            "type": "number",
+            "title": "Reference Price"
+          },
+          "reference_price_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Reference Price As Of"
+          },
+          "reference_range_low": {
+            "type": "number",
+            "title": "Reference Range Low"
+          },
+          "reference_range_high": {
+            "type": "number",
+            "title": "Reference Range High"
+          },
+          "reference_days": {
+            "type": "integer",
+            "title": "Reference Days"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_strength": {
+            "type": "string",
+            "enum": [
+              "STRONG",
+              "LIMITED_STALE",
+              "LIMITED_FROZEN",
+              "LIMITED_FEW_DAYS",
+              "LIMITED_SAME_PRICE"
+            ],
+            "title": "Reference Strength"
+          },
+          "limitations": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "STALE_REFERENCE",
+                "FROZEN_REFERENCE",
+                "FEW_REFERENCE_DAYS",
+                "SAME_PRICE_ALL_WINDOW"
+              ]
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "unit",
+          "reference_price",
+          "reference_price_as_of",
+          "reference_range_low",
+          "reference_range_high",
+          "reference_days",
+          "window_days",
+          "is_stale",
+          "price_unchanged_since",
+          "reference_strength",
+          "limitations"
+        ],
+        "title": "ReferenceResponse",
+        "description": "The recent reported AMIS reference at a mandi, without any offer (what an offer check compares with)."
       },
       "SeasonalPoint": {
         "properties": {

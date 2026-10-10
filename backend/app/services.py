@@ -290,12 +290,19 @@ def compare_mandis(crop_option: str, mandi: str, quantity_maund: float = 100,
     rows = []
     for r in ranked:
         if not r["has_price"]:
-            rows.append({"mandi": r["mandi"], "has_data": False})
+            rows.append({"mandi": r["mandi"], "has_data": False, "is_best": False})
             continue
         price_date = found[r["mandi"]][1]
+        ref = reference(crop_option, r["mandi"], as_of)
         rows.append({"mandi": r["mandi"], "price": r["current_price"], "transport_cost": r["transport_cost"] or 0.0,
                      "net_price": r["net_price"], "prices_as_of": price_date, "is_stale": is_stale(price_date, as_of),
-                     "has_data": True, "gain_vs_preferred": _round((r["net_price"] - own) * quantity_maund)})
+                     "has_data": True, "gain_vs_preferred": _round((r["net_price"] - own) * quantity_maund),
+                     "price_unchanged_since": ref["price_unchanged_since"], "reference_days": ref["reference_days"],
+                     "reference_strength": ref["reference_strength"], "is_best": False})
+    # "Best" only when the highest net price rests on a strong reference; a stale, frozen, thin or repeated price
+    # is never called best, and then no mandi is.
+    if rows and rows[0].get("has_data") and rows[0]["reference_strength"] == "STRONG":
+        rows[0]["is_best"] = True
     return rows
 
 
@@ -326,41 +333,59 @@ def _window(points: list[tuple[str, float]]) -> list[float]:
     return [p for d, p in points if (last - date.fromisoformat(d)).days < OFFER_WINDOW_DAYS]
 
 
-def offer_check(crop_option: str, mandi: str, offer: float, quantity_maund: float = 100,
-                as_of: date | None = None, arhti_pct: float | None = None) -> dict:
-    """A buyer's offer against recent AMIS *reference* prices at this mandi (never a fair or guaranteed price),
-    plus the other mandis after estimated transport. The offer is a gross quoted price; `arhti_pct` is shown only
-    if the farmer entered it and never changes the result. The classification and the reference-strength rules
-    (stale, frozen, too few days, one repeated price) are Owner B's `ml.decision.offer_reference`."""
+def _reference_inputs(crop_option: str, mandi: str, as_of: date | None) -> dict:
+    """The AMIS reference at one mandi on or before `as_of`: latest price and date, the window, stale, frozen."""
     series = _series(crop_option, mandi)
     points = _upto(_data()["daily"][series], as_of)
     if not points:
-        raise LookupError("no prices")
-    last_day = points[-1][0]
-    window = _window(points)
-    stale, frozen = is_stale(last_day, as_of), frozen_since(series, last_day)
+        raise LookupError(f"no AMIS price for {crop_option} at {mandi} on or before {as_of}")
+    day, price = points[-1]
+    return {"reference_price": price, "prices_as_of": day, "window_prices": _window(points),
+            "is_stale": is_stale(day, as_of), "price_unchanged_since": frozen_since(series, day)}
+
+
+def reference(crop_option: str, mandi: str, as_of: date | None = None) -> dict:
+    """The recent reported reference at a mandi, without any offer: what the offer check would compare with,
+    and how far it can be leaned on (Owner B's `ml.decision.reference_strength`)."""
+    r = _reference_inputs(crop_option, mandi, as_of)
+    strength, weak = decision.reference_strength(r["window_prices"], r["is_stale"], r["price_unchanged_since"])
+    codes = {"LIMITED_STALE": "STALE_REFERENCE", "LIMITED_FROZEN": "FROZEN_REFERENCE",
+             "LIMITED_FEW_DAYS": "FEW_REFERENCE_DAYS", "LIMITED_SAME_PRICE": "SAME_PRICE_ALL_WINDOW"}
+    return {"reference_price": r["reference_price"], "reference_price_as_of": r["prices_as_of"],
+            "reference_range_low": min(r["window_prices"]), "reference_range_high": max(r["window_prices"]),
+            "reference_days": len(r["window_prices"]), "window_days": OFFER_WINDOW_DAYS,
+            "is_stale": r["is_stale"], "price_unchanged_since": r["price_unchanged_since"],
+            "reference_strength": strength, "limitations": [codes[w] for w in weak]}
+
+
+def offer_check(crop_option: str, mandi: str, offer: float, quantity_maund: float = 100,
+                as_of: date | None = None, arhti_pct: float | None = None) -> dict:
+    """A buyer's offer against recent AMIS *reference* prices at this mandi (never a fair or guaranteed price),
+    plus every mandi after estimated transport (the farmer's own first). The offer is a gross quoted price;
+    `arhti_pct` is shown only if the farmer entered it and never changes the result. The classification and the
+    reference-strength rules (stale, frozen, too few days, one repeated price) are Owner B's
+    `ml.decision.offer_reference`."""
+    own = _reference_inputs(crop_option, mandi, as_of)
     transport = _data()["transport"]
     alternatives = []
     for other in fcfg.CITY_ID:
         if other == mandi:
             continue
         try:
-            price, day = latest_price(crop_option, other, as_of)
+            r = _reference_inputs(crop_option, other, as_of)
         except LookupError:
             alternatives.append({"mandi": other, "reference_price": None})
             continue
-        alternatives.append({"mandi": other, "reference_price": price, "prices_as_of": day,
-                             "is_stale": is_stale(day, as_of),
-                             "price_unchanged_since": frozen_since(_series(crop_option, other), day),
-                             "transport_cost": transport[(DISPLAY[mandi], other)],
-                             "window_prices": _window(_upto(_data()["daily"][_series(crop_option, other)], as_of))})
-    r = decision.offer_reference(offer, quantity_maund, window, points[-1][1], is_stale=stale,
-                                 price_unchanged_since=frozen, own_transport_cost=transport[(DISPLAY[mandi], mandi)],
-                                 arhti_pct=arhti_pct, alternatives=alternatives)
+        alternatives.append({"mandi": other, **r, "transport_cost": transport[(DISPLAY[mandi], other)]})
+    r = decision.offer_reference(offer, quantity_maund, own["window_prices"], own["reference_price"],
+                                 is_stale=own["is_stale"], price_unchanged_since=own["price_unchanged_since"],
+                                 own_transport_cost=transport[(DISPLAY[mandi], mandi)], arhti_pct=arhti_pct,
+                                 alternatives=alternatives, mandi=mandi, prices_as_of=own["prices_as_of"])
     legacy = {"BELOW_REFERENCE_RANGE": "below", "WITHIN_REFERENCE_RANGE": "fair", "ABOVE_REFERENCE_RANGE": "above"}
+    last_day = own["prices_as_of"]
     return {
-        **r, "reference_price_as_of": last_day, "window_days": OFFER_WINDOW_DAYS, "is_stale": stale,
-        "price_unchanged_since": frozen,
+        **r, "reference_price_as_of": last_day, "window_days": OFFER_WINDOW_DAYS, "is_stale": own["is_stale"],
+        "price_unchanged_since": own["price_unchanged_since"],
         # Deprecated aliases (kept for older clients): the range is a reference, not a "fair" range.
         "fair_low": r["reference_range_low"], "fair_high": r["reference_range_high"],
         "verdict": legacy[r["range_position"]], "difference_per_maund": r["difference_vs_range_per_maund"],
