@@ -12,12 +12,7 @@ Environment (.env, never committed):
 
 Advice comes from the same service layer as the web app (interface I6, backend/app/services.py, Owner C),
 so WhatsApp and the web always give the same answer. Until that module exists, replies say so honestly.
-Phone numbers and message text are never logged.
-
-Conversation (task A11): free text ("گندم بہاولپور 100 من") answers at once; "0" opens a numbered menu
-(1 advice, 2 compare, 3 why, 4/5 alerts on/off) that guides crop, rice variety, mandi and quantity. Bare numbers
-are read against the farmer's current step, kept in SQLite for 30 minutes (backend/app/channels/conversation.py).
-Meta's retried deliveries are recognised by message id, also in SQLite, so a restart does not answer twice.
+Phone numbers are never logged.
 """
 
 from __future__ import annotations
@@ -28,18 +23,17 @@ import json
 import logging
 import os
 import urllib.request
+from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from typing import Protocol
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from backend.app import db
-from backend.app.channels import conversation as conv
-from backend.app.channels import reply, voice
-from backend.app.channels.provider import AdviceProvider, get_provider
+from backend.app.channels import reply
+from backend.app.channels.parse import Parsed, parse
+from backend.app.channels.provider import AdviceProvider, NotReady, get_provider
 from backend.app.chat import service as chat_service
 from backend.app.chat.llm import get_llm
 
@@ -116,21 +110,42 @@ def text_message(body: str) -> dict:
     return {"type": "text", "text": {"body": reply.clip(body, 4096)}}
 
 
-def buttons_message(body: str, buttons: list[tuple[str, str]] | None = None) -> dict:
-    """Body with up to 3 quick-reply buttons (Meta's limit; titles at most 20 characters)."""
+def buttons_message(body: str) -> dict:
     return {"type": "interactive", "interactive": {
         "type": "button",
         "body": {"text": reply.clip(body)},
-        "action": {"buttons": [{"type": "reply", "reply": {"id": i, "title": t[:20]}}
-                               for i, t in (buttons or reply.BUTTONS)[:3]]},
+        "action": {"buttons": [{"type": "reply", "reply": {"id": i, "title": t}} for i, t in reply.BUTTONS]},
     }}
 
 
 # ---------------------------------------------------------------- conversation
 
-CHANNEL = "whatsapp"
-# Quick-reply button ids are the command words the conversation engine understands ("menu" opens the menu).
-BUTTON_TEXT = {"why": "why", "compare": "compare", "stop": "stop", "start": "start", "menu": "0"}
+class Memory:
+    """The last query per sender, so "کیوں؟" and "منڈیاں" know what they refer to. In memory only (MVP):
+    a restart forgets, and the farmer simply sends the query again. Also remembers seen message ids,
+    because Meta retries deliveries."""
+
+    def __init__(self, size: int = 2000):
+        self.size = size
+        self.last: OrderedDict[str, Parsed] = OrderedDict()
+        self.seen: OrderedDict[str, None] = OrderedDict()
+
+    def remember(self, phone: str, q: Parsed) -> None:
+        self.last[phone] = q
+        self.last.move_to_end(phone)
+        while len(self.last) > self.size:
+            self.last.popitem(last=False)
+
+    def first_time(self, message_id: str) -> bool:
+        if message_id in self.seen:
+            return False
+        self.seen[message_id] = None
+        while len(self.seen) > self.size:
+            self.seen.popitem(last=False)
+        return True
+
+
+MEMORY = Memory()
 
 
 def message_text(msg: dict) -> str | None:
@@ -141,110 +156,72 @@ def message_text(msg: dict) -> str | None:
     if kind == "interactive":
         it = msg.get("interactive", {})
         picked = it.get("button_reply") or it.get("list_reply") or {}
-        return BUTTON_TEXT.get(picked.get("id", ""), picked.get("title"))
+        return {"why": "why", "compare": "compare", "stop": "stop"}.get(picked.get("id", ""), picked.get("title"))
     if kind == "button":
         return msg.get("button", {}).get("payload") or msg.get("button", {}).get("text")
     return None
 
 
-ChatFn = Callable[[str, str, str, "float | None", str], str]   # (question, crop, mandi, quantity, phone) -> answer
+ChatFn = Callable[[str, Parsed, str], str]   # (question, remembered query, phone) -> answer text
 
 
 def default_chat(provider: AdviceProvider) -> ChatFn:
-    """Free questions after an answer go to the same guarded chat as the web app (task A9)."""
-    def run(question: str, crop: str, mandi: str, quantity: float | None, phone: str) -> str:
-        return chat_service.answer(question, crop, mandi, quantity or conv.DEFAULT_QUANTITY_MAUND, provider,
-                                   get_llm(), phone=phone).answer
+    """Free questions go to the same guarded chat as the web app (task A9)."""
+    def run(question: str, q: Parsed, phone: str) -> str:
+        return chat_service.answer(question, q.crop_option, q.mandi, q.quantity_maund, provider, get_llm(),
+                                   phone=phone).answer
     return run
 
 
-def _with_footer(body: str, choices, limit: int = reply.MAX_BODY) -> str:
-    """The answer, then its numbered next steps; the answer is clipped first so the choices always show."""
-    footer = reply.choice_footer(choices) if choices else ""
-    if not footer:
-        return reply.clip(body, limit)
-    return reply.clip(body, limit - len(footer) - 1) + "\n" + footer
-
-
-def _answer(body: str, choices) -> dict:
-    buttons = reply.buttons_for(choices)
-    text = _with_footer(body, choices)
-    return buttons_message(text, buttons) if buttons else text_message(text)
-
-
-def render(r: conv.Reply, chat: ChatFn | None, phone: str) -> dict:
-    """A conversation reply as a Cloud API message, in Urdu. Numbers come only from r.data (the service layer)."""
-    k, d, ch = r.kind, r.data, r.choices
-    invalid = [reply.INVALID] if d.get("invalid") else []
-    if k == "menu":
-        note = [reply.MENU_NOTE[d["note"]]] if d.get("note") else []
-        return text_message("\n".join([*note, *invalid, reply.MENU_HEAD, reply.choice_lines(ch), reply.MENU_TAIL]))
-    if k == "not_understood":
-        return text_message("\n".join([reply.SORRY, reply.MENU_HEAD, reply.choice_lines(ch), reply.MENU_TAIL]))
-    if k in reply.ASK_NUMBERED:
-        return text_message("\n".join([*invalid, reply.ASK_NUMBERED[k], reply.choice_lines(ch)]))
-    if k == "ask_quantity":
-        return text_message("\n".join([*invalid, reply.ASK_QUANTITY, reply.choice_lines(ch)]))
-    if k == "advice":
-        return _answer(reply.advice_text(d["advice"], quantity_assumed=d["quantity_assumed"]), ch)
-    if k == "why":
-        return _answer(reply.why_text(d["advice"], d["reasons"]), ch)
-    if k == "compare":
-        return _answer(reply.compare_text(d["crop_option"], d["rows"]), ch)
-    if k == "post_menu":
-        return _answer(reply.INVALID, ch)
-    if k == "alerts":
-        return _answer(reply.STARTED if d["enabled"] else reply.STOPPED, ch)
-    if k == "not_registered":
-        return _answer(reply.NOT_REGISTERED, ch)
-    if k == "no_data":
-        head = reply.NO_DATA.format(mandi=reply.MANDI_UR.get(d["mandi"], d["mandi"]),
-                                    crop=reply.CROP_UR.get(d["crop_option"], d["crop_option"]))
-        return text_message("\n".join([head, reply.ASK_NUMBERED["ask_mandi"], reply.choice_lines(ch)]))
-    if k == "not_ready":
-        return text_message(reply.NOT_READY)
-    if k == "voice_confirm":
-        heard = reply.heard_text(d["crop_option"], d["mandi"], d["quantity_maund"])
-        return text_message("\n".join([*invalid, heard, reply.choice_lines(ch)]))
-    if k == "chat" and chat is not None:
-        return _answer(chat(d["question"], d["crop_option"], d["mandi"], d["quantity_maund"], phone), ch)
-    return _answer(reply.SORRY, ch)   # a free question, but no chat function was given
-
-
-def respond(msg: dict, provider: AdviceProvider, chat: ChatFn | None = None, now: datetime | None = None) -> dict:
-    """The reply to one incoming message, as a Cloud API message object. The conversation engine decides; the
-    session is read from and saved to the database (backend/app/db.py), so a restart does not lose it."""
+def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY, chat: ChatFn | None = None) -> dict:
+    """The reply to one incoming message, as a Cloud API message object. Pure apart from `provider`."""
     phone = msg.get("from", "")
-    if not db.digits(phone):
-        return text_message(reply.HELP)
-    now = now or datetime.now(UTC)
     if msg.get("type") in ("audio", "voice"):
-        return _voice(msg, phone, provider, chat, now)
-    r = conv.converse(CHANNEL, phone, message_text(msg) or "", provider, now)
-    return render(r, chat, phone)
-
-
-def _voice(msg: dict, phone: str, provider: AdviceProvider, chat: ChatFn | None, now: datetime) -> dict:
-    """Task A10, off unless FS_VOICE_NOTES=1 and a transcriber is registered (channels/voice.py). Either way the
-    farmer is never answered from an unconfirmed transcript."""
-    settings = voice.get_voice_settings()
-    pair, media = voice.pipeline(settings), voice.media_id(msg)
-    if pair is None:
-        return text_message(reply.VOICE_SOON)
-    if media is None:
-        return text_message(reply.VOICE_FAILED)
+        return text_message(reply.VOICE_SOON)  # task A10
+    text = message_text(msg)
+    if text is None:
+        return text_message(reply.HELP)
+    p = parse(text)
+    ctx = p  # the query a "no data" reply refers to
     try:
-        t = voice.transcribe_note(media, *pair, settings)
-    except voice.VoiceFailed as e:
-        log.warning("WhatsApp voice note not transcribed: %s", e)
-        return text_message(reply.VOICE_FAILED)
-    r = conv.converse(CHANNEL, phone, t.text, provider, now, from_voice=True, voice_confidence=t.confidence,
-                      min_confidence=settings.min_confidence)
-    return render(r, chat, phone)
+        if p.kind == "help":
+            return text_message(reply.HELP)
+        if p.kind == "unknown":
+            q = memory.last.get(phone)
+            if chat and q:
+                return buttons_message(chat(text, q, phone))
+            return text_message(reply.NOT_UNDERSTOOD)
+        if p.kind in ("stop", "start"):
+            provider.set_alerts(phone, p.kind == "start")
+            return text_message(reply.STOPPED if p.kind == "stop" else reply.STARTED)
+        if p.kind in ("why", "compare"):
+            q = memory.last.get(phone)
+            if q is None:
+                return text_message(reply.NEED_QUERY_FIRST)
+            ctx = q
+            if p.kind == "why":
+                a = provider.advice(q.crop_option, q.mandi, q.quantity_maund, phone)
+                return buttons_message(reply.why_text(a, provider.explain(q.crop_option, q.mandi, phone)))
+            rows = provider.compare(q.crop_option, q.mandi, q.quantity_maund, phone)
+            return buttons_message(reply.compare_text(q.crop_option, rows))
+        # a query
+        if p.missing:
+            return text_message(reply.ASK[p.missing[0]])
+        assumed = p.quantity_maund is None
+        if assumed:
+            p.quantity_maund = reply.DEFAULT_QUANTITY_MAUND
+        a = provider.advice(p.crop_option, p.mandi, p.quantity_maund, phone)
+        memory.remember(phone, p)
+        return buttons_message(reply.advice_text(a, quantity_assumed=assumed))
+    except LookupError:
+        return text_message(reply.NO_DATA.format(mandi=reply.MANDI_UR.get(ctx.mandi or "", ctx.mandi),
+                                                 crop=reply.CROP_UR.get(ctx.crop_option or "", ctx.crop_option)))
+    except NotReady as e:
+        log.warning("WhatsApp: service not ready: %s", e)
+        return text_message(reply.NOT_READY)
 
 
 def _handle(msg: dict, provider: AdviceProvider, sender: Sender) -> None:
-    db.expire_old_conversations()
     sender.send(msg.get("from", ""), respond(msg, provider, chat=default_chat(provider)))
 
 
@@ -284,7 +261,7 @@ async def receive(
         for change in entry.get("changes", []):
             for msg in change.get("value", {}).get("messages", []):  # delivery statuses are ignored
                 message_id = msg.get("id", "")
-                if not message_id or db.first_time_seen(CHANNEL, message_id):
+                if not message_id or MEMORY.first_time(message_id):
                     background.add_task(_handle, msg, provider, sender)
                     queued += 1
     return {"status": "ok", "queued": queued}  # Meta only needs a quick 200; replies go out after it

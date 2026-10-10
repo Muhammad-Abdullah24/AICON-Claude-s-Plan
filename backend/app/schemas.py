@@ -423,7 +423,7 @@ class FarmerIn(Strict):
     district: MandiId
     land_area_acres: float | None = Field(None, gt=0, le=100_000)
     arhti_commission_pct: float | None = Field(None, ge=0, le=50)
-    alerts_enabled: bool = False   # opt-in: a new farmer gets no alerts until they turn them on
+    alerts_enabled: bool = True
     crops: list[FarmerCropIn] = Field(default_factory=list, max_length=4)
 
 

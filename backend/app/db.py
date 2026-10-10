@@ -16,7 +16,7 @@ import re
 import sqlite3
 import threading
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS farmers (
     district TEXT NOT NULL,
     land_area_acres REAL,
     arhti_commission_pct REAL,
-    alerts_enabled INTEGER NOT NULL DEFAULT 0,   -- opt-in: off until the farmer turns alerts on
+    alerts_enabled INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS farmer_crops (
@@ -80,34 +80,9 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     used_fallback INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
 );
--- The numbered-menu step a WhatsApp or SMS farmer is on (backend/app/channels/conversation.py). Codes and
--- numbers only, never message text; a row lives SESSION_MINUTES and expired rows are deleted.
-CREATE TABLE IF NOT EXISTS conversations (
-    channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'sms')),
-    phone TEXT NOT NULL,
-    step TEXT NOT NULL,
-    pending TEXT,
-    draft_crop TEXT,
-    draft_mandi TEXT,
-    draft_quantity REAL,
-    last_crop TEXT,
-    last_mandi TEXT,
-    last_quantity REAL,
-    expires_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    PRIMARY KEY (channel, phone)
-);
--- Incoming message ids already handled, so a provider's retry is not answered twice, even after a restart.
-CREATE TABLE IF NOT EXISTS seen_messages (
-    channel TEXT NOT NULL,
-    message_id TEXT NOT NULL,
-    seen_at TEXT NOT NULL,
-    PRIMARY KEY (channel, message_id)
-);
 """
 
-# The demo profile from the blueprint's demo script. Invented, not a real person. Alerts are opt-in for every
-# farmer; Ahmed is seeded with them on, explicitly, so the alert demo (docs/DEMO.md section 3) works.
+# The demo profile from the blueprint's demo script. Invented, not a real person.
 DEMO_FARMER = {
     "name": "Ahmed", "phone": "+920000000001", "language": "ur", "district": "bahawalpur",
     "land_area_acres": 12.5, "arhti_commission_pct": None, "alerts_enabled": True,
@@ -203,7 +178,7 @@ def create_farmer(f: dict, conn: sqlite3.Connection | None = None) -> dict:
                 "INSERT INTO farmers (id, name, phone, language, district, land_area_acres, arhti_commission_pct,"
                 " alerts_enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (farmer_id, f["name"], digits(f["phone"]), f.get("language", "ur"), f["district"],
-                 f.get("land_area_acres"), f.get("arhti_commission_pct"), int(f.get("alerts_enabled", False)), now()))
+                 f.get("land_area_acres"), f.get("arhti_commission_pct"), int(f.get("alerts_enabled", True)), now()))
             _write_crops(conn, farmer_id, f.get("crops", []))
     except sqlite3.IntegrityError as e:
         raise ValueError("phone already registered") from e
@@ -234,9 +209,8 @@ def set_alerts_by_phone(phone: str, enabled: bool) -> bool:
 
 
 def alerts_enabled_by_phone(phone: str) -> bool:
-    """False for a number that is not registered: nobody gets alerts without turning them on."""
     f = get_farmer_by_phone(phone)
-    return False if f is None else f["alerts_enabled"]
+    return True if f is None else f["alerts_enabled"]
 
 
 def list_alert_farmers() -> list[dict]:
@@ -293,76 +267,3 @@ def log_message(farmer_id: str | None, channel: str, direction: str, content: st
     with conn:
         conn.execute("INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                      (str(uuid.uuid4()), farmer_id, alert_id, channel, direction, content, status, now()))
-
-
-# ---------------------------------------------------------------- channel conversations (task A11)
-
-CHANNELS = ("whatsapp", "sms")
-CONVERSATION_FIELDS = ("step", "pending", "draft_crop", "draft_mandi", "draft_quantity", "last_crop", "last_mandi",
-                       "last_quantity")
-SEEN_KEEP_HOURS = 24
-
-
-def _key(channel: str, phone: str) -> tuple[str, str]:
-    if channel not in CHANNELS:
-        raise ValueError(f"unknown channel {channel!r}")
-    number = digits(phone)
-    if not number:
-        raise ValueError("phone has no digits")
-    return channel, number
-
-
-def _ts(t: datetime) -> str:
-    return t.astimezone(UTC).isoformat(timespec="seconds")
-
-
-def get_conversation(channel: str, phone: str) -> dict | None:
-    """The stored session, expired or not (the engine tells the farmer when it expired), or None.
-    `expires_at` comes back as a datetime."""
-    row = connect().execute("SELECT * FROM conversations WHERE channel = ? AND phone = ?",
-                            _key(channel, phone)).fetchone()
-    if row is None:
-        return None
-    out = {k: row[k] for k in CONVERSATION_FIELDS}
-    out["expires_at"] = datetime.fromisoformat(row["expires_at"])
-    return out
-
-
-def save_conversation(channel: str, phone: str, fields: dict, minutes: float, at: datetime | None = None) -> None:
-    """Insert or replace the session; it expires `minutes` after `at` (default now). Unknown keys are ignored."""
-    at = at or datetime.now(UTC)
-    values = [fields.get(k) for k in CONVERSATION_FIELDS]
-    conn = connect()
-    with conn:
-        conn.execute(
-            f"INSERT OR REPLACE INTO conversations (channel, phone, {', '.join(CONVERSATION_FIELDS)}, expires_at,"  # noqa: S608 (fixed names)
-            f" updated_at) VALUES (?, ?, {', '.join('?' * len(CONVERSATION_FIELDS))}, ?, ?)",
-            (*_key(channel, phone), *values, _ts(at + timedelta(minutes=minutes)), _ts(at)))
-
-
-def clear_conversation(channel: str, phone: str) -> None:
-    conn = connect()
-    with conn:
-        conn.execute("DELETE FROM conversations WHERE channel = ? AND phone = ?", _key(channel, phone))
-
-
-def expire_old_conversations(at: datetime | None = None) -> int:
-    """Delete expired sessions and message ids older than SEEN_KEEP_HOURS. Returns how many sessions went."""
-    at = at or datetime.now(UTC)
-    conn = connect()
-    with conn:
-        n = conn.execute("DELETE FROM conversations WHERE expires_at <= ?", (_ts(at),)).rowcount
-        conn.execute("DELETE FROM seen_messages WHERE seen_at <= ?", (_ts(at - timedelta(hours=SEEN_KEEP_HOURS)),))
-    return n
-
-
-def first_time_seen(channel: str, message_id: str, at: datetime | None = None) -> bool:
-    """Record an incoming message id; False if it was already recorded (a provider retry)."""
-    conn = connect()
-    try:
-        with conn:
-            conn.execute("INSERT INTO seen_messages VALUES (?, ?, ?)",
-                         (channel, message_id, _ts(at or datetime.now(UTC))))
-    except sqlite3.IntegrityError:
-        return False
-    return True

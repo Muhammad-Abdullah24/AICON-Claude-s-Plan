@@ -320,23 +320,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/webhooks/sms": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Receive */
-        post: operations["receive_webhooks_sms_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/chat": {
         parameters: {
             query?: never;
@@ -818,7 +801,7 @@ export interface components {
             arhti_commission_pct?: number | null;
             /**
              * Alerts Enabled
-             * @default false
+             * @default true
              */
             alerts_enabled: boolean;
             /** Crops */
@@ -2120,26 +2103,6 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
-                };
-            };
-        };
-    };
-    receive_webhooks_sms_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
         };
