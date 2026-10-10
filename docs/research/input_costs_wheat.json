@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "crop": "Wheat",
+    "region": "Punjab",
+    "unit": "Rs per acre",
+    "base": "API Wheat Policy Analysis for 2023-24 Crop, Table-13 (Punjab)",
+    "source": "https://api.gov.pk/SiteImage/Policy/Wheat%20Policy%20Analysis%20For%202023-24%20Crop.pdf",
+    "method": "Non-fertiliser items x 1.119 (CPI FY25 1.045 x FY26 1.071). Fertiliser x 1.253: the Annex-X basket (1 DAP + 2 urea + 0.1 NP + application) re-priced at DAP 15,000 and urea 4,749 per 50 kg bag (economics_inputs.json).",
+    "confidence": "estimate",
+    "researched": "2026-10-10, docs/research/DATA_PACK.md"
+  },
+  "items": [
+    {"item": "land_preparation", "name_en": "Land preparation", "name_ur": "زمین کی تیاری", "official_2023_24": 10000, "rs_per_acre": 11190, "paid": "sowing"},
+    {"item": "seed", "name_en": "Seed and sowing", "name_ur": "بیج اور بوائی", "official_2023_24": 10100, "rs_per_acre": 11302, "paid": "sowing"},
+    {"item": "sprays", "name_en": "Plant protection and weeding", "name_ur": "سپرے اور گوڈی", "official_2023_24": 2500, "rs_per_acre": 2798, "paid": "season"},
+    {"item": "irrigation", "name_en": "Irrigation and watercourse cleaning", "name_ur": "آبپاشی اور کھال صفائی", "official_2023_24": 9650, "rs_per_acre": 10799, "paid": "season"},
+    {"item": "fertilizer", "name_en": "Fertiliser and its application", "name_ur": "کھاد اور ڈالائی", "official_2023_24": 21689, "rs_per_acre": 27176, "paid": "sowing"}
+  ],
+  "sowing_cash_total_rs_per_acre": 63265,
+  "at_harvest": {"item": "harvesting", "name_en": "Harvesting and threshing", "name_ur": "کٹائی اور گہائی", "official_2023_24": 18525, "rs_per_acre": 20730, "paid": "harvest"},
+  "excluded": {
+    "land_rent": {"official_2023_24": 35000, "rs_per_acre": 39165, "note": "add for tenants"},
+    "other": {"official_2023_24": 7345, "note": "mark-up, management, land tax: the loan's cost is computed separately"}
+  }
+}

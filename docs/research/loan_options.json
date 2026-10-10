@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "researched": "2026-10-10, docs/research/DATA_PACK.md",
+    "note": "Cheapest first. max_rs_rule is applied by the API for each farmer. verified = checked on an official government or SBP page."
+  },
+  "options": [
+    {"id": "kissan_card", "name_en": "CM Punjab Kissan Card", "name_ur": "کسان کارڈ", "annual_rate_pct": 0,
+     "max_rs_rule": "min(30000 * acres, 150000)", "eligible_rule": "1 <= acres <= 12.5 (Punjab)",
+     "conditions_en": "For seed and fertiliser from authorised dealers. Card valid 6 months, then 1 month grace to repay.",
+     "conditions_ur": "صرف بیج اور کھاد کے لیے، منظور شدہ ڈیلر سے۔ کارڈ 6 ماہ، پھر واپسی کے لیے 1 ماہ کی مہلت۔",
+     "source_url": "https://punjab.gov.pk/node/5690", "verified": true},
+    {"id": "pm_youth_t1", "name_en": "PM Youth Loan (Tier 1)", "name_ur": "وزیراعظم یوتھ قرضہ (ٹیئر 1)", "annual_rate_pct": 0,
+     "max_rs_rule": "500000", "eligible_rule": "21 <= age <= 45, not a loan defaulter",
+     "conditions_en": "Up to 3 years in equal monthly instalments: plan the monthly payment before harvest.",
+     "conditions_ur": "3 سال تک ماہانہ برابر قسطیں: کٹائی سے پہلے ماہانہ قسط کا انتظام سوچ لیں۔",
+     "source_url": "https://www.sbp.org.pk/incen-others/PMYBALS.asp", "verified": true},
+    {"id": "akhuwat", "name_en": "Akhuwat interest-free loan", "name_ur": "اخوت بلا سود قرضہ", "annual_rate_pct": 0,
+     "max_rs_rule": "50000", "eligible_rule": "member of a 3-6 farmer group / community organisation",
+     "conditions_en": "Small amounts (Rs 15,000-50,000 a season in Akhuwat's own cases). Apply at a branch with your group.",
+     "conditions_ur": "چھوٹی رقم (اخوت کی مثالوں میں فی سیزن 15,000 سے 50,000)۔ اپنے گروپ کے ساتھ برانچ میں درخواست دیں۔",
+     "source_url": "https://akhuwat.org.pk/?p=3423", "verified": false},
+    {"id": "zarkhez_e", "name_en": "Zarkhez-e digital crop loan", "name_ur": "زرخیز ای ڈیجیٹل زرعی قرضہ", "annual_rate_pct": 18,
+     "max_rs_rule": "min(100000 * acres, 1000000)", "eligible_rule": "acres <= 12.5 (Punjab)",
+     "conditions_en": "Markup KIBOR + 8%, at least 18% a year. Only 25% can be taken as cash.",
+     "conditions_ur": "مارک اپ کم از کم 18% سالانہ۔ صرف 25% نقد لیا جا سکتا ہے۔",
+     "source_url": "https://ztbl.com.pk/agri-loan/zarkhez-e-assan-digital-zarai-qarza/", "verified": false},
+    {"id": "bank", "name_en": "Bank crop loan", "name_ur": "بینک زرعی قرضہ", "annual_rate_pct": 16.5,
+     "max_rs_rule": "none", "eligible_rule": "anyone",
+     "conditions_en": "Typical formal rate: policy rate 11.5% + 5%.", "conditions_ur": "عام بینک شرح: پالیسی ریٹ 11.5% جمع 5%۔",
+     "source_url": "data/processed/economics_inputs.json (macro.holding_interest_rate_pct_per_year)", "verified": false},
+    {"id": "arhti", "name_en": "Arhti advance", "name_ur": "آڑھتی سے ادھار", "annual_rate_pct": 66,
+     "max_rs_rule": "none", "eligible_rule": "anyone",
+     "conditions_en": "About 4 times the bank rate once commission and the price cut at sale are counted; often ties the crop to the arhti.",
+     "conditions_ur": "کمیشن اور فروخت پر کم ریٹ ملا کر بینک سے تقریباً 4 گنا مہنگا؛ اکثر فصل آڑھتی کو ہی بیچنی پڑتی ہے۔",
+     "source_url": "https://www.sbp.org.pk/research/bulletin/2014/Vol-10-1/Tete-a-TeteArhtiyas.pdf", "verified": false}
+  ]
+}
