@@ -86,7 +86,12 @@
     "sourceShap": "Reasons from the forecast model (SHAP)",
     "chart": "Price history and the 4-week range",
     "legendHistory": "Past weekly price",
-    "legendRange": "Likely range in 4 weeks"
+    "legendRange": "Likely range in 4 weeks",
+    "liquidityTitle": "The gamble of waiting",
+    "liquidityNote": "Each past year at this mandi: the harvest-time price vs {{months}} months later. Green bars are years holding paid, red are years it lost.",
+    "capped": "2026 was capped by policy",
+    "legendPaid": "holding paid",
+    "legendLost": "holding lost"
   },
   "compare": {
     "title": "Where to sell: net price after transport",
@@ -198,5 +203,67 @@
     "replayExit": "Back to today",
     "notFound": "No price data for this crop at this mandi.",
     "invalid": "Some of the details you entered are not valid. Please check them."
+  },
+  "wait": {
+    "title": "Can you afford to wait?",
+    "intro": "Sell what you need now; hold the rest only if waiting pays for your money.",
+    "cashNeed": "Cash you need now (Rs)",
+    "waitMonths": "How long can you wait?",
+    "monthsN": "{{n}} months",
+    "money": "Whose money are you living on?",
+    "moneyOwn": "Own cash",
+    "moneyBank": "Bank loan",
+    "moneyArhti": "Arhti (middleman)",
+    "rate": "Interest (% a year)",
+    "storage": "Where will you store it?",
+    "storageGodown": "Proper godown",
+    "storageBags": "Bags at home",
+    "offer": "Arhti's offer, per maund (optional)",
+    "check": "Work it out",
+    "answer": "What to do",
+    "verdict": {
+      "SELL_ALL": "Sell it all now",
+      "SPLIT": "Sell some now, hold the rest",
+      "HOLD_ALL": "Hold it all for now"
+    },
+    "sellNow": "Sell now: {{maund}} maund",
+    "hold": "Hold: {{maund}} maund",
+    "ways": "Your ways out (for {{qty}} maund)",
+    "exit": {
+      "SELL_NOW": "Sell now",
+      "ARHTI_OFFER": "Take the arhti's offer",
+      "HOLD": "Hold and sell later"
+    },
+    "atMandi": "at {{mandi}}",
+    "holdWorst": "in a bad year, {{amount}}",
+    "holdCost": "interest + storage: {{amount}}",
+    "historyPaid": "With your money and store, waiting paid in {{wins}} of the last {{n}} years.",
+    "confidence": "How sure: {{level}}",
+    "warn": {
+      "STALE_PRICE": "The mandi price is old — be careful.",
+      "NEWS_PRICE_CONFLICT": "News reports a different price ({{source}}: {{price}} on {{date}}). Check before you act.",
+      "POLICY_UNCERTAIN": "Government policy is unsettled right now.",
+      "HOLD_WHEAT_ONLY": "Holding is only worked out for wheat.",
+      "CASH_NEED_EXCEEDS_CROP": "Selling the whole crop still won't cover the cash you need.",
+      "TOO_FEW_SEASONS": "Not enough past years to judge holding."
+    },
+    "estimate": "Estimate from past AMIS prices, not a guarantee."
+  },
+  "news": {
+    "title": "Market news",
+    "policy": "Government policy",
+    "conflict": "News reports {{price}} ({{source}}, {{date}}) — {{pct}}% away from the mandi price {{amis}}. Check before you act.",
+    "byline": "{{source}} · {{date}}",
+    "snapshot": "saved copy",
+    "empty": "No market news right now.",
+    "tag": {
+      "SUPPORT_PRICE": "support price",
+      "PROCUREMENT": "procurement",
+      "CAP_OR_BAN": "cap / ban",
+      "IMPORT": "import",
+      "PRICE_REPORT": "price",
+      "OTHER": "news"
+    },
+    "more": "Read"
   }
 }

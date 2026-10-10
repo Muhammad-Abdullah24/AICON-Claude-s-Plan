@@ -136,13 +136,17 @@ def test_history_shows_gaps_and_frozen_weeks(client):
     assert all(p["price"] is None or p["price"] > 0 for p in h["weekly"])
 
 
-def test_crop_plan_ranks_by_profit(client):
+def test_crop_plan_ranks_fresh_first_then_by_profit(client):
     p = client.get("/api/crop-plan", params={"mandi": "rahim_yar_khan", "land_area_acres": 5}).json()
-    profits = [i["expected_profit"] for i in p["items"]]
-    assert profits == sorted(profits, reverse=True)
-    assert [i["rank"] for i in p["items"]] == list(range(1, len(profits) + 1))
+    items = p["items"]
+    assert [i["rank"] for i in items] == list(range(1, len(items) + 1))
+    # F4: a stale starting price never ranks first. Fresh crops lead, then stale ones; by profit within each group.
+    assert not items[0]["is_stale"]
+    assert [i["is_stale"] for i in items] == sorted(i["is_stale"] for i in items)   # all fresh before any stale
+    fresh = [i["expected_profit"] for i in items if not i["is_stale"]]
+    assert fresh == sorted(fresh, reverse=True)
     assert "irri" in p["not_available"] and p["is_estimate"] is True
-    for i in p["items"]:
+    for i in items:
         assert i["harvest_price_low"] <= i["harvest_price_estimate"] <= i["harvest_price_high"]
         # The engine rounds profit per acre to whole rupees, so the total can differ by up to half a rupee an acre.
         assert i["expected_profit"] == pytest.approx(i["profit_per_acre"] * 5, abs=0.5 * 5)

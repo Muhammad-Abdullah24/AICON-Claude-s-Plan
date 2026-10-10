@@ -1,23 +1,16 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
-import { api } from '../api/client'
 import { useAppState } from '../appState'
-import { OfferCheck } from '../components/OfferCheck'
+import { NewsBanner } from '../components/NewsBanner'
 import { SelectionBar } from '../components/SelectionBar'
-import { SignalCard } from '../components/SignalCard'
-import { ErrorBox, Loading } from '../components/Status'
+import { WaitPlan } from '../components/WaitPlan'
 import { WeatherLine } from '../components/WeatherLine'
-import { useAsync } from '../lib/useAsync'
 
-/** Answer first (blueprint section 11): the SELL / WAIT card, then the four big actions. */
+/** The pivot's question first (docs/PIVOT.md F1): can you afford to wait, and with whose money? */
 export function Home() {
   const { t } = useTranslation()
-  const { selection, quantity } = useAppState()
-  const [advice, reload] = useAsync(
-    (signal) => api.advice({ ...selection, quantity_maund: quantity }, signal),
-    `${selection.crop}|${selection.mandi}|${quantity}`,
-  )
+  const { selection } = useAppState()
 
   const actions = [
     { to: '/why', label: t('actions.why') },
@@ -29,9 +22,8 @@ export function Home() {
   return (
     <div className="space-y-5">
       <SelectionBar withQuantity />
-      {advice.status === 'loading' && <Loading />}
-      {advice.status === 'error' && <ErrorBox error={advice.error} onRetry={reload} />}
-      {advice.status === 'ok' && <SignalCard advice={advice.data} />}
+      <NewsBanner crop={selection.crop} mandi={selection.mandi} />
+      <WaitPlan />
       <WeatherLine mandi={selection.mandi} />
       <nav className="grid grid-cols-2 gap-3" aria-label={t('app.name')}>
         {actions.map((a) => (
@@ -44,7 +36,6 @@ export function Home() {
           </Link>
         ))}
       </nav>
-      <OfferCheck />
     </div>
   )
 }

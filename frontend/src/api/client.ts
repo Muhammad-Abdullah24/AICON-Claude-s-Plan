@@ -35,6 +35,17 @@ export type CropId = ForecastResponse['crop']
 export type MandiId = S['ForecastResponse']['mandi']
 export type Signal = AdviceResponse['signal']
 export type DirectionCall = S['DirectionCall']
+export type WaitPlanResponse = S['WaitPlanResponse']
+export type WaitExit = S['WaitExit']
+export type HoldHistory = S['HoldHistory']
+export type HoldSeason = S['HoldSeason']
+export type NewsResponse = S['NewsResponse']
+export type NewsItem = S['NewsItem']
+export type NewsPriceCheck = S['NewsPriceCheck']
+export type PolicyResponse = S['PolicyResponse']
+export type PolicyEvent = S['PolicyEvent']
+export type Money = WaitPlanResponse['money']
+export type Storage = WaitPlanResponse['storage']
 
 /** Input limits, read from the backend's schema so the two can never disagree. */
 export const QUANTITY_MAX: number = spec.components.schemas.OfferCheckRequest.properties.quantity_maund.maximum
@@ -133,6 +144,23 @@ export const api = {
     request<CompareResponse>(`/api/compare-mandis${priced(p)}`, { signal }),
   cropPlan: (p: { mandi?: string; land_area_acres?: number }, signal?: AbortSignal) =>
     request<CropPlanResponse>(`/api/crop-plan${priced(p)}`, { signal }),
+  waitPlan: (
+    p: Pair & {
+      quantity_maund?: number
+      cash_need_rs?: number
+      wait_months?: number
+      money?: Money
+      annual_rate?: number | null
+      storage?: Storage
+      offer?: number | null
+    },
+    signal?: AbortSignal,
+  ) => request<WaitPlanResponse>(`/api/wait-plan${priced(p)}`, { signal }),
+  // News is today's, never replayed (like weather), so it does not carry the replay date.
+  news: (p: { crop?: string; mandi?: string }, signal?: AbortSignal) =>
+    request<NewsResponse>(`/api/news${query(p)}`, { signal }),
+  policy: (crop: string, signal?: AbortSignal) =>
+    request<PolicyResponse>(`/api/policy${priced({ crop })}`, { signal }),
   offerCheck: (body: { crop: string; mandi: string; offer_price: number; quantity_maund: number }) =>
     request<OfferCheckResponse>(`/api/offer-check${priced({})}`, post(body)),
   margin: (p: { crop: string; price: number; arhti_pct?: number | null }, signal?: AbortSignal) =>

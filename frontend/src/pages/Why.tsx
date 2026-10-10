@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import { api, type ForecastResponse } from '../api/client'
+import { api, type ForecastResponse, type HoldHistory } from '../api/client'
 import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
 import { DirectionLine } from '../components/DirectionLine'
@@ -23,6 +23,7 @@ export function Why() {
   const key = `${selection.crop}|${selection.mandi}`
   const [explain, reloadExplain] = useAsync((signal) => api.explain(selection, signal), key)
   const [forecast] = useAsync((signal) => api.forecast(selection, signal), key)
+  const [wait] = useAsync((signal) => api.waitPlan(selection, signal), key)
 
   return (
     <div className="space-y-5">
@@ -50,6 +51,17 @@ export function Why() {
           </>
         )}
       </section>
+      {wait.status === 'ok' && wait.data.history && wait.data.history.seasons.length > 0 && (
+        <section className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
+          <h2 className="text-xl font-bold">{t('why.liquidityTitle')}</h2>
+          <p className="text-sm text-slate">{t('why.liquidityNote', { months: wait.data.wait_months })}</p>
+          <LiquidityChart history={wait.data.history} />
+          <ul className="flex flex-wrap gap-x-4 text-xs text-slate">
+            <li><span className="me-1 inline-block h-2.5 w-3 rounded-sm bg-field align-middle" />{t('why.legendPaid')}</li>
+            <li><span className="me-1 inline-block h-2.5 w-3 rounded-sm bg-madder align-middle" />{t('why.legendLost')}</li>
+          </ul>
+        </section>
+      )}
       {forecast.status === 'ok' && (
         <details className="rounded-2xl bg-paper p-4 shadow-sm">
           <summary className="cursor-pointer py-2 font-bold">{t('why.chart')}</summary>
@@ -57,6 +69,34 @@ export function Why() {
         </details>
       )}
     </div>
+  )
+}
+
+/** Each past year's outcome of holding (docs/PIVOT.md F2): the net gain per maund, green when holding paid. */
+function LiquidityChart({ history }: { history: HoldHistory }) {
+  const { t } = useTranslation()
+  const c = useMemo(() => readTokens(), [])
+  const data = history.seasons.map((s) => ({ year: String(s.year), net: s.net_gain_per_maund, paid: s.paid }))
+  return (
+    <>
+      <div dir="ltr" className="h-56 w-full" role="img" aria-label={t('why.liquidityTitle')}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={c.line} vertical={false} />
+            <XAxis dataKey="year" tick={{ fill: c.slate, fontSize: 12 }} stroke={c.line} />
+            <YAxis tickFormatter={(v: number) => formatNumber(v)} width={CHART_Y_AXIS_WIDTH}
+              tick={{ fill: c.slate, fontSize: 12, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
+            <Tooltip formatter={(v) => formatRs(Number(v))} />
+            <Bar dataKey="net" name={t('why.liquidityTitle')} isAnimationActive={false}>
+              {data.map((d) => (
+                <Cell key={d.year} fill={d.paid ? c.field : c.madder} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {data.some((d) => d.year === '2026') && <p className="text-xs text-wheat-deep">{t('why.capped')}</p>}
+    </>
   )
 }
 

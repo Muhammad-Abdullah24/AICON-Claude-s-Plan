@@ -382,6 +382,10 @@ def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None
             "sell_window_months": window["window_months"] if window else [],
             "is_stale": c["is_stale"], **calendar(option),
         })
+    # A stale starting price never ranks first (F4): fresh crops lead, then stale ones, each by expected profit.
+    items.sort(key=lambda i: (i["is_stale"], -i["expected_profit"]))
+    for rank, item in enumerate(items, start=1):
+        item["rank"] = rank
     return {"items": items, "not_available": missing}
 
 
