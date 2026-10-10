@@ -1,19 +1,14 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { api, type Money, type Storage, type WaitExit, type WaitPlanResponse } from '../api/client'
 import { useAppState } from '../appState'
-import { formatRs, parseTypedNumber } from '../lib/format'
+import { formatRs } from '../lib/format'
 import { useAsync } from '../lib/useAsync'
-import { ChipGroup } from './ChipGroup'
 import { HelpTip } from './HelpTip'
 import { ErrorBox, Loading } from './Status'
-import { Icon } from './ui/Icon'
 import { Callout, CardTitle } from './ui/primitives'
-import { cardClass, inputClass, labelClass } from './ui/styles'
+import { cardClass } from './ui/styles'
 
-const MONEY: Money[] = ['own', 'bank', 'arhti']
-const STORAGE: Storage[] = ['godown', 'bags']
 const VERDICT_STYLE: Record<string, string> = {
   SELL_ALL: 'text-field',
   SPLIT: 'text-wheat-deep',
@@ -25,18 +20,15 @@ const VERDICT_STYLE: Record<string, string> = {
 export function WaitPlan() {
   const { t } = useTranslation()
   const { selection, quantity } = useAppState()
-  const [cash, setCash] = useState('')
-  const [months, setMonths] = useState(4)
-  const [money, setMoney] = useState<Money>('own')
-  const [storage, setStorage] = useState<Storage>('godown')
-  const [offer, setOffer] = useState('')
-  const [household, setHousehold] = useState('')
-  const [income, setIncome] = useState('')
-
-  const cashRs = parseTypedNumber(cash) ?? 0
-  const offerRs = offer === '' ? null : parseTypedNumber(offer)
-  const householdRs = parseTypedNumber(household) ?? 0
-  const incomeRs = parseTypedNumber(income) ?? 0
+  // No questions on Home: the answer uses sensible defaults (own money, proper store, 4 months). A logged-in
+  // farmer's cash need still comes from their loan list on the server.
+  const cashRs = 0
+  const months = 4
+  const money: Money = 'own'
+  const storage: Storage = 'godown'
+  const offerRs = null
+  const householdRs = 0
+  const incomeRs = 0
   const key = `${selection.crop}|${selection.mandi}|${quantity}|${cashRs}|${months}|${money}|${storage}|${offerRs}|${householdRs}|${incomeRs}`
   const [state, reload] = useAsync(
     (signal) =>
@@ -57,7 +49,6 @@ export function WaitPlan() {
     key,
   )
 
-  const input = `${inputClass} figures mt-2 block w-full max-w-xs text-lg font-semibold`
   return (
     <section className={cardClass('surface', 'space-y-5')}>
       <CardTitle icon="clock">{t('wait.title')}</CardTitle>
@@ -65,77 +56,6 @@ export function WaitPlan() {
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
       {state.status === 'ok' && <Answer plan={state.data} />}
-      {/* The farmer's situation, folded under the answer so the answer stays on the first screen. Open by default
-          until a cash need is typed, so a first-time farmer sees what to fill in. */}
-      <details className="group rounded-2xl border border-line bg-paper px-4" open={cash === ''}>
-        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 font-semibold text-field [&::-webkit-details-marker]:hidden">
-          <span>{t('wait.yourSituation')}</span>
-          <Icon name="chevron" className="size-5 transition-transform group-open:rotate-180" />
-        </summary>
-        <div className="space-y-5 pb-4">
-          <label className={labelClass}>
-            {t('wait.cashNeed')}
-            <HelpTip text={t('help.cashNeed')} />
-            <input inputMode="numeric" value={cash} onChange={(e) => setCash(e.target.value)} className={input} />
-          </label>
-
-          {/* Leave "cash now" empty and the app works it out: loans due before the sale + household spending
-            not covered by other income (milk, labour) while waiting (docs/PIVOT.md 3.4). */}
-          <details className="group rounded-xl border border-line bg-cotton px-4">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-field [&::-webkit-details-marker]:hidden">
-              <span>{t('wait.more')}</span>
-              <Icon name="chevron" className="size-5 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="space-y-4 pb-4">
-              <label className={labelClass}>
-                {t('wait.household')}
-                <input
-                  inputMode="numeric"
-                  value={household}
-                  onChange={(e) => setHousehold(e.target.value)}
-                  className={input}
-                />
-              </label>
-              <label className={labelClass}>
-                {t('wait.otherIncome')}
-                <input
-                  inputMode="numeric"
-                  value={income}
-                  onChange={(e) => setIncome(e.target.value)}
-                  className={input}
-                />
-              </label>
-            </div>
-          </details>
-
-          <ChipGroup
-            label={t('wait.waitMonths')}
-            help={t('help.months')}
-            value={String(months)}
-            onChange={(v) => setMonths(Number(v))}
-            options={[2, 3, 4, 5, 6].map((m) => ({ value: String(m), label: t('wait.monthsN', { n: m }) }))}
-          />
-          <ChipGroup
-            label={t('wait.money')}
-            help={t('help.money')}
-            value={money}
-            onChange={(v) => setMoney(v as Money)}
-            options={MONEY.map((m) => ({ value: m, label: t(`wait.money${m[0].toUpperCase()}${m.slice(1)}`) }))}
-          />
-          <ChipGroup
-            label={t('wait.storage')}
-            help={t('help.storage')}
-            value={storage}
-            onChange={(v) => setStorage(v as Storage)}
-            options={STORAGE.map((s) => ({ value: s, label: t(`wait.storage${s[0].toUpperCase()}${s.slice(1)}`) }))}
-          />
-          <label className={labelClass}>
-            {t('wait.offer')}
-            <HelpTip text={t('help.offer')} />
-            <input inputMode="decimal" value={offer} onChange={(e) => setOffer(e.target.value)} className={input} />
-          </label>
-        </div>
-      </details>
     </section>
   )
 }

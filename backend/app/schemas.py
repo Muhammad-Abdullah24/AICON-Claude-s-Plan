@@ -118,6 +118,29 @@ class WeatherNow(Strict):
     attribution: str
 
 
+class OutlookDay(Strict):
+    date: dt.date
+    rain_mm: float
+    rain_prob: int                  # % chance of rain that day
+    tmax: int | None
+
+
+class WeatherOutlookResponse(Strict):
+    mandi: MandiId
+    headline: Literal["RAIN_SOON", "RAIN_LATER", "DRY"]   # rain within 3 days / later in the 16 days / none
+    first_rain_date: dt.date | None
+    first_rain_prob: int | None
+    first_rain_mm: float | None
+    rain_days: int
+    dry_from: dt.date | None        # the first day after the last rainy day in the forecast
+    dry_days: int                   # how many forecast days from dry_from are dry
+    max_temp_7d: int
+    days: list[OutlookDay]          # the next 7 days
+    horizon_days: int
+    fetched_at: dt.datetime
+    attribution: str
+
+
 class ForecastResponse(Labelled):
     crop: CropId
     mandi: MandiId

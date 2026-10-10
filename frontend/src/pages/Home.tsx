@@ -7,7 +7,7 @@ import { SelectionBar } from '../components/SelectionBar'
 import { Icon, type IconName } from '../components/ui/Icon'
 import { buttonClass } from '../components/ui/styles'
 import { WaitPlan } from '../components/WaitPlan'
-import { WeatherLine } from '../components/WeatherLine'
+import { WeatherOutlook } from '../components/WeatherOutlook'
 
 /** The pivot's question first (docs/PIVOT.md F1): can you afford to wait, and with whose money? */
 export function Home() {
@@ -45,7 +45,7 @@ export function Home() {
         {t('actions.voice')}
       </a>
       <div className="empty:hidden lg:col-start-1 lg:row-start-4">
-        <WeatherLine mandi={selection.mandi} />
+        <WeatherOutlook mandi={selection.mandi} />
       </div>
       <nav className="grid grid-cols-2 gap-3 lg:col-start-1 lg:row-start-5" aria-label={t('app.name')}>
         {actions.map((a) => (

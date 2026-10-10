@@ -89,6 +89,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/weather-outlook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weather Outlook
+         * @description Rain in the next days at the mandi (Open-Meteo daily forecast, up to 16 days). 503 when unavailable.
+         */
+        get: operations["weather_outlook_api_weather_outlook_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/advice": {
         parameters: {
             query?: never;
@@ -1502,6 +1522,20 @@ export interface components {
              */
             prices_as_of: string;
         };
+        /** OutlookDay */
+        OutlookDay: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Rain Mm */
+            rain_mm: number;
+            /** Rain Prob */
+            rain_prob: number;
+            /** Tmax */
+            tmax: number | null;
+        };
         /** PolicyEvent */
         PolicyEvent: {
             /**
@@ -1792,6 +1826,44 @@ export interface components {
             /** Attribution */
             attribution: string;
         };
+        /** WeatherOutlookResponse */
+        WeatherOutlookResponse: {
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Headline
+             * @enum {string}
+             */
+            headline: "RAIN_SOON" | "RAIN_LATER" | "DRY";
+            /** First Rain Date */
+            first_rain_date: string | null;
+            /** First Rain Prob */
+            first_rain_prob: number | null;
+            /** First Rain Mm */
+            first_rain_mm: number | null;
+            /** Rain Days */
+            rain_days: number;
+            /** Dry From */
+            dry_from: string | null;
+            /** Dry Days */
+            dry_days: number;
+            /** Max Temp 7D */
+            max_temp_7d: number;
+            /** Days */
+            days: components["schemas"]["OutlookDay"][];
+            /** Horizon Days */
+            horizon_days: number;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Attribution */
+            attribution: string;
+        };
         /** WeatherResponse */
         WeatherResponse: {
             /**
@@ -1950,6 +2022,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeatherResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    weather_outlook_api_weather_outlook_get: {
+        parameters: {
+            query: {
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherOutlookResponse"];
                 };
             };
             /** @description Validation Error */

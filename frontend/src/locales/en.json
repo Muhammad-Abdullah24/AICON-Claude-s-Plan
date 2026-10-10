@@ -394,5 +394,15 @@
     "s3": "Which mandi pays most after transport.",
     "tip": "Tap the ? beside any word you don't know.",
     "start": "Start"
+  },
+  "outlook": {
+    "title": "Weather",
+    "today": "today",
+    "tomorrow": "tomorrow",
+    "rainSoon": "Chance of rain {{day}} ({{prob}}%)",
+    "rainLater": "No rain in the next 3 days. Rain possible from {{date}}",
+    "dry": "No rain expected in the next {{days}} days",
+    "dryAfter": "Then dry from {{date}} ({{days}} days)",
+    "hot": "Very hot this week: up to {{t}}°"
   }
 }
