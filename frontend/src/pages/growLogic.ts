@@ -17,7 +17,8 @@ export interface SeasonSection extends SeasonSummary {
 
 /** Crop items grouped under their season, in the API's season order; ranked crops keep the API's order (first). */
 export function seasonSections(plan: Pick<CropPlanResponse, 'items' | 'seasons'>): SeasonSection[] {
-  return plan.seasons.map((s) => ({ ...s, items: plan.items.filter((i) => i.season === s.season) }))
+  // An older API without seasons (a deploy half-done) gives no sections instead of crashing the screen.
+  return (plan.seasons ?? []).map((s) => ({ ...s, items: plan.items.filter((i) => i.season === s.season) }))
 }
 
 export interface Line {

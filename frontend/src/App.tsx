@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 
 import { api } from './api/client'
 import { Header } from './components/Header'
 import { ReplayBanner } from './components/ReplayBanner'
+import { ScreenBoundary } from './components/ScreenBoundary'
 import { ErrorBox, Loading } from './components/Status'
 import { useAsync } from './lib/useAsync'
 import { Chat } from './pages/Chat'
@@ -21,6 +22,7 @@ const History = lazy(() => import('./pages/History').then((m) => ({ default: m.H
 
 export default function App() {
   const [meta, reload] = useAsync((signal) => api.meta(signal), 'meta')
+  const location = useLocation()
 
   if (meta.status !== 'ok') {
     return (
@@ -35,20 +37,22 @@ export default function App() {
       <Header />
       <ReplayBanner />
       <main className="mx-auto max-w-xl px-4 py-5">
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/loan" element={<Loan />} />
-            <Route path="/why" element={<Why />} />
-            <Route path="/compare" element={<Compare />} />
-            <Route path="/grow" element={<Grow />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/margin" element={<Margin />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+        <ScreenBoundary key={location.pathname}>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/loan" element={<Loan />} />
+              <Route path="/why" element={<Why />} />
+              <Route path="/compare" element={<Compare />} />
+              <Route path="/grow" element={<Grow />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/margin" element={<Margin />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </ScreenBoundary>
       </main>
     </AppStateProvider>
   )
