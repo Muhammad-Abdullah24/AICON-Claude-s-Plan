@@ -80,20 +80,32 @@ def rank_within_seasons(items: Iterable[Mapping], min_comparable: int = config.M
     return {"items": rows, "seasons": seasons}
 
 
+# The policy tags that make prices uncertain: the same set the wait plan's POLICY_UNCERTAIN warning uses.
+UNCERTAIN_TAGS = ("SUPPORT_PRICE", "CAP_OR_BAN", "IMPORT")
+
+
 def support_price_context(events: Sequence[Mapping], as_of: date,
-                          max_age_days: int = config.SUPPORT_PRICE_CONTEXT_MAX_AGE_DAYS) -> dict:
+                          max_age_days: int = config.SUPPORT_PRICE_CONTEXT_MAX_AGE_DAYS,
+                          recent_days: int = config.POLICY_RECENT_DAYS) -> dict:
     """The latest SUPPORT_PRICE item from the policy timeline (H3's get_policy_events, already cut at as_of).
 
     state: CURRENT (within max_age_days), OUTDATED (older: shown as "the latest we have"), or UNAVAILABLE (none).
+    uncertain: a support-price, cap/ban or import item in the last `recent_days` (the app's existing
+    POLICY_UNCERTAIN rule), whatever the state. H3's events carry no status field, so this is the only
+    machine-readable uncertainty; the event text says the rest (e.g. "still undecided").
     Policy context only: never a mandi price and never a price the farmer is promised.
     """
-    support = [e for e in events if e.get("tag") == "SUPPORT_PRICE" and e.get("date", "") <= as_of.isoformat()]
+    known = [e for e in events if e.get("date", "") <= as_of.isoformat()]
+    recent_from = date.fromordinal(as_of.toordinal() - recent_days).isoformat()
+    uncertain = any(e.get("tag") in UNCERTAIN_TAGS and e["date"] >= recent_from for e in known)
+    base = {"max_age_days": max_age_days, "uncertain": uncertain, "uncertain_window_days": recent_days}
+    support = [e for e in known if e.get("tag") == "SUPPORT_PRICE"]
     if not support:
-        return {"state": "UNAVAILABLE", "event": None, "age_days": None, "max_age_days": max_age_days}
+        return {"state": "UNAVAILABLE", "event": None, "age_days": None, **base}
     latest = max(support, key=lambda e: e["date"])
     age = (as_of - date.fromisoformat(latest["date"])).days
     return {"state": "CURRENT" if age <= max_age_days else "OUTDATED", "event": dict(latest), "age_days": age,
-            "max_age_days": max_age_days}
+            **base}
 
 
 def context_notes(crop_option: str, mandi: str, notes: Sequence[Mapping] = config.CONTEXT_NOTES) -> list[dict]:

@@ -113,6 +113,24 @@ def test_support_price_context_is_current_outdated_or_unavailable():
     assert grow.support_price_context([], dt.date(2026, 10, 9))["event"] is None
 
 
+def test_support_price_context_flags_recent_policy_change_as_uncertain():
+    # The 6 Oct "undecided" item is 3 days old on 9 Oct: uncertain, and still CURRENT.
+    now = grow.support_price_context(EVENTS, dt.date(2026, 10, 9))
+    assert now["uncertain"] is True and now["uncertain_window_days"] == 14
+    # A month later nothing is recent: not uncertain (but still CURRENT, 34 days old).
+    later = grow.support_price_context(EVENTS, dt.date(2026, 11, 9))
+    assert later["state"] == "CURRENT" and later["uncertain"] is False
+    # An import 10 days back makes it uncertain even when the support-price item itself is old (OUTDATED).
+    aug = grow.support_price_context(EVENTS, dt.date(2026, 8, 3))
+    assert aug["state"] == "OUTDATED" and aug["uncertain"] is True
+    # And with no support-price item at all: UNAVAILABLE, uncertainty still reported.
+    only_import = grow.support_price_context([EVENTS[1]], dt.date(2026, 7, 30))
+    assert only_import["state"] == "UNAVAILABLE" and only_import["uncertain"] is True
+    # The window edge: exactly 14 days back counts (as the wait plan's rule), 15 does not.
+    assert grow.support_price_context([EVENTS[0]], dt.date(2026, 10, 20))["uncertain"] is True
+    assert grow.support_price_context([EVENTS[0]], dt.date(2026, 10, 21))["uncertain"] is False
+
+
 def test_support_price_context_never_reads_past_as_of():
     assert grow.support_price_context(EVENTS, dt.date(2026, 10, 5))["event"]["date"] == "2026-01-21"
 

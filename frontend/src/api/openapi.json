@@ -4261,6 +4261,14 @@
           "max_age_days": {
             "type": "integer",
             "title": "Max Age Days"
+          },
+          "uncertain": {
+            "type": "boolean",
+            "title": "Uncertain"
+          },
+          "uncertain_window_days": {
+            "type": "integer",
+            "title": "Uncertain Window Days"
           }
         },
         "additionalProperties": false,
@@ -4269,7 +4277,9 @@
           "state",
           "event",
           "age_days",
-          "max_age_days"
+          "max_age_days",
+          "uncertain",
+          "uncertain_window_days"
         ],
         "title": "SupportPriceContext",
         "description": "The latest wheat SUPPORT_PRICE item from the policy timeline: policy context, not a mandi price and not a\nprice anyone is promised."

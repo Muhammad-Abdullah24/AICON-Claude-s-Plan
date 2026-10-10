@@ -65,19 +65,22 @@ describe('What to Grow (F4)', () => {
   it('the wheat policy context is labelled as policy, not a price, and says when it is old or missing (6)', () => {
     const event = { date: '2026-01-21', tag: 'SUPPORT_PRICE', text_ur: 'اردو', text_en: 'Rs 3,500 indicative',
       source: 'Dunya News', url: 'https://x' } as const
-    const old: Ctx = { state: 'OUTDATED', event, age_days: 109, max_age_days: 60 }
+    const old: Ctx = { state: 'OUTDATED', event, age_days: 109, max_age_days: 60, uncertain: false,
+      uncertain_window_days: 14 }
     expect(policyLine(old, 'en', (d) => d)).toEqual({
       key: 'grow.policy.OUTDATED',
       params: { text: isolate('Rs 3,500 indicative'), source: isolate('Dunya News'), date: isolate('2026-01-21') },
     })
     expect(policyLine({ ...old, state: 'CURRENT' }, 'ur', (d) => d).params.text).toBe(isolate('اردو'))
-    expect(policyLine({ state: 'UNAVAILABLE', event: null, age_days: null, max_age_days: 60 }, 'en', (d) => d).key)
+    expect(policyLine({ ...old, state: 'UNAVAILABLE', event: null, age_days: null }, 'en', (d) => d).key)
       .toBe('grow.policy.UNAVAILABLE')
     expect(en.grow.policy.limit).toMatch(/not a mandi price/)
     expect(en.grow.policy.limit).toMatch(/not a price you are guaranteed/)
     expect(ur.grow.policy.limit).toMatch(/منڈی کا ریٹ نہیں/)
     expect(ur.grow.policy.limit).toMatch(/گارنٹی/)
     expect(en.grow.policy.OUTDATED).toMatch(/may have changed/)
+    expect(en.grow.policy.uncertain).toMatch(/uncertain/)
+    expect(ur.grow.policy.uncertain).toContain('{{days}}')
   })
 
   it('no "AI says grow X" language in the grow block', () => {

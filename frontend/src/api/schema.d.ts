@@ -1367,6 +1367,10 @@ export interface components {
             age_days: number | null;
             /** Max Age Days */
             max_age_days: number;
+            /** Uncertain */
+            uncertain: boolean;
+            /** Uncertain Window Days */
+            uncertain_window_days: number;
         };
         /** TokenResponse */
         TokenResponse: {

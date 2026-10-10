@@ -197,9 +197,14 @@ def test_crop_plan_wheat_support_price_context(client):
     ctx = p["support_price_context"]
     assert ctx["state"] == "CURRENT" and ctx["event"]["tag"] == "SUPPORT_PRICE" and ctx["event"]["url"]
     assert ctx["age_days"] <= ctx["max_age_days"]
+    assert ctx["uncertain"] is True                 # the "undecided" item is days old: flagged, not hidden
     may, _, _ = _plan(client, "bahawalpur", as_of="2026-05-10")
     assert may["support_price_context"]["state"] == "OUTDATED"
     assert may["support_price_context"]["event"]["date"] <= "2026-05-10"
+    assert may["support_price_context"]["uncertain"] is True    # the 28 Apr price cap is 12 days old
+    early, _, _ = _plan(client, "bahawalpur", as_of="2025-12-01")
+    assert early["support_price_context"]["state"] == "UNAVAILABLE"
+    assert early["support_price_context"]["event"] is None
 
 
 def test_history_has_twelve_seasonal_months(client):

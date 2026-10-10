@@ -286,6 +286,8 @@ class SupportPriceContext(Strict):
     event: PolicyEvent | None
     age_days: int | None
     max_age_days: int               # older than this is OUTDATED
+    uncertain: bool                 # a support-price, cap/ban or import item in the last uncertain_window_days
+    uncertain_window_days: int      # the wait plan's POLICY_UNCERTAIN window (14)
 
 
 class CropPlanItem(Strict):

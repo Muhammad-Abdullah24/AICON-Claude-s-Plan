@@ -145,6 +145,9 @@ function PolicyContext({ ctx }: { ctx: SupportPriceContext }) {
     <aside className="space-y-1 rounded-2xl border-2 border-line bg-paper p-4">
       <h4 className="font-bold">{t('grow.policy.title')}</h4>
       <p className={ctx.state === 'CURRENT' ? undefined : 'text-wheat-deep'}>{t(line.key, line.params)}</p>
+      {ctx.uncertain && (
+        <p className="text-wheat-deep">{t('grow.policy.uncertain', { days: ctx.uncertain_window_days })}</p>
+      )}
       <p className="text-sm text-slate">{t('grow.policy.limit')}</p>
       {ctx.event && (
         <a href={ctx.event.url} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center text-sm underline">

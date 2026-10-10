@@ -149,7 +149,8 @@
       "CURRENT": "Latest: {{text}} ({{source}}, {{date}})",
       "OUTDATED": "The latest we have is from {{date}} ({{source}}): {{text}}. It may have changed since.",
       "UNAVAILABLE": "No current support-price information. Check with the agriculture department before relying on one.",
-      "link": "Read the source"
+      "link": "Read the source",
+      "uncertain": "Policy changed in the last {{days}} days: treat the support price as uncertain."
     },
     "notes": {
       "RICE_WATER_BAHAWALPUR": "Water check: rice is a summer crop here (sown {{sow}}, harvested {{harvest}}), and canal water in Bahawalpur division has run short before ({{source}}, {{date}}). Before choosing rice, check that your canal turns or tubewell can water it through the season. A consideration, not advice against rice."
