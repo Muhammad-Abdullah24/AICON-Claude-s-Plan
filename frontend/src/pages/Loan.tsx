@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { api, type LenderId, type LoanOption, type LoanPlanResponse } from '../api/client'
 import { useAppState } from '../appState'
 import { ChipGroup } from '../components/ChipGroup'
+import { HelpTip } from '../components/HelpTip'
 import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
 import { formatRs, parseTypedNumber } from '../lib/format'
@@ -107,6 +108,7 @@ export function Loan() {
           </label>
           <label className="block text-sm text-slate">
             {t('loan.planned')}
+            <HelpTip text={t('help.planned')} />
             <input
               inputMode="numeric"
               value={planned}
@@ -129,6 +131,10 @@ export function Loan() {
       {valid && state.status === 'loading' && <Loading />}
       {valid && state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
       {valid && state.status === 'ok' && <Plan plan={state.data} />}
+      <Link to="/" className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-field-soft px-4 py-3 font-semibold text-field">
+        <span>{t('loan.next')}</span>
+        <span aria-hidden className="rtl:rotate-180">→</span>
+      </Link>
     </div>
   )
 }

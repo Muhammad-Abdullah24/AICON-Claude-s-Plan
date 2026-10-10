@@ -5,6 +5,8 @@ import { Link, NavLink, useLocation } from 'react-router'
 import { useAppState } from '../../appState'
 import type { Lang } from '../../i18n'
 import { formatDate } from '../../lib/format'
+import { openGuide } from '../../lib/guide'
+import { Guide } from '../Guide'
 import { ReplayBanner } from '../ReplayBanner'
 import { Icon } from '../ui/Icon'
 import { BOTTOM, MORE_ITEMS, MORE_PATH, NAV } from './nav'
@@ -30,6 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex-1 pb-28 lg:pb-10">{children}</div>
       </div>
       <BottomNav />
+      <Guide />
     </div>
   )
 }
@@ -142,6 +145,14 @@ function TopBar() {
           <div className="lg:hidden">
             <LanguageToggle onGreen />
           </div>
+          <button
+            type="button"
+            onClick={openGuide}
+            aria-label={t('help.open')}
+            className="flex size-[44px] shrink-0 items-center justify-center rounded-full bg-paper/15 text-xl font-bold text-paper hover:bg-paper/25 focus-visible:outline-paper"
+          >
+            ?
+          </button>
           <NavLink
             to="/profile"
             aria-label={farmer ? farmer.name : t('nav.profile')}
