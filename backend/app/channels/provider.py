@@ -18,6 +18,7 @@ class AdviceProvider(Protocol):
     def explain(self, crop_option: str, mandi: str, phone: str) -> list[dict]: ...
     def compare(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> list[dict]: ...
     def wait_plan(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
+    def loan_plan(self, crop_option: str, phone: str) -> dict: ...
     def set_alerts(self, phone: str, enabled: bool) -> None: ...
 
 
@@ -54,6 +55,17 @@ class ServicesProvider:
     def wait_plan(self, crop_option, mandi, quantity_maund, phone):
         plan = self._fn("wait_plan")(crop_option, mandi, quantity_maund, phone=phone)
         return {**plan, "crop_option": crop_option, "mandi": mandi}
+
+    def loan_plan(self, crop_option, phone):
+        """The loan planner needs the farmer's land area, which lives in their profile. Raises LookupError when
+        the sender is not registered or has no land area on file (the channel then asks them to set it)."""
+        from backend.app import db  # noqa: PLC0415 (lazy, like set_alerts)
+        f = db.get_farmer_by_phone(phone) if phone else None
+        acres = (f or {}).get("land_area_acres")
+        if not acres:
+            raise LookupError("no land area on file")
+        plan = self._fn("loan_plan")(crop_option, acres)
+        return {**plan, "crop_option": crop_option}
 
     def set_alerts(self, phone, enabled):
         self._fn("set_alerts")(phone, enabled)

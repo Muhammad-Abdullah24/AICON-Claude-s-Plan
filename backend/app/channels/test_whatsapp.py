@@ -79,7 +79,8 @@ def test_parse_asks_instead_of_guessing():
 
 
 @pytest.mark.parametrize("text, kind", [("کیوں", "why"), ("why?", "why"), ("2", "compare"), ("بند", "stop"),
-                                        ("hi", "help"), ("", "help"), ("kal ka mausam", "unknown")])
+                                        ("hi", "help"), ("", "help"), ("kal ka mausam", "unknown"),
+                                        ("قرض", "loan"), ("loan", "loan"), ("qarza", "loan")])
 def test_parse_commands(text, kind):
     assert parse(text).kind == kind
 
@@ -244,3 +245,42 @@ def test_wait_word_after_a_query_returns_the_plan():
 def test_wait_word_without_a_query_asks_first():
     body = body_of(whatsapp.respond(text_msg("رکھیں"), FakeProvider(), whatsapp.Memory()))
     assert body == reply.NEED_QUERY_FIRST
+
+
+def _loan_plan_dict():
+    return {"crop_option": "Wheat", "acres": 5, "input_need_rs": 419975, "savings_rs": 0,
+            "borrow_needed_rs": 419975,
+            "options": [{"id": "kissan_card", "name_ur": "کسان کارڈ"}, {"id": "zarkhez_e", "name_ur": "زرخیز-ای"},
+                        {"id": "arhti", "name_ur": "آڑھتی"}],
+            "ladder": [{"id": "kissan_card", "amount_rs": 150000, "interest_rs": 0},
+                       {"id": "zarkhez_e", "amount_rs": 269975, "interest_rs": 20248}],
+            "ladder_interest_rs": 20248, "harvest_due_rs": 440223, "uncovered_rs": 0,
+            "over_borrow_rs": 480025, "extra_cost_rs": 177759, "warnings": ["COST_ESTIMATE", "OVER_BORROWING"]}
+
+
+def test_loan_text_lays_out_the_plan():
+    t = reply.loan_text(_loan_plan_dict())
+    for expected in ("گندم", "5 ایکڑ", "Rs 419,975", "کسان کارڈ", "بلا سود", "زرخیز-ای", "Rs 440,223",
+                     "Rs 480,025", reply.LOAN_WARNING_UR["OVER_BORROWING"]):
+        assert expected in t
+    assert len(t) <= reply.MAX_BODY
+
+
+def test_loan_word_returns_the_plan_for_the_remembered_crop():
+    class LoanProvider(FakeProvider):
+        def loan_plan(self, crop_option, phone):
+            return {**_loan_plan_dict(), "crop_option": crop_option}
+
+    mem = whatsapp.Memory()
+    whatsapp.respond(text_msg("گندم بہاولپور 100 من"), LoanProvider(), mem)   # remembers wheat
+    body = body_of(whatsapp.respond(text_msg("قرض"), LoanProvider(), mem))
+    assert "قرض کا منصوبہ" in body and "گندم" in body
+
+
+def test_loan_word_without_land_area_asks_for_it():
+    class NoLandProvider(FakeProvider):
+        def loan_plan(self, crop_option, phone):
+            raise LookupError("no land area on file")
+
+    body = body_of(whatsapp.respond(text_msg("قرض"), NoLandProvider(), whatsapp.Memory()))
+    assert body == reply.NEED_LAND_AREA
