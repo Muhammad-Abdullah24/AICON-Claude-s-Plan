@@ -20,7 +20,8 @@ export const NAV: NavItem[] = [
 ]
 
 /** The phone's bottom bar (besides "More"); every other screen is listed on the "More" page, so none is lost. */
-export const BOTTOM: string[] = ['/', '/why', '/compare', '/grow']
+// The loan planner is a core screen, so it is in the bar; "Why" is one tap away from the Home answer.
+export const BOTTOM: string[] = ['/', '/loan', '/compare', '/grow']
 
 /** The "More" page: a list of the screens that are not in the phone's bottom bar. Navigation only. */
 export const MORE_PATH = '/more'

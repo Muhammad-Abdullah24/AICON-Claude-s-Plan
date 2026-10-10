@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 
 import { api } from '../api/client'
 import { useAppState } from '../appState'
+import { HelpTip } from '../components/HelpTip'
 import { DataLabel } from '../components/DataLabel'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
@@ -34,7 +35,10 @@ export function Margin() {
     <div className="space-y-6">
       <SelectionBar />
       <section className="space-y-5 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
-        <h2 className="text-2xl font-bold">{t('margin.title')}</h2>
+        <h2 className="text-2xl font-bold">
+          {t('margin.title')}
+          <HelpTip text={t('help.margin')} />
+        </h2>
         <label className={labelClass}>
           {t('margin.price')}
           <input inputMode="decimal" value={priceTyped} onChange={(e) => setPriceTyped(e.target.value)} className={input} />

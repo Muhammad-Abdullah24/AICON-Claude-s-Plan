@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import { api } from '../api/client'
 import { useAppState } from '../appState'
+import { HelpTip } from '../components/HelpTip'
 import { DataLabel } from '../components/DataLabel'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
@@ -26,7 +27,10 @@ export function Compare() {
     <div className="space-y-6">
       <SelectionBar />
       <section className="space-y-4">
-        <h2 className="text-2xl font-bold">{t('compare.title')}</h2>
+        <h2 className="text-2xl font-bold">
+          {t('compare.title')}
+          <HelpTip text={t('help.compare')} />
+        </h2>
         {state.status === 'loading' && <Loading />}
         {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
         {state.status === 'ok' &&

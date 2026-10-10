@@ -41,6 +41,9 @@ Hamza's Vercel account. Open the API's `/health` first; the free plan sleeps and
 | 4:10–4:40 | **WhatsApp** on the phone | "گندم بہاولپور 100 من", then "رکھیں" → the same wait plan in Urdu. No smartphone app needed. |
 | 4:40–5:00 | – | **Close.** "Everyone tells the farmer the price. FarmSight tells him how much to borrow, from whom, and whether he can afford to wait, in his language." Limits in one breath: AMIS mandi prices (2026 capped, and we show it); the backtest is history, not a promise; holding is worked out for wheat only for now. |
 
+**First load:** a short welcome guide pops up once per browser (three starting points). Use it as the opening
+beat, or tap **Start**. The **?** in the green bar reopens it, and every **?** beside a word explains it in one line.
+
 **Must work:** the loan planner, the wait plan in replay, and today's news banner. If WhatsApp fails, say so and move
 on: the web shows the same numbers.
 

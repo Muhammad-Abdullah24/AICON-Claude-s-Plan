@@ -1,5 +1,7 @@
 import { useId } from 'react'
 
+import { HelpTip } from './HelpTip'
+
 import { Icon } from './ui/Icon'
 
 interface Option {
@@ -17,16 +19,22 @@ export function ChipGroup({
   options,
   value,
   onChange,
+  help,
 }: {
   label: string
   options: Option[]
   value: string
   onChange: (value: string) => void
+  /** One plain sentence explaining the choice, behind a "?" (see HelpTip). */
+  help?: string
 }) {
   const name = useId()
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-semibold text-ink">{label}</legend>
+      <legend className="mb-2 text-sm font-semibold text-ink">
+        {label}
+        {help && <HelpTip text={help} />}
+      </legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <label

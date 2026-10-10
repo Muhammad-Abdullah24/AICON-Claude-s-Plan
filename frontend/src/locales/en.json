@@ -71,7 +71,8 @@
     "compare": "Compare mandis",
     "grow": "What to grow",
     "ask": "Ask a question",
-    "voice": "Ask by voice (WhatsApp)"
+    "voice": "Ask by voice (WhatsApp)",
+    "loan": "How much to borrow?"
   },
   "offer": {
     "title": "A buyer offered you",
@@ -286,7 +287,8 @@
     "cashUsed": "Cash needed now: {{amount}}",
     "more": "Household and other income",
     "whySellSmall": "Waiting gains only about {{gain}} a maund in a typical year, too little for the risk: in a bad year you lose about {{worst}} a maund.",
-    "whySellLoss": "With your money and store, waiting loses about {{loss}} a maund in a typical year."
+    "whySellLoss": "With your money and store, waiting loses about {{loss}} a maund in a typical year.",
+    "yourSituation": "Your situation (tap to change)"
   },
   "news": {
     "title": "Market news",
@@ -303,7 +305,8 @@
       "PRICE_REPORT": "price",
       "OTHER": "news"
     },
-    "more": "Read"
+    "more": "Read",
+    "fold": "Market news and government policy ({{n}})"
   },
   "loan": {
     "title": "How much should you borrow?",
@@ -356,6 +359,34 @@
     "amount": "Amount (Rs)",
     "due": "Due date",
     "addButton": "Add",
-    "harvestApart": "Not included: about {{amount}} for harvesting and threshing, paid in April from the crop. Don’t borrow it now."
+    "harvestApart": "Not included: about {{amount}} for harvesting and threshing, paid in April from the crop. Don’t borrow it now.",
+    "next": "At harvest: should you sell now or wait?"
+  },
+  "help": {
+    "what": "What does this mean?",
+    "open": "How to use KASHT",
+    "cashNeed": "Money you must pay soon after harvest: loans due, labour, school fees. Not sure? Leave it empty and fill in household spending below.",
+    "months": "How many months you could keep the grain before selling. Longer waits cost more interest and more grain lost in storage.",
+    "money": "Whose money keeps your house running while you wait. Your own savings cost nothing; a bank loan is about 16.5% a year; an arhti's advance about 66% a year.",
+    "storage": "A proper godown loses about 3.5% of the grain over the wait; bags at home lose about 10% to damp and insects.",
+    "offer": "Type the price per maund your arhti or a buyer offered. We show it next to selling at the mandi yourself.",
+    "history": "What really happened in past years at this mandi if you sold at harvest or waited this long, with your money and store. From AMIS prices.",
+    "planned": "How much you were going to borrow, and from whom. We compare it with the cheapest way to get what your wheat needs.",
+    "compare": "Net price = the mandi's price minus the cost of taking your crop there. The best mandi may not be the nearest one.",
+    "margin": "From each maund's price, take away what it cost to grow and your arhti's commission. What is left is yours.",
+    "liquidity": "Each bar is one past year: selling at harvest vs waiting. Green: waiting paid. Red: waiting lost money.",
+    "grow": "Crops are compared only with crops of the same season, because you can't sow summer and winter crops at the same time."
+  },
+  "guide": {
+    "title": "Welcome to KASHT",
+    "intro": "Tap one to start.",
+    "s1title": "Sell now or wait?",
+    "s1": "How much to sell now, how much to hold.",
+    "s2title": "How much should I borrow?",
+    "s2": "Before sowing: how much to borrow, and the cheapest money.",
+    "s3title": "Where to sell?",
+    "s3": "Which mandi pays most after transport.",
+    "tip": "Tap the ? beside any word you don't know.",
+    "start": "Start"
   }
 }
