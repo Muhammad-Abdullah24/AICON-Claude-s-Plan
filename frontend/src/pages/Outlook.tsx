@@ -25,9 +25,10 @@ export function Outlook() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
+      <div className="space-y-2">
         <h1 className="text-2xl font-bold lg:text-3xl">{t('outlook.title')}</h1>
         <p className="text-sm text-slate">{t('outlook.note')}</p>
+        <Note tone="caution">{t('outlook.context')}</Note>
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
@@ -38,7 +39,6 @@ export function Outlook() {
           <WeatherLine mandi={selection.mandi} />
         </div>
         <div className="space-y-4">
-          <Note>{t('outlook.context')}</Note>
           <Link to="/why" className="card block p-5 font-semibold text-field hover:bg-field-soft">
             {t('outlook.whyLink')}
           </Link>

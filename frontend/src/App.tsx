@@ -5,6 +5,7 @@ import { api } from './api/client'
 import { AppShell } from './components/shell/AppShell'
 import { ErrorBox, Loading } from './components/Status'
 import { useAsync } from './lib/useAsync'
+import { Channels } from './pages/Channels'
 import { Chat } from './pages/Chat'
 import { Compare } from './pages/Compare'
 import { Grow } from './pages/Grow'
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/compare" element={<Compare />} />
             <Route path="/outlook" element={<Outlook />} />
             <Route path="/why" element={<Why />} />
+            <Route path="/channels" element={<Channels />} />
             <Route path="/grow" element={<Grow />} />
             <Route path="/history" element={<History />} />
             <Route path="/margin" element={<Margin />} />

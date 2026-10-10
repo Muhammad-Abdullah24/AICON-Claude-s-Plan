@@ -26,12 +26,22 @@ export function SignalCard({ advice, secondary = false }: { advice: AdviceRespon
   return (
     <article className="parchi rounded-b-2xl px-5 pb-5" aria-live="polite">
       <div className={`-mx-5 mb-3 h-2 ${s.band}`} aria-hidden />
-      <h2 className={`font-urdu ${secondary ? 'text-2xl' : 'text-4xl'} leading-[2] font-bold ${s.text}`}>
-        <span aria-hidden className="me-2">
-          {s.icon}
-        </span>
-        {t(`signal.${advice.signal}`)}
-      </h2>
+      {secondary ? (
+        // Market outlook is background: the estimate leads, the simple rule's result is a small labelled line.
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold">{t('outlook.estimateTitle', { weeks })}</h2>
+          <p className="text-sm text-slate">
+            {t('outlook.ruleSays')} <span className={`font-semibold ${s.text}`}>{t(`signal.${advice.signal}`)}</span>
+          </p>
+        </div>
+      ) : (
+        <h2 className={`font-urdu text-4xl leading-[2] font-bold ${s.text}`}>
+          <span aria-hidden className="me-2">
+            {s.icon}
+          </span>
+          {t(`signal.${advice.signal}`)}
+        </h2>
+      )}
 
       <dl className="tear mt-3 grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-1 pt-3">
         <dt className="text-sm text-slate">{t('signal.today')}</dt>

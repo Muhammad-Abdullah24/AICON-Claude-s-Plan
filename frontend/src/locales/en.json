@@ -184,7 +184,9 @@
     "title": "Market outlook",
     "note": "The price estimate and our model's signal, as background. Our forecasts were tested and are not reliable enough to tell you to hold your crop.",
     "context": "This is context, not a guaranteed future price. To decide on an offer, use the offer check.",
-    "whyLink": "Why this outlook, and how good is the data?"
+    "whyLink": "Why this outlook, and how good is the data?",
+    "estimateTitle": "Price estimate for the next {{weeks}} weeks",
+    "ruleSays": "The simple rule (wait only if the estimate beats interest and a 5% margin) says:"
   },
   "why": {
     "title": "Why this advice",
@@ -301,7 +303,13 @@
     "create": "Create profile",
     "logout": "Log out",
     "notFound": "No profile with this number. Create one below.",
-    "exists": "This number already has a profile. Log in instead."
+    "exists": "This number already has a profile. Log in instead.",
+    "alertsTitle": "Watch the price",
+    "alertsOn": "Price alerts: on",
+    "alertsOff": "Price alerts: off",
+    "alertsHelp": "Alerts are off until you turn them on. At most one a week, and never for an old or frozen price.",
+    "alertsNeedProfile": "Price alerts need a profile. Log in or register first.",
+    "alertsNotPromise": "Alerts are information, not a promise of a sale or a price."
   },
   "months": {
     "1": "January",
@@ -375,5 +383,25 @@
     "limitedExplain": "An old, repeated or thin price does not show today's market, so FarmSight does not judge offers from it.",
     "range": "Range reported: {{low}} to {{high}}.",
     "seeHistory": "See the price history and dates"
+  },
+  "channels": {
+    "title": "FarmSight on WhatsApp and SMS",
+    "subtitle": "Low on internet? Check an offer with the numbered text menu.",
+    "whatsappTitle": "Send 0 on WhatsApp",
+    "realText": "The menu exactly as FarmSight sends it",
+    "smsOfferTitle": "Your offer as an SMS",
+    "smsMenuTitle": "The menu as an SMS",
+    "smsParts": "{{parts}} SMS part(s). Warnings are never cut to save space.",
+    "notAPromise": "reported price, not a sale promise",
+    "checkOfferFirst": "Check an offer on the home screen to see the SMS FarmSight would send for it.",
+    "statusTitle": "What works today",
+    "menuWorks": "The numbered text menu works the same on WhatsApp and SMS: no smartphone app needed for SMS.",
+    "waConnected": "This server is connected to WhatsApp.",
+    "waNotConnected": "WhatsApp is not connected on this server yet (it needs the Meta app keys).",
+    "smsLive": "An SMS provider is connected.",
+    "smsNotLive": "SMS is not live yet: no SMS provider is connected. The menu above is what it will send.",
+    "voiceOn": "Voice notes are on, and always confirmed before any answer.",
+    "voiceOff": "Voice notes are not available yet. Type, or use the numbers.",
+    "freeText": "You can also type a whole query, e.g. \"gandum bahawalpur 100 man offer 3514\"."
   }
 }
