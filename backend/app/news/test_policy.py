@@ -21,5 +21,13 @@ def test_policy_events_respect_as_of_for_replay():
     assert not any(e["date"] == "2026-07-24" for e in early)   # the July import is not yet
 
 
+def test_an_event_appears_on_its_publication_day_and_not_before():
+    # CropGPT published the aggregator funding shortfall on 21 Apr 2026.
+    def funding(as_of):
+        return [e for e in policy.get_policy_events("wheat", as_of=as_of) if e["source"] == "CropGPT"]
+    assert funding(dt.date(2026, 4, 20)) == []
+    assert len(funding(dt.date(2026, 4, 21))) == 1
+
+
 def test_no_wheat_policy_events_leak_into_cotton():
     assert policy.get_policy_events("cotton") == []

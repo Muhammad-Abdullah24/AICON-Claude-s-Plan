@@ -1,6 +1,9 @@
 """Curated policy timeline (task H3, docs/PIVOT.md 3.2). Reads the hand-written policy_events.json.
 
 Standard library only. Honours `as_of` so a replay of a past week shows only the events known by then.
+
+Each event's `date` is the publication date of its source article (checked on the page, 10 Oct), not the day the
+decision was taken: a replay should only show what a farmer could have read by then.
 """
 
 from __future__ import annotations
