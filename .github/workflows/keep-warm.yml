@@ -12,7 +12,6 @@ jobs:
     steps:
       - name: Ping the API and the site
         run: |
-          for url in https://farmsight-api-auat.onrender.com/health                      https://aicon-claude-s-plan-bay.vercel.app/api/meta; do
-            curl -s -m 90 -o /dev/null -w "%{http_code} %{time_total}s $url
-" "$url" || true
+          for url in https://farmsight-api-auat.onrender.com/health https://aicon-claude-s-plan-bay.vercel.app/api/meta; do
+            curl -s -m 90 -o /dev/null -w '%{http_code} %{time_total}s\n' "$url" || true
           done
