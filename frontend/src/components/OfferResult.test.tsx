@@ -131,11 +131,11 @@ describe('offer result', () => {
     expect(t).not.toContain('Compared with the nearest edge')   // no range claim on a weak reference
   })
 
-  it('shows the facts in the order a farmer needs them', () => {
+  it('a limited result leads with the limit, then the numbers, then safe next steps', () => {
     const t = text(render(wheatBahawalpur()))
-    const order = ['Buyer\'s offer', 'Latest reported mandi price', 'Recent reference range', 'Source: AMIS',
-      'Prices as of', 'Difference on your 100 maund', 'AMIS reported the same',
-      'Other mandis after estimated transport', 'Not included, and assumptions']
+    const order = ['Reference data is limited', 'AMIS reported the same', 'Buyer\'s offer', 'Latest reported mandi price',
+      'Difference on your 100 maund', 'Source: AMIS', 'Prices as of', 'What can you do now?',
+      'What FarmSight cannot know', 'Not included, and assumptions']
     const at = order.map((s) => t.indexOf(s))
     expect(at.every((i) => i >= 0)).toBe(true)
     expect([...at].sort((a, b) => a - b)).toEqual(at)
@@ -157,14 +157,16 @@ describe('offer result', () => {
       result_status: 'ABOVE_REFERENCE_RANGE' })))).not.toContain('Before you decide')
   })
 
-  it('weak alternatives are not called better; transport and commission are labelled estimates', () => {
-    const t = text(render(wheatBahawalpur({ estimated_commission: { pct: 2, per_maund: 70.28, total: 7028,
-      source: 'farmer' } })))
-    expect(t).toContain('Vehari: reference too weak to compare')
-    expect(t).toContain('transport Rs 165 (estimate)')
+  it('transport and commission are labelled estimates; the cannot-know panel is there', () => {
+    const html = render(wheatBahawalpur({ estimated_commission: { pct: 2, per_maund: 70.28, total: 7028,
+      source: 'farmer' } }))
+    const t = text(html)
+    expect(t).toContain('Transport costs are estimates from road distance, not quotes.')
     expect(t).toContain('Commission at the rate you entered (2%)')
     expect(t).toContain('not used in the comparison above')
-    expect(t).toContain('check that a buyer is there')
+    expect(html).toContain('data-badge="estimate"')
+    for (const s of ['Crop quality, grade and moisture', "The buyer's terms", 'Whether a truck is available',
+      'Credit you owe, or an urgent need for cash', 'Whether a buyer is really there']) expect(t).toContain(s)
   })
 
   it.each(['en', 'ur'] as const)('in %s every string resolves and no forbidden wording appears', (lng) => {
@@ -199,6 +201,7 @@ describe('Home', () => {
     setCrop: () => {}, setMandi: () => {}, setQuantity: () => {}, signIn: () => {}, signOut: () => {},
     setFarmer: () => {}, mandisFor: () => meta.mandis, series: () => undefined,
     name: (i: { name_en: string } | undefined) => i?.name_en ?? '', cropName: () => 'Wheat', mandiName,
+    lastCheck: null, setLastCheck: () => {},
   } as unknown as AppState
 
   it('puts "Check a buyer\'s offer" first and the market outlook after it', () => {
@@ -212,11 +215,13 @@ describe('Home', () => {
       </I18nextProvider>,
     )
     const t = text(html)
-    expect(t.indexOf("Check a buyer's offer")).toBeGreaterThanOrEqual(0)
+    expect(t.trim().indexOf("Got a buyer's offer? Check it before you sell.")).toBe(0)
     expect(t.indexOf("Check a buyer's offer")).toBeLessThan(t.indexOf('Market outlook'))
     expect(t).toContain('Check my offer')
     expect(t).toContain('The buyer offered (Rs per maund, 40 kg)')
+    expect(t).toContain('1 maund = 40 kg')
     expect(html).toContain('id="offer"')
+    expect(t).toContain('No offer checked yet')            // first use: a clear empty state
     expect(t).not.toContain('What you should do')
   })
 })

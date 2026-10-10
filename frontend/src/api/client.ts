@@ -22,6 +22,8 @@ export type AdviceResponse = S['AdviceResponse']
 export type CompareResponse = S['CompareResponse']
 export type CompareRow = S['CompareRow']
 export type OfferCheckResponse = S['OfferCheckResponse']
+export type ReferenceResponse = S['ReferenceResponse']
+export type ChannelPreview = S['ChannelPreview']
 export type MarginResponse = S['MarginResponse']
 export type CropPlanResponse = S['CropPlanResponse']
 export type CropPlanItem = S['CropPlanItem']
@@ -135,6 +137,9 @@ export const api = {
     request<CropPlanResponse>(`/api/crop-plan${priced(p)}`, { signal }),
   offerCheck: (body: { crop: string; mandi: string; offer_price: number; quantity_maund: number }) =>
     request<OfferCheckResponse>(`/api/offer-check${priced({})}`, post(body)),
+  reference: (p: Pair, signal?: AbortSignal) => request<ReferenceResponse>(`/api/reference${priced(p)}`, { signal }),
+  channelsPreview: (p: Pair & { quantity_maund?: number; offer_price?: number | null }, signal?: AbortSignal) =>
+    request<ChannelPreview>(`/api/channels/preview${priced(p)}`, { signal }),
   margin: (p: { crop: string; price: number; arhti_pct?: number | null }, signal?: AbortSignal) =>
     request<MarginResponse>(`/api/margin${query(p)}`, { signal }),
   weather: (mandi: string, signal?: AbortSignal) =>

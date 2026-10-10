@@ -57,7 +57,8 @@
     "estimate": "Estimate",
     "weatherCredit": "Weather data by Open-Meteo.com",
     "weatherLine": "Weather this week: {{tmax}}°C high, {{rain}} mm rain",
-    "weatherCached": "(saved reading)"
+    "weatherCached": "(saved reading)",
+    "sourceShort": "AMIS Punjab"
   },
   "select": {
     "crop": "Crop",
@@ -97,7 +98,6 @@
   },
   "offer": {
     "title": "Check a buyer's offer",
-    "intro": "Before you agree, see how the offer compares with prices recently reported at the mandi, and with other mandis after transport.",
     "label": "The buyer offered (Rs per maund, 40 kg)",
     "placeholder": "e.g. 3514",
     "check": "Check my offer",
@@ -134,21 +134,16 @@
     "nextSteps": {
       "title": "Before you decide",
       "askReason": "Ask the buyer how the price was set, and whether quality or grade changed it.",
-      "compare": "Compare nearby mandis after transport (below).",
+      "compare": "Compare nearby mandis after transport.",
       "reference": "You can use these reported prices as an independent reference when you negotiate.",
       "constraints": "If you are tied by credit, transport or an urgent need for cash, FarmSight cannot remove that constraint."
     },
     "alternatives": {
-      "title": "Other mandis after estimated transport",
       "noData": "no price reported",
       "unknown": "reference too weak to compare",
       "better": "estimated better after transport",
       "higherNotBetter": "higher mandi price, but not estimated better after transport",
-      "notBetter": "not estimated better after transport",
-      "line": "Reported {{price}} − transport {{transport}} (estimate) = {{net}} per maund",
-      "vsOffer": "Compared with the offer, on {{qty}} maund: {{total}}",
-      "verify": "Before you travel, check that a buyer is there and what their terms are.",
-      "open": "Open mandi comparison"
+      "notBetter": "not estimated better after transport"
     },
     "assumptions": {
       "title": "Not included, and assumptions",
@@ -157,7 +152,33 @@
       "TRANSPORT_IS_ESTIMATE": "Transport costs are estimates from road distance, not quotes.",
       "COMMISSION_NOT_INCLUDED": "No commission is included."
     },
-    "referenceOnly": "These are reported mandi prices: a reference for negotiation, not a promise of what you will get. Timing, transport, credit and the actual auction can change the price you receive."
+    "referenceOnly": "These are reported mandi prices: a reference for negotiation, not a promise of what you will get. Timing, transport, credit and the actual auction can change the price you receive.",
+    "form": {
+      "crop": "Which crop?",
+      "mandi": "Which mandi?",
+      "quantity": "How many maund?",
+      "maundIs40kg": "1 maund = 40 kg",
+      "perMaund": "per maund",
+      "example": "Example: wheat · Bahawalpur · {{qty}} maund · {{offer}} (fills the form only)"
+    },
+    "errors": {
+      "offer": "Enter the buyer's price per maund: a number above 0.",
+      "tooLarge": "That price is too large. Enter the price per maund (40 kg)."
+    },
+    "loading": "Checking the offer against the available reference…",
+    "offerToRef": "Buyer's offer → reported reference · difference on {{qty}} maund: {{total}}",
+    "availableReference": "available reference price per maund",
+    "limitedExplain": "FarmSight shows the numbers but does not judge the offer from this reference.",
+    "compareCta": "Compare mandis after transport",
+    "detailsCta": "Details: why this result",
+    "checkYourself": "Find out the crop grade, payment terms and whether a buyer is there yourself. FarmSight does not know them.",
+    "whatYouCanDo": {
+      "title": "What can you do now?",
+      "body": "Decide with a fresher reference, or with information straight from the mandi.",
+      "tryMandi": "Try another mandi",
+      "latestDates": "See the latest available dates",
+      "askMandi": "Ask at the mandi directly"
+    }
   },
   "outlook": {
     "title": "Market outlook",
@@ -174,14 +195,37 @@
     "legendRange": "Likely range in 4 weeks"
   },
   "compare": {
-    "title": "Where to sell: net price after transport",
-    "best": "Best",
-    "net": "Net price",
-    "price": "Mandi price",
-    "transport": "Transport (estimate)",
+    "title": "Compare mandis after transport",
     "gainFor": "vs your mandi, on {{qty}} maund",
     "noData": "No price data",
-    "priceOf": "price of {{date}}"
+    "context": "{{crop}} · {{qty}} maund",
+    "contextOffer": "{{crop}} · {{qty}} maund · buyer's offer {{offer}} per maund",
+    "caution": "This is not necessarily the best mandi. Check that a buyer is there and arrange transport before you travel.",
+    "cautionWeak": "Some prices here are limited (old, repeated or too few reports), so they are not ranked as better.",
+    "orderOffer": "Your mandi first, then the others. Not a ranking.",
+    "orderNet": "By estimated net price. A mandi is marked best only on a strong reference.",
+    "yourMandi": "your mandi",
+    "reportedPerMaund": "Reported reference / maund",
+    "transportPerMaund": "Transport estimate / maund",
+    "netPerMaund": "Estimated net / maund",
+    "vsOffer": "Estimated difference from the buyer's offer on {{qty}} maund",
+    "transportNote": "Transport is an estimate from road distance, not a quote.",
+    "limitedNote": {
+      "LIMITED_STALE": "This price is old: it is not used to call this mandi better.",
+      "LIMITED_FROZEN": "AMIS has not updated this price for weeks: it is not used to call this mandi better.",
+      "LIMITED_FEW_DAYS": "Too few reports lately: this price is not used to call this mandi better.",
+      "LIMITED_SAME_PRICE": "The same price on every reported day: not used to call this mandi better."
+    },
+    "bestStrong": "Highest estimated net price, on a strong reference",
+    "calc": {
+      "title": "How is this calculated?",
+      "net": "Estimated net = reported reference − estimated transport, per maund",
+      "difference": "Difference = (estimated net − buyer's offer) × your maund",
+      "notIncluded": "Other fees, grade deductions and payment terms are not included."
+    },
+    "changeOffer": "Change the offer",
+    "addOffer": "Check an offer to compare with it",
+    "footnote": "The estimated net is not a promise of what you will be paid."
   },
   "grow": {
     "title": "What to grow: expected profit at harvest",
@@ -282,5 +326,54 @@
     "replayExit": "Back to today",
     "notFound": "No price data for this crop at this mandi.",
     "invalid": "Some of the details you entered are not valid. Please check them."
+  },
+  "home": {
+    "title": "Got a buyer's offer? Check it before you sell.",
+    "subtitle": "See the recent mandi reference and other mandis after transport, then decide for yourself.",
+    "trust": "AMIS mandi reports · Urdu · WhatsApp menu (SMS not live yet)",
+    "reference": {
+      "title": "Latest mandi reference",
+      "perMaund": "per maund · latest available report",
+      "loading": "Fetching the latest available reference…"
+    },
+    "freshness": {
+      "title": "How fresh is the data?",
+      "strong": "Reference strength: strong enough to compare an offer with.",
+      "limited": "Reference strength: limited. Use it with care, not as a firm range."
+    },
+    "how": {
+      "title": "How FarmSight helps",
+      "offer": "Enter the buyer's offer",
+      "reference": "Compare it with the reported reference",
+      "transport": "See other mandis after transport",
+      "decide": "Decide for your own situation"
+    },
+    "last": {
+      "title": "Your last check",
+      "sessionOnly": "Kept in this browser session only.",
+      "emptyTitle": "No offer checked yet",
+      "emptyBody": "Enter a buyer's price above to see the recent reference, the difference for your quantity and other mandis."
+    },
+    "outlookLink": "See the market outlook"
+  },
+  "cannotKnow": {
+    "title": "What FarmSight cannot know",
+    "intro": "These can change what you actually get for your crop:",
+    "grade": "Crop quality, grade and moisture",
+    "terms": "The buyer's terms (payment time, deductions)",
+    "truck": "Whether a truck is available, and its real fare",
+    "credit": "Credit you owe, or an urgent need for cash",
+    "buyer": "Whether a buyer is really there"
+  },
+  "details": {
+    "titleLimited": "Reference data is limited",
+    "titleStrong": "Reference data quality",
+    "reviewed": "data up to {{date}}",
+    "strongHeadline": "Recent and varied reports: usable as a reference",
+    "availableReference": "Available reference price per maund",
+    "strongExplain": "Still a reference, not a promise: grade, terms and the auction can change your price.",
+    "limitedExplain": "An old, repeated or thin price does not show today's market, so FarmSight does not judge offers from it.",
+    "range": "Range reported: {{low}} to {{high}}.",
+    "seeHistory": "See the price history and dates"
   }
 }
