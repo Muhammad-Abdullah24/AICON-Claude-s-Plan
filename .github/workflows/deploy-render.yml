@@ -1,0 +1,20 @@
+# Render's auto-deploy did not fire on 10 Oct, so the web app (Vercel, auto) ran ahead of the API (Render, manual).
+# This triggers Render's deploy hook on every push to main. Setup, once: Render -> farmsight-api -> Settings ->
+# Deploy Hook -> copy the URL; GitHub -> repo Settings -> Secrets and variables -> Actions -> New secret
+# RENDER_DEPLOY_HOOK = that URL. Without the secret the job does nothing.
+name: deploy-render
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Trigger the Render deploy hook
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "RENDER_DEPLOY_HOOK not set; skipping"; exit 0; fi
+          curl -s -X POST -o /dev/null -w "Render deploy hook: %{http_code}\n" "$HOOK"

@@ -37,3 +37,16 @@ export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => v
     </div>
   )
 }
+
+/** A screen that crashed while drawing (not a network problem): says so, and offers a reload. */
+export function ScreenError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="rounded-xl border-2 border-madder/40 bg-paper p-4" role="alert">
+      <p className="font-bold text-madder">{t('status.screenError')}</p>
+      <button type="button" onClick={onRetry} className="mt-3 min-h-12 rounded-xl border-2 border-ink px-4 py-2">
+        {t('status.retry')}
+      </button>
+    </div>
+  )
+}

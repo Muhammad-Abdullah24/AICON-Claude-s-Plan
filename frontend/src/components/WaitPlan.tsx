@@ -159,13 +159,13 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
         </p>
       )}
 
-      {plan.weeks.length > 0 && <Weeks plan={plan} />}
+      {(plan.weeks ?? []).length > 0 && <Weeks plan={plan} />}
 
       <div className="space-y-2">
         <p className="text-sm font-semibold text-slate">{t('wait.ways', { qty: plan.quantity_maund })}</p>
         <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
           {/* "Sell all" means holding does not pay here: its row would only add a confusing number. */}
-          {plan.exits
+          {(plan.exits ?? [])
             .filter((e) => !(plan.verdict === 'SELL_ALL' && e.kind === 'HOLD'))
             .map((e) => (
               <ExitRow key={e.kind} exit={e} />
@@ -179,7 +179,7 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
           <HelpTip text={t('help.history')} />
         </p>
       )}
-      {plan.warnings
+      {(plan.warnings ?? [])
         .filter((w) => w === 'CASH_NEED_EXCEEDS_CROP')
         .map((w) => (
           <Warning key={w} code={w} check={plan.news_check} />
@@ -197,7 +197,7 @@ function Weeks({ plan }: { plan: WaitPlanResponse }) {
     <div className="space-y-2">
       <p className="text-sm font-semibold text-slate">{t('wait.weeksTitle', { qty: plan.quantity_maund })}</p>
       <ol className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
-        {plan.weeks.map((w) => (
+        {(plan.weeks ?? []).map((w) => (
           <li
             key={w.week}
             className={`flex items-center justify-between gap-3 px-4 py-3 ${w.week === best ? 'bg-field-soft' : ''}`}
