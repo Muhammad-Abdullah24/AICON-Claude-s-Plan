@@ -8,6 +8,8 @@ import { useAsync } from '../lib/useAsync'
 import { ChipGroup } from './ChipGroup'
 import { DataLabel } from './DataLabel'
 import { ErrorBox, Loading } from './Status'
+import { Badge, Callout, CardTitle } from './ui/primitives'
+import { cardClass, inputClass, labelClass } from './ui/styles'
 
 const MONEY: Money[] = ['own', 'bank', 'arhti']
 const STORAGE: Storage[] = ['godown', 'bags']
@@ -48,17 +50,16 @@ export function WaitPlan() {
     key,
   )
 
-  const input = 'figures w-40 rounded-xl border-2 border-line bg-paper px-3 py-2 text-lg focus:border-ink focus:outline-none'
+  const input = `${inputClass} figures mt-2 block w-full max-w-xs text-lg font-semibold`
   return (
-    <section className="space-y-4 rounded-2xl bg-paper p-4 shadow-sm">
-      <div>
-        <h2 className="text-xl font-bold">{t('wait.title')}</h2>
-        <p className="text-sm text-slate">{t('wait.intro')}</p>
-      </div>
+    <section className={cardClass('surface', 'space-y-5')}>
+      <CardTitle icon="clock" sub={t('wait.intro')}>
+        {t('wait.title')}
+      </CardTitle>
 
-      <label className="block text-sm text-slate">
+      <label className={labelClass}>
         {t('wait.cashNeed')}
-        <input inputMode="numeric" value={cash} onChange={(e) => setCash(e.target.value)} className={`${input} mt-1 block`} />
+        <input inputMode="numeric" value={cash} onChange={(e) => setCash(e.target.value)} className={input} />
       </label>
 
       <ChipGroup
@@ -79,9 +80,9 @@ export function WaitPlan() {
         onChange={(v) => setStorage(v as Storage)}
         options={STORAGE.map((s) => ({ value: s, label: t(`wait.storage${s[0].toUpperCase()}${s.slice(1)}`) }))}
       />
-      <label className="block text-sm text-slate">
+      <label className={labelClass}>
         {t('wait.offer')}
-        <input inputMode="decimal" value={offer} onChange={(e) => setOffer(e.target.value)} className={`${input} mt-1 block`} />
+        <input inputMode="decimal" value={offer} onChange={(e) => setOffer(e.target.value)} className={input} />
       </label>
 
       {state.status === 'loading' && <Loading />}
@@ -94,7 +95,7 @@ export function WaitPlan() {
 function Answer({ plan }: { plan: WaitPlanResponse }) {
   const { t } = useTranslation()
   return (
-    <div className="tear space-y-3 pt-3">
+    <div className="space-y-4 rounded-2xl border border-line bg-cotton p-4 sm:p-5" aria-live="polite">
       <h3 className={`text-2xl font-bold ${VERDICT_STYLE[plan.verdict] ?? ''}`}>
         {t(`wait.verdict.${plan.verdict}`)}
       </h3>
@@ -105,10 +106,12 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
       )}
 
       <div className="space-y-2">
-        <p className="text-sm font-bold text-slate">{t('wait.ways', { qty: plan.quantity_maund })}</p>
-        {plan.exits.map((e) => (
-          <ExitRow key={e.kind} exit={e} />
-        ))}
+        <p className="text-sm font-semibold text-slate">{t('wait.ways', { qty: plan.quantity_maund })}</p>
+        <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-paper">
+          {plan.exits.map((e) => (
+            <ExitRow key={e.kind} exit={e} />
+          ))}
+        </div>
       </div>
 
       {plan.history && (
@@ -116,13 +119,15 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
           {t('wait.historyPaid', { wins: plan.history.wins, n: plan.history.n })}
         </p>
       )}
-      <p className="text-xs text-slate">{t('wait.confidence', { level: t(`signal.confidenceLevels.${plan.confidence}`) })}</p>
+      <p className="text-sm text-slate">{t('wait.confidence', { level: t(`signal.confidenceLevels.${plan.confidence}`) })}</p>
 
       {plan.warnings.map((w) => (
         <Warning key={w} code={w} check={plan.news_check} />
       ))}
 
-      <p className="text-xs text-slate">{t('wait.estimate')}</p>
+      <p>
+        <Badge kind="estimate">{t('wait.estimate')}</Badge>
+      </p>
       <DataLabel isSynthetic={plan.is_synthetic} asOf={plan.prices_as_of} stale={plan.is_stale} />
     </div>
   )
@@ -133,15 +138,15 @@ function ExitRow({ exit: e }: { exit: WaitExit }) {
   const { mandiName } = useAppState()
   const where = e.kind === 'SELL_NOW' && e.mandi ? ` ${t('wait.atMandi', { mandi: mandiName(e.mandi) })}` : ''
   return (
-    <div className="flex items-baseline justify-between gap-3 border-s-2 border-line ps-3">
-      <span className="text-sm">
+    <div className="flex items-baseline justify-between gap-3 px-4 py-3">
+      <span className="text-sm text-ink">
         {t(`wait.exit.${e.kind}`)}
         {where}
       </span>
       <span className="text-end">
-        <span className="figures font-medium">{formatRs(e.total_rs)}</span>
+        <span className="figures text-lg font-semibold">{formatRs(e.total_rs)}</span>
         {e.kind === 'HOLD' && e.worst_total_rs != null && (
-          <span className="block text-xs text-slate">{t('wait.holdWorst', { amount: formatRs(e.worst_total_rs) })}</span>
+          <span className="block text-sm text-slate">{t('wait.holdWorst', { amount: formatRs(e.worst_total_rs) })}</span>
         )}
       </span>
     </div>
@@ -154,5 +159,9 @@ function Warning({ code, check }: { code: string; check: WaitPlanResponse['news_
     code === 'NEWS_PRICE_CONFLICT' && check
       ? { source: check.news_source, price: formatRs(check.news_price), date: check.news_date }
       : {}
-  return <p className="rounded-lg bg-wheat/20 px-3 py-2 text-sm text-wheat-deep">{t(`wait.warn.${code}`, opts)}</p>
+  return (
+    <Callout tone="caution">
+      <p className="font-semibold">{t(`wait.warn.${code}`, opts)}</p>
+    </Callout>
+  )
 }

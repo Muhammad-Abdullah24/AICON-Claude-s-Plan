@@ -22,14 +22,14 @@ export function History() {
   const c = useMemo(() => readTokens(), [])
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
       {state.status === 'ok' && (
         <>
-          <section className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
-            <h2 className="font-bold">{t('history.weekly')}</h2>
+          <section className="space-y-3 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
+            <h2 className="text-xl font-bold">{t('history.weekly')}</h2>
             <div dir="ltr" className="h-56 w-full" role="img" aria-label={t('history.weekly')}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={state.data.weekly} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -46,8 +46,8 @@ export function History() {
             <DataLabel isSynthetic={state.data.is_synthetic} asOf={state.data.prices_as_of} />
           </section>
 
-          <section className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
-            <h2 className="font-bold">{t('history.seasonal')}</h2>
+          <section className="space-y-3 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
+            <h2 className="text-xl font-bold">{t('history.seasonal')}</h2>
             <div dir="ltr" className="h-52 w-full" role="img" aria-label={t('history.seasonal')}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={state.data.seasonal} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>

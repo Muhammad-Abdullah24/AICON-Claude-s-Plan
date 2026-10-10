@@ -8,6 +8,7 @@ import { DataLabel } from '../components/DataLabel'
 import { DirectionLine } from '../components/DirectionLine'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
+import { Icon } from '../components/ui/Icon'
 import type { Lang } from '../i18n'
 import { addWeeks, formatMonth, formatNumber, formatRs } from '../lib/format'
 import { CHART_MIN_TICK_GAP, CHART_TICK_PX, CHART_Y_AXIS_WIDTH, readTokens } from '../lib/tokens'
@@ -26,18 +27,22 @@ export function Why() {
   const [wait] = useAsync((signal) => api.waitPlan(selection, signal), key)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
-      <section className="space-y-3 rounded-2xl bg-paper p-4 shadow-sm">
-        <h2 className="text-xl font-bold">{t('why.title')}</h2>
+      <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+      <section className="space-y-4 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
+        <h2 className="flex items-center gap-2 text-2xl font-bold">
+          <Icon name="why" className="size-6 text-field" />
+          {t('why.title')}
+        </h2>
         {explain.status === 'loading' && <Loading />}
         {explain.status === 'error' && <ErrorBox error={explain.error} onRetry={reloadExplain} />}
         {explain.status === 'ok' && (
           <>
             <DirectionLine direction={explain.data.direction} />
-            <ul className="space-y-2">
+            <ul className="divide-y divide-line">
               {explain.data.reasons.map((r) => (
-                <li key={r.text_en} className="flex gap-2 text-base">
+                <li key={r.text_en} className="flex gap-3 py-2.5 text-base">
                   <span aria-hidden className={r.direction === 'UP' ? 'text-field' : r.direction === 'DOWN' ? 'text-madder' : 'text-slate'}>
                     {ARROW[r.direction]}
                   </span>
@@ -45,14 +50,14 @@ export function Why() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-slate">
+            <p className="border-t border-line pt-3 text-sm text-slate">
               {explain.data.source === 'shap' ? t('why.sourceShap') : t('why.sourceFacts')}
             </p>
           </>
         )}
       </section>
       {wait.status === 'ok' && wait.data.history && wait.data.history.seasons.length > 0 && (
-        <section className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
+        <section className="space-y-3 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
           <h2 className="text-xl font-bold">{t('why.liquidityTitle')}</h2>
           <p className="text-sm text-slate">{t('why.liquidityNote', { months: wait.data.wait_months })}</p>
           <LiquidityChart history={wait.data.history} />
@@ -62,9 +67,13 @@ export function Why() {
           </ul>
         </section>
       )}
+      </div>
       {forecast.status === 'ok' && (
-        <details className="rounded-2xl bg-paper p-4 shadow-sm">
-          <summary className="cursor-pointer py-2 font-bold">{t('why.chart')}</summary>
+        <details className="group rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 font-bold [&::-webkit-details-marker]:hidden">
+            <span>{t('why.chart')}</span>
+            <Icon name="chevron" className="size-5 text-field transition-transform group-open:rotate-180" />
+          </summary>
           <ForecastChart f={forecast.data} lang={lang} />
         </details>
       )}

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import { api } from '../api/client'
 import { useAsync } from '../lib/useAsync'
+import { Icon } from './ui/Icon'
 
 /** This week's weather at the mandi, with the credit Open-Meteo's CC BY 4.0 licence requires. */
 export function WeatherLine({ mandi }: { mandi: string }) {
@@ -10,7 +11,8 @@ export function WeatherLine({ mandi }: { mandi: string }) {
   if (state.status !== 'ok') return null
   const w = state.data.weather
   return (
-    <p className="flex flex-wrap gap-x-2 text-xs text-slate">
+    <p className="flex flex-wrap items-center gap-x-2 rounded-2xl border border-line bg-paper px-4 py-1 text-sm text-slate">
+      <Icon name="info" className="size-5 text-slate" />
       <span>
         {t('data.weatherLine', {
           tmax: w.tmax_c == null ? '–' : Math.round(w.tmax_c),
