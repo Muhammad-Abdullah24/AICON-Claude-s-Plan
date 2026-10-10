@@ -10,7 +10,7 @@ import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
 import { formatMonth, formatNumber, formatRs } from '../lib/format'
 import { inSeason } from '../lib/months'
-import { readTokens } from '../lib/tokens'
+import { CHART_MIN_TICK_GAP, CHART_TICK_PX, CHART_Y_AXIS_WIDTH, readTokens } from '../lib/tokens'
 import { useAsync } from '../lib/useAsync'
 
 /** 52 weeks of prices, and the usual price by month as % of the yearly trend (UC-12). */
@@ -34,10 +34,10 @@ export function History() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={state.data.weekly} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke={c.line} vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={(d: string) => formatMonth(d, lang)} minTickGap={40}
-                    tick={{ fill: c.slate, fontSize: 12 }} stroke={c.line} />
-                  <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => formatNumber(v)} width={56}
-                    tick={{ fill: c.slate, fontSize: 12, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
+                  <XAxis dataKey="date" tickFormatter={(d: string) => formatMonth(d, lang)} minTickGap={CHART_MIN_TICK_GAP}
+                    tick={{ fill: c.slate, fontSize: CHART_TICK_PX }} stroke={c.line} />
+                  <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => formatNumber(v)} width={CHART_Y_AXIS_WIDTH}
+                    tick={{ fill: c.slate, fontSize: CHART_TICK_PX, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
                   <Tooltip formatter={(v) => formatRs(Number(v))} />
                   <Line dataKey="price" stroke={c.ink} strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>
@@ -52,9 +52,13 @@ export function History() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={state.data.seasonal} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke={c.line} vertical={false} />
-                  <XAxis dataKey="month" tickFormatter={(m: number) => t(`months.${m}`).slice(0, 3)}
-                    tick={{ fill: c.slate, fontSize: 11 }} stroke={c.line} interval={0} />
-                  <YAxis domain={[80, 120]} width={40} tick={{ fill: c.slate, fontSize: 12 }} stroke={c.line} />
+                  {/* Urdu month names are never cut short (a 3-letter Urdu fragment is not a word): full names,
+                      every third month. English uses the short form, every other month. */}
+                  <XAxis dataKey="month"
+                    tickFormatter={(m: number) => (lang === 'ur' ? t(`months.${m}`) : t(`months.${m}`).slice(0, 3))}
+                    tick={{ fill: c.slate, fontSize: CHART_TICK_PX }} stroke={c.line} interval={lang === 'ur' ? 2 : 1} />
+                  <YAxis domain={[80, 120]} width={48} tick={{ fill: c.slate, fontSize: CHART_TICK_PX }}
+                    stroke={c.line} />
                   <ReferenceLine y={100} stroke={c.slate} strokeDasharray="4 3" />
                   <Tooltip formatter={(v) => (v == null ? '–' : `${Number(v).toFixed(0)}%`)}
                     labelFormatter={(m) => t(`months.${String(m)}`)} />

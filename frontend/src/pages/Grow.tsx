@@ -17,7 +17,8 @@ const RISK_STYLE = { LOW: 'bg-field text-paper', MEDIUM: 'bg-wheat text-ink', HI
 export function Grow() {
   const { t } = useTranslation()
   const { meta, farmer, name, cropName } = useAppState()
-  const [mandi, setMandi] = useState<string>(farmer?.district ?? 'bahawalpur')
+  // Default: the farmer's district, else the first mandi the API lists (never a hardcoded mandi).
+  const [mandi, setMandi] = useState<string>(farmer?.district ?? meta.mandis[0].id)
   const [landTyped, setLandTyped] = useState(String(farmer?.land_area_acres ?? 10))
   const land = parseTypedNumber(landTyped)
   const acres = land !== null && land > 0 ? land : undefined
@@ -28,29 +29,51 @@ export function Grow() {
 
   return (
     <div className="space-y-5">
-      <div className="space-y-4 rounded-2xl bg-paper p-4 shadow-sm">
-        <ChipGroup
-          label={t('select.mandi')}
-          options={meta.mandis.map((m) => ({ value: m.id, label: name(m) }))}
-          value={mandi}
-          onChange={setMandi}
-        />
-        <div>
-          <label htmlFor="land" className="mb-1 block text-sm text-slate">
-            {t('grow.land')}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="land"
-              inputMode="decimal"
-              value={landTyped}
-              onChange={(e) => setLandTyped(e.target.value)}
-              className="figures w-28 rounded-xl border-2 border-line bg-paper px-3 py-2 text-xl focus:border-ink focus:outline-none"
-            />
-            <span>{t('grow.acres')}</span>
+      {/* One line until tapped, so the ranking stays on the first screen (same pattern as SelectionBar). */}
+      <details className="group rounded-2xl bg-paper shadow-sm">
+        <summary
+          onClick={(e) => acres === undefined && e.preventDefault()}
+          className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden"
+        >
+          <span className="font-bold">
+            {name(meta.mandis.find((m) => m.id === mandi))} · {acres ?? '–'} {t('grow.acres')}
+          </span>
+          <span className="shrink-0 rounded-full border-2 border-line px-3 text-sm text-slate group-open:hidden">
+            {t('select.change')}
+          </span>
+          <span className="hidden shrink-0 rounded-full border-2 border-line px-3 text-sm text-slate group-open:inline">
+            {t('select.done')}
+          </span>
+        </summary>
+        <div className="space-y-4 px-4 pb-4">
+          <ChipGroup
+            label={t('select.mandi')}
+            options={meta.mandis.map((m) => ({ value: m.id, label: name(m) }))}
+            value={mandi}
+            onChange={setMandi}
+          />
+          <div>
+            <label htmlFor="land" className="mb-1 block text-sm text-slate">
+              {t('grow.land')}
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                id="land"
+                inputMode="decimal"
+                value={landTyped}
+                onChange={(e) => setLandTyped(e.target.value)}
+                aria-invalid={acres === undefined}
+                aria-describedby={acres === undefined ? 'land-error' : undefined}
+                className="figures min-h-12 w-28 rounded-xl border-2 border-line bg-paper px-3 py-2 text-xl focus:border-ink focus:outline-none"
+              />
+              <span>{t('grow.acres')}</span>
+            </div>
+            {acres === undefined && (
+              <p id="land-error" className="mt-1 text-sm text-madder">{t('grow.landInvalid')}</p>
+            )}
           </div>
         </div>
-      </div>
+      </details>
 
       <h2 className="text-xl font-bold">{t('grow.title')}</h2>
       {state.status === 'loading' && <Loading />}

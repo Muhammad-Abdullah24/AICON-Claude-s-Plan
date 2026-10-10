@@ -28,7 +28,7 @@ export function ChipGroup({
         {options.map((o) => (
           <label
             key={o.value}
-            className="cursor-pointer rounded-xl border-2 border-line bg-paper px-4 py-1.5 text-base transition-colors has-checked:border-ink has-checked:bg-ink has-checked:text-cotton has-focus-visible:outline-3 has-focus-visible:outline-wheat"
+            className="inline-flex min-h-12 cursor-pointer items-center rounded-xl border-2 border-line bg-paper px-4 py-1.5 text-base transition-colors has-checked:border-ink has-checked:bg-ink has-checked:text-cotton has-focus-visible:outline-3 has-focus-visible:outline-wheat"
           >
             <input
               type="radio"

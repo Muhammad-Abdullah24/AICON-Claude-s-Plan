@@ -10,7 +10,7 @@ import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
 import { addWeeks, formatMonth, formatNumber, formatRs } from '../lib/format'
-import { readTokens } from '../lib/tokens'
+import { CHART_MIN_TICK_GAP, CHART_TICK_PX, CHART_Y_AXIS_WIDTH, readTokens } from '../lib/tokens'
 import { useAsync } from '../lib/useAsync'
 
 const ARROW = { UP: '⬆', DOWN: '⬇', '': '•' } as const
@@ -52,7 +52,7 @@ export function Why() {
       </section>
       {forecast.status === 'ok' && (
         <details className="rounded-2xl bg-paper p-4 shadow-sm">
-          <summary className="cursor-pointer font-bold">{t('why.chart')}</summary>
+          <summary className="cursor-pointer py-2 font-bold">{t('why.chart')}</summary>
           <ForecastChart f={forecast.data} lang={lang} />
         </details>
       )}
@@ -81,10 +81,10 @@ function ForecastChart({ f, lang }: { f: ForecastResponse; lang: Lang }) {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={c.line} vertical={false} />
-            <XAxis dataKey="date" tickFormatter={(d: string) => formatMonth(d, lang)} minTickGap={40}
-              tick={{ fill: c.slate, fontSize: 12 }} stroke={c.line} />
-            <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => formatNumber(v)} width={56}
-              tick={{ fill: c.slate, fontSize: 12, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
+            <XAxis dataKey="date" tickFormatter={(d: string) => formatMonth(d, lang)} minTickGap={CHART_MIN_TICK_GAP}
+              tick={{ fill: c.slate, fontSize: CHART_TICK_PX }} stroke={c.line} />
+            <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => formatNumber(v)} width={CHART_Y_AXIS_WIDTH}
+              tick={{ fill: c.slate, fontSize: CHART_TICK_PX, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
             <Tooltip formatter={(v) => (Array.isArray(v) ? v.map((x) => formatRs(Number(x))).join(' – ') : formatRs(Number(v)))} />
             <Area dataKey="band" name={t('why.legendRange')} stroke="none" fill={c.wheat} fillOpacity={0.35} isAnimationActive={false} />
             <Line dataKey="price" name={t('why.legendHistory')} stroke={c.ink} strokeWidth={2} dot={false} isAnimationActive={false} />
