@@ -10,10 +10,22 @@ import type { Lang } from '../i18n'
 import { formatDate, formatMonth, formatRs, parseTypedNumber } from '../lib/format'
 import { inSeason } from '../lib/months'
 import { useAsync } from '../lib/useAsync'
+import {
+  noteLine,
+  notRankedKeys,
+  policyLine,
+  seasonSections,
+  seasonStatusLine,
+  type SeasonSection,
+  type SupportPriceContext,
+} from './growLogic'
 
 const RISK_STYLE = { LOW: 'bg-field text-paper', MEDIUM: 'bg-wheat text-ink', HIGH: 'bg-madder text-paper' } as const
 
-/** Crop options ranked by expected profit at harvest, each with its season and best selling month (UC-05, UC-06). */
+/**
+ * Crop options with their expected profit at harvest, season and best selling month (UC-05, UC-06), compared only
+ * within a season and only on current, reliable reference prices (F4). The API decides which crops are ranked.
+ */
 export function Grow() {
   const { t } = useTranslation()
   const { meta, farmer, name, cropName } = useAppState()
@@ -80,8 +92,12 @@ export function Grow() {
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
       {state.status === 'ok' && (
         <>
-          {state.data.items.map((item) => (
-            <CropCard key={item.crop} item={item} />
+          {seasonSections(state.data).map((section) => (
+            <SeasonBlock
+              key={section.season}
+              section={section}
+              policy={section.items.some((i) => i.crop === 'wheat') ? state.data.support_price_context : null}
+            />
           ))}
           {state.data.not_available.length > 0 && (
             <p className="text-sm text-slate">
@@ -96,23 +112,72 @@ export function Grow() {
   )
 }
 
+/** One season: whether its crops could be compared (and why not), the wheat policy context, then the crops. */
+function SeasonBlock({ section, policy }: { section: SeasonSection; policy: SupportPriceContext | null }) {
+  const { t } = useTranslation()
+  const status = seasonStatusLine(section)
+  const headingId = `season-${section.season}`
+  return (
+    <section className="space-y-3" aria-labelledby={headingId}>
+      <h3 id={headingId} className="text-lg font-bold">
+        {t(`grow.seasons.${section.season}`)}
+      </h3>
+      <p
+        role="status"
+        className={`rounded-xl p-3 text-sm ${section.status === 'RANKED' ? 'bg-paper text-slate' : 'bg-wheat-soft text-ink'}`}
+      >
+        {t(status.key, status.params)}
+      </p>
+      {policy && <PolicyContext ctx={policy} />}
+      {section.items.map((item) => (
+        <CropCard key={item.crop} item={item} />
+      ))}
+    </section>
+  )
+}
+
+/** Wheat's support-price status from the policy timeline (H3): context, never a mandi price or a promise. */
+function PolicyContext({ ctx }: { ctx: SupportPriceContext }) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language as Lang
+  const line = policyLine(ctx, lang, (iso) => formatDate(iso, lang))
+  return (
+    <aside className="space-y-1 rounded-2xl border-2 border-line bg-paper p-4">
+      <h4 className="font-bold">{t('grow.policy.title')}</h4>
+      <p className={ctx.state === 'CURRENT' ? undefined : 'text-wheat-deep'}>{t(line.key, line.params)}</p>
+      <p className="text-sm text-slate">{t('grow.policy.limit')}</p>
+      {ctx.event && (
+        <a href={ctx.event.url} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center text-sm underline">
+          {t('grow.policy.link')}
+        </a>
+      )}
+    </aside>
+  )
+}
+
 function CropCard({ item }: { item: CropPlanItem }) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language as Lang
   const { cropName } = useAppState()
   const profit = item.expected_profit
+  const notRanked = notRankedKeys(item)
 
   return (
     <article className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-lg font-bold">
-          <span className="figures me-2 text-slate">{item.rank}</span>
+        <h4 className="text-lg font-bold">
+          {item.rank != null && <span className="figures me-2 text-slate">{item.rank}</span>}
           {cropName(item.crop)}
-        </h3>
+        </h4>
         <span className={`rounded px-2 text-sm ${RISK_STYLE[item.risk_level]}`}>
           {t('grow.risk')}: {t(`grow.riskLevels.${item.risk_level}`)}
         </span>
       </div>
+      {notRanked && notRanked.length > 0 && (
+        <p className="text-sm text-wheat-deep">
+          {t('grow.notRanked')} {notRanked.map((k) => t(k)).join('، ')}
+        </p>
+      )}
       <p className="text-sm text-slate">{t('grow.profitTotal')}</p>
       <p className={`figures text-3xl ${profit >= 0 ? 'text-field' : 'text-madder'}`}>
         {profit >= 0 ? '+' : '−'}
@@ -147,6 +212,17 @@ function CropCard({ item }: { item: CropPlanItem }) {
           {t(item.is_stale ? 'data.stale' : 'data.asOf', { date: formatDate(item.latest_price_date, lang) })}
         </span>
       </p>
+      {item.notes.map((note) => {
+        const line = noteLine(note, item, (m) => t(`months.${m}`), (iso) => formatDate(iso, lang))
+        return (
+          <p key={note.id} className="rounded-xl bg-wheat-soft p-3 text-sm">
+            {t(line.key, line.params)}{' '}
+            <a href={note.url} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center underline">
+              {t('grow.noteSource')}
+            </a>
+          </p>
+        )
+      })}
     </article>
   )
 }
