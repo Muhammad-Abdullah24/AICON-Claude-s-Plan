@@ -57,6 +57,7 @@ from backend.app.schemas import (
     Storage,
     TokenResponse,
     WaitPlanResponse,
+    WeatherOutlookResponse,
     WeatherResponse,
 )
 
@@ -201,6 +202,16 @@ def current_weather(mandi: MandiId) -> WeatherResponse:
 
 
 # ---------------------------------------------------------------- advice, compare, offer, margin, crop plan
+
+@router.get("/weather-outlook", response_model=WeatherOutlookResponse)
+def weather_outlook(mandi: MandiId) -> WeatherOutlookResponse:
+    """Rain in the next days at the mandi (Open-Meteo daily forecast, up to 16 days). 503 when unavailable."""
+    try:
+        o = weather.outlook(MANDI_TO_DATA[mandi])
+    except LookupError as e:
+        raise HTTPException(503, str(e)) from e
+    return WeatherOutlookResponse(mandi=mandi, **o)
+
 
 @router.get("/advice", response_model=AdviceResponse)
 def advice(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None, as_of: AsOf = None,

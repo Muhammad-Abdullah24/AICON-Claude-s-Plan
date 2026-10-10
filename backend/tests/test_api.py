@@ -474,3 +474,14 @@ def test_wait_plan_week_by_week_after_harvest(client):
     old = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "as_of": "2018-06-01"}).json()
     new = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur"}).json()
     assert old["weeks_n_years"] < new["weeks_n_years"]                      # no peeking past as_of
+
+
+def test_weather_outlook_headline_rules():
+    from backend.app.weather import summarize_outlook
+    day = lambda i, mm, p: {"date": f"2026-10-{10 + i:02d}", "rain_mm": mm, "rain_prob": p, "tmax": 33}  # noqa: E731
+    soon = summarize_outlook([day(0, 0, 5), day(1, 6, 45)] + [day(i, 0, 0) for i in range(2, 16)])
+    assert soon["headline"] == "RAIN_SOON" and soon["first_rain_date"] == "2026-10-11" and soon["dry_days"] == 14
+    later = summarize_outlook([day(i, 0, 0) for i in range(5)] + [day(5, 3, 60)] + [day(i, 0, 0) for i in range(6, 16)])
+    assert later["headline"] == "RAIN_LATER" and later["first_rain_date"] == "2026-10-15"
+    dry = summarize_outlook([day(i, 0.5, 80) for i in range(16)])          # drizzle under 1 mm is not rain
+    assert dry["headline"] == "DRY" and dry["rain_days"] == 0 and len(dry["days"]) == 7

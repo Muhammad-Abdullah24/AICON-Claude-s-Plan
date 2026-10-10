@@ -26,6 +26,7 @@ export type MarginResponse = S['MarginResponse']
 export type CropPlanResponse = S['CropPlanResponse']
 export type CropPlanItem = S['CropPlanItem']
 export type WeatherResponse = S['WeatherResponse']
+export type WeatherOutlookResponse = S['WeatherOutlookResponse']
 export type Farmer = S['Farmer']
 export type FarmerIn = S['FarmerIn']
 export type FarmerUpdate = S['FarmerUpdate']
@@ -219,6 +220,8 @@ export const api = {
     request<OfferCheckResponse>(`/api/offer-check${priced({})}`, post(body)),
   margin: (p: { crop: string; price: number; arhti_pct?: number | null }, signal?: AbortSignal) =>
     request<MarginResponse>(`/api/margin${query(p)}`, { signal }),
+  weatherOutlook: (mandi: string, signal?: AbortSignal) =>
+    request<WeatherOutlookResponse>(`/api/weather-outlook${query({ mandi })}`, { signal }),
   weather: (mandi: string, signal?: AbortSignal) =>
     request<WeatherResponse>(`/api/weather${query({ mandi })}`, { signal }),
   chat: (body: { question: string; crop?: string; mandi?: string; quantity_maund?: number }) =>

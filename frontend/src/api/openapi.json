@@ -316,6 +316,54 @@
         }
       }
     },
+    "/api/weather-outlook": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Weather Outlook",
+        "description": "Rain in the next days at the mandi (Open-Meteo daily forecast, up to 16 days). 503 when unavailable.",
+        "operationId": "weather_outlook_api_weather_outlook_get",
+        "parameters": [
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherOutlookResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/advice": {
       "get": {
         "tags": [
@@ -4860,6 +4908,43 @@
         ],
         "title": "OfferCheckResponse"
       },
+      "OutlookDay": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "rain_mm": {
+            "type": "number",
+            "title": "Rain Mm"
+          },
+          "rain_prob": {
+            "type": "integer",
+            "title": "Rain Prob"
+          },
+          "tmax": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tmax"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "rain_mm",
+          "rain_prob",
+          "tmax"
+        ],
+        "title": "OutlookDay"
+      },
       "PolicyEvent": {
         "properties": {
           "date": {
@@ -5649,6 +5734,124 @@
           "attribution"
         ],
         "title": "WeatherNow"
+      },
+      "WeatherOutlookResponse": {
+        "properties": {
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "headline": {
+            "type": "string",
+            "enum": [
+              "RAIN_SOON",
+              "RAIN_LATER",
+              "DRY"
+            ],
+            "title": "Headline"
+          },
+          "first_rain_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Rain Date"
+          },
+          "first_rain_prob": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Rain Prob"
+          },
+          "first_rain_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Rain Mm"
+          },
+          "rain_days": {
+            "type": "integer",
+            "title": "Rain Days"
+          },
+          "dry_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dry From"
+          },
+          "dry_days": {
+            "type": "integer",
+            "title": "Dry Days"
+          },
+          "max_temp_7d": {
+            "type": "integer",
+            "title": "Max Temp 7D"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/OutlookDay"
+            },
+            "type": "array",
+            "title": "Days"
+          },
+          "horizon_days": {
+            "type": "integer",
+            "title": "Horizon Days"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandi",
+          "headline",
+          "first_rain_date",
+          "first_rain_prob",
+          "first_rain_mm",
+          "rain_days",
+          "dry_from",
+          "dry_days",
+          "max_temp_7d",
+          "days",
+          "horizon_days",
+          "fetched_at",
+          "attribution"
+        ],
+        "title": "WeatherOutlookResponse"
       },
       "WeatherResponse": {
         "properties": {

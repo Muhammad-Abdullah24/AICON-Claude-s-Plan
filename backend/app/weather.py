@@ -96,3 +96,70 @@ def current(mandi: str, fetch=None, clock=time.time) -> dict:
             return {**hit[1], "cached": True}
         rows = _offline()[mandi][-92:]
         return _summary(rows, True, "offline file", datetime.now(UTC))
+
+
+# ---------------------------------------------------------------- outlook: rain in the next days (demo, 10 Oct)
+
+OUTLOOK_DAYS = 16          # Open-Meteo's daily forecast reaches 16 days; beyond that it is not a forecast
+RAIN_MM = 1.0              # a day counts as rainy at 1 mm or more with at least RAIN_PROB % chance
+RAIN_PROB = 30
+_outlook_cache: dict[str, tuple[float, dict]] = {}
+
+
+def fetch_outlook(lat: float, lon: float, timeout: float = 8.0) -> list[dict]:
+    q = urllib.parse.urlencode({"latitude": lat, "longitude": lon,
+                                "daily": "precipitation_sum,precipitation_probability_max,temperature_2m_max",
+                                "forecast_days": OUTLOOK_DAYS, "timezone": "Asia/Karachi"})
+    with urllib.request.urlopen(f"{API}?{q}", timeout=timeout) as resp:
+        d = json.loads(resp.read())["daily"]
+    return [{"date": day, "rain_mm": d["precipitation_sum"][i] or 0.0,
+             "rain_prob": d["precipitation_probability_max"][i] or 0, "tmax": d["temperature_2m_max"][i]}
+            for i, day in enumerate(d["time"])]
+
+
+def summarize_outlook(days: list[dict]) -> dict:
+    """One plain headline from the daily forecast: rain in the next 3 days, rain later, or dry; plus how long the
+    dry spell after the last rainy day lasts, and the hottest day this week."""
+    rainy = [d for d in days if d["rain_mm"] >= RAIN_MM and d["rain_prob"] >= RAIN_PROB]
+    first = rainy[0] if rainy else None
+    if first and days.index(first) <= 2:
+        headline = "RAIN_SOON"
+    elif first:
+        headline = "RAIN_LATER"
+    else:
+        headline = "DRY"
+    after = days.index(rainy[-1]) + 1 if rainy else 0
+    dry_from = days[after]["date"] if after < len(days) else None
+    return {
+        "headline": headline,
+        "first_rain_date": first["date"] if first else None,
+        "first_rain_prob": int(first["rain_prob"]) if first else None,
+        "first_rain_mm": round(first["rain_mm"], 1) if first else None,
+        "rain_days": len(rainy),
+        "dry_from": dry_from,
+        "dry_days": len(days) - after,
+        "max_temp_7d": round(max(d["tmax"] for d in days[:7] if d["tmax"] is not None)),
+        "days": [{"date": d["date"], "rain_mm": round(d["rain_mm"], 1), "rain_prob": int(d["rain_prob"]),
+                  "tmax": round(d["tmax"]) if d["tmax"] is not None else None} for d in days[:7]],
+        "horizon_days": len(days),
+    }
+
+
+def outlook(mandi: str, fetch=None, clock=time.time) -> dict:
+    """The next days' rain outlook for a mandi (data name). Cached an hour; raises LookupError if unavailable."""
+    hit = _outlook_cache.get(mandi)
+    if hit and clock() - hit[0] < CACHE_SECONDS:
+        return hit[1]
+    lat, lon = COORDS[mandi]
+    try:
+        days = (fetch or fetch_outlook)(lat, lon)
+        if not days:
+            raise ValueError("no days")
+        out = {**summarize_outlook(days), "fetched_at": datetime.now(UTC), "attribution": WEATHER_ATTRIBUTION}
+        _outlook_cache[mandi] = (clock(), out)
+        return out
+    except (urllib.error.URLError, TimeoutError, ValueError, KeyError, TypeError) as e:
+        if hit:
+            return hit[1]
+        raise LookupError(f"weather outlook unavailable for {mandi} ({type(e).__name__})") from e
+
