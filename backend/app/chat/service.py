@@ -15,7 +15,7 @@ from backend.app.channels.parse import parse
 from backend.app.channels.provider import AdviceProvider, NotReady
 from backend.app.chat import guard
 from backend.app.chat.llm import LLM, LLMUnavailable, RateLimiter
-from backend.app.chat.prompt import SYSTEM_PROMPT, build_context, user_message
+from backend.app.chat.prompt import SYSTEM_PROMPT, build_context, extra_context, user_message
 
 log = logging.getLogger("farmsight.chat")
 
@@ -37,6 +37,23 @@ class ChatAnswer:
 def _template(a: dict, reason: str, crop: str, mandi: str) -> ChatAnswer:
     return ChatAnswer(reply.advice_text(a), True, reason, crop, mandi,
                       a.get("data_source", "amis"), bool(a.get("is_synthetic")))
+
+
+def _extras(crop: str, mandi: str, qty: float) -> str:
+    """Crop plan, wait plan, loan costs and wheat policy for the context. Any failure just leaves a part out."""
+    from backend.app import services  # noqa: PLC0415 (service layer; imported late to keep the chat module light)
+    parts: dict = {}
+    for key, call in (("crop_plan", lambda: services.crop_plan(mandi, 1)),
+                      ("wait", lambda: services.wait_plan(crop, mandi, qty)),
+                      ("loan", lambda: services.loan_plan("Wheat", 1)),
+                      ("policy", lambda: services.crop_plan(mandi, 1).get("support_price_context"))):
+        try:
+            parts[key] = call()
+        except Exception:  # noqa: BLE001 (a missing part must never break the answer)
+            parts[key] = None
+    pol = parts["policy"]
+    policy = (pol.get("text_en") or pol.get("summary_en")) if isinstance(pol, dict) else None
+    return extra_context(parts["crop_plan"], parts["wait"], parts["loan"], policy)
 
 
 def answer(question: str, crop_option: str | None, mandi: str | None, quantity_maund: float | None,
@@ -66,6 +83,9 @@ def answer(question: str, crop_option: str | None, mandi: str | None, quantity_m
     if not limiter.allow("gemini"):
         return _template(a, "rate_limited", crop, mandi)
     context = build_context(a, reasons)
+    extra = _extras(crop, mandi, qty)
+    if extra:
+        context = f"{context}\n{extra}"
     try:
         text = llm.generate(SYSTEM_PROMPT, user_message(context, question))
     except LLMUnavailable as e:

@@ -69,7 +69,6 @@ export function Margin() {
                 })}
               </p>
             )}
-            <p className="text-sm text-slate">{t('margin.costNote', { confidence: state.data.cost_confidence })}</p>
             <DataLabel isSynthetic={state.data.is_synthetic} />
           </>
         )}

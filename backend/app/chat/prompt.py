@@ -11,16 +11,17 @@ MODEL_DEFAULT = "gemini-3.5-flash-lite"   # gemini-2.5-flash is closed to new ke
 TEMPERATURE = 0.2
 MAX_OUTPUT_TOKENS = 400
 
-SYSTEM_PROMPT = """You are FarmSight's assistant for farmers in South Punjab, Pakistan. You answer one question about selling one crop, using only the CONTEXT, which comes from FarmSight's price forecast and advisory engine.
+SYSTEM_PROMPT = """You are KASHT's farm assistant for small farmers in South Punjab, Pakistan. You answer the farmer's question about selling, waiting, borrowing or which crop to sow, using only the CONTEXT, which comes from KASHT's price, crop-plan, wait-plan and loan engines.
 
 Rules:
 1. Reply in the farmer's language: Urdu script if the question is in Urdu script, Roman Urdu if it is in Roman Urdu, English if it is in English. Never use Hindi (Devanagari) script.
 2. Use only numbers that appear in the CONTEXT or in the question. Never calculate, estimate, round or invent a number, price, percentage or date. Write every number with digits, exactly as it appears in the CONTEXT.
-3. If the answer is not in the CONTEXT, say you do not know, and suggest asking about today's price, the 4-week forecast, the best mandi, or why.
-4. Never change the advice. If the signal is SELL, do not tell the farmer to wait; if it is WAIT, do not tell them to sell now.
-5. The forecast is an estimate, not a guarantee. Say so if the farmer asks for certainty.
-6. Give no advice on loans, seeds, fertiliser, pesticides or weather beyond what the CONTEXT says.
-7. Keep it short: at most 4 sentences, in plain words a farmer with little schooling understands."""
+3. Answer first, in one clear sentence (for example which crop to sow, sell now or wait, how much to borrow), then at most 2 short reasons from the CONTEXT.
+4. For "what to sow", use the crop plan: match the month the farmer asks about to the crops' sowing months, and name the best crop of that season. If no tracked crop is sown in that month, say which tracked crop is sown next and when.
+5. If the answer is not in the CONTEXT, say so in one sentence and suggest asking about selling, waiting, loans or which crop to sow.
+6. Never change the advice: if the signal or plan says sell, do not tell the farmer to wait, and the reverse.
+7. These are estimates, not guarantees; say so in a few words.
+8. Keep it short: at most 4 sentences, in plain words a farmer with little schooling understands."""
 
 USER_TEMPLATE = """CONTEXT:
 {context}
@@ -49,6 +50,43 @@ def build_context(a: Mapping, reasons: Sequence[Mapping] = ()) -> str:
         lines.append("data: SYNTHETIC placeholder, not real prices")
     for r in list(reasons)[:3]:
         lines.append(f"reason: {r.get('text_ur', '')}")
+    return "\n".join(lines)
+
+
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December")
+
+
+def _months(span) -> str:
+    a, b = span
+    return MONTHS[a - 1] if a == b else f"{MONTHS[a - 1]} to {MONTHS[b - 1]}"
+
+
+def extra_context(crop_plan: Mapping | None, wait: Mapping | None, loan: Mapping | None,
+                  policy: str | None) -> str:
+    """More facts from the app's engines, so the assistant can answer beyond today's sell signal."""
+    lines = []
+    if crop_plan:
+        for s in crop_plan.get("seasons", []):
+            crops = [i for i in crop_plan["items"] if i.get("season") == s["season"]]
+            ranked = s["status"] == "RANKED"
+            lines.append(f"crop plan, {s['season']} season: "
+                         + ("crops ranked by estimated profit" if ranked else "too few tracked crops to rank"))
+            for i in crops:
+                lines.append(f"  {i['crop_option']}: sow {_months(i['sowing_months'])}, harvest {_months(i['harvest_months'])}, "
+                             f"estimated profit {rs(i['profit_per_acre'])} per acre, price risk {i['risk_level']}"
+                             + (f", rank {i['rank']}" if ranked and i.get('rank') else "")
+                             + (", price data old" if i.get("is_stale") else ""))
+    if wait:
+        h = wait.get("history") or {}
+        lines.append(f"wait plan for {wait.get('quantity_maund', 0):g} maund (own money, proper store): {wait['verdict']}"
+                     + (f"; waiting paid in {h['wins']} of {h['n']} past years" if h else ""))
+    if loan:
+        lines.append(f"loan plan for wheat, per acre: cash needed before selling {rs(loan['input_need_rs'] / loan['acres'])}; "
+                     "cheapest money first: Kissan Card (0% interest, up to Rs 30,000 per acre, up to Rs 150,000), "
+                     "PM Youth loan (0%, age 21 to 45), Akhuwat (0%, small), bank about 16.5% a year, arhti about 66% a year")
+    if policy:
+        lines.append(f"wheat policy: {policy}")
     return "\n".join(lines)
 
 

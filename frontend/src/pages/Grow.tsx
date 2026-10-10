@@ -108,7 +108,6 @@ export function Grow() {
               {t('grow.notAvailable', { crops: state.data.not_available.map(cropName).join('، ') })}
             </p>
           )}
-          <p className="text-xs text-slate">{t('grow.estimateNote')}</p>
           <DataLabel isSynthetic={state.data.is_synthetic} />
         </>
       )}

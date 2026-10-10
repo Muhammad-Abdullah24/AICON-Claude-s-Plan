@@ -56,7 +56,6 @@ export function Loan() {
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-bold">{t('loan.title')}</h2>
-        <p className="text-sm text-slate">{t('loan.intro')}</p>
       </div>
       {/* One line until tapped, so the answer stays on the first screen (same pattern as SelectionBar and Grow). */}
       <details className="group rounded-2xl bg-paper shadow-sm">
