@@ -37,11 +37,6 @@ class FakeProvider:
         self._check(crop_option, mandi)
         return [{"mandi": mandi, "net_price": 3800, "has_data": True}]
 
-    def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
-        self.calls.append(("offer", crop_option, mandi, quantity_maund, offer_price))
-        self._check(crop_option, mandi)
-        return {"buyer_offer_price": offer_price, "reference_price": 3820, "result_status": "REFERENCE_DATA_LIMITED"}
-
     def set_alerts(self, phone, enabled):  # the engine never calls it: the channel applies alert_action
         raise AssertionError("engine must not write")
 
@@ -94,21 +89,14 @@ def test_zero_and_help_open_the_main_menu_from_anywhere(text):
 
 # ---------------------------------------------------------------- guided advice flow
 
-def test_menu_1_is_the_offer_check_and_ends_in_the_service_layer_result():
-    out, _ = chat("0", "1", crop_no("Wheat"), mandi_no("BahawalPur"), "100")
-    assert out.reply.kind == "ask_offer" and out.state.step == conv.OFFER_STEP and numbers(out) == ["0"]
-    out, provider = chat("0", "1", crop_no("Wheat"), mandi_no("BahawalPur"), "100", "3514")
-    assert out.reply.kind == "offer"
-    assert out.reply.data["result"]["reference_price"] == 3820          # straight from the provider
-    assert provider.calls == [("offer", "Wheat", "BahawalPur", 100.0, 3514.0)]
-    assert out.state.step == conv.POST_ADVICE and out.state.last_offer == 3514
+def test_wheat_flow_ends_in_the_service_layer_advice():
+    out, provider = chat("0", "1", crop_no("Wheat"), mandi_no("BahawalPur"), "100")
+    assert out.reply.kind == "advice"
+    assert out.reply.data["advice"]["current_price"] == 3820          # straight from the provider
+    assert provider.calls == [("advice", "Wheat", "BahawalPur", 100.0)]
+    assert out.state.step == conv.POST_ADVICE and out.state.last_crop == "Wheat"
     assert out.reply.choices == (("1", "why"), ("2", "compare"), ("3", "alerts_on"), ("0", "menu"))
-
-
-def test_guided_advice_still_works_from_free_text():
-    out, provider = chat("gandum", mandi_no("BahawalPur"), "100")
-    assert out.reply.kind == "advice" and provider.calls == [("advice", "Wheat", "BahawalPur", 100.0)]
-    assert out.reply.data["quantity_assumed"] is False and out.state.last_offer is None
+    assert out.reply.data["quantity_assumed"] is False
 
 
 def test_each_step_lists_its_numbers_and_zero():
@@ -123,16 +111,16 @@ def test_each_step_lists_its_numbers_and_zero():
 def test_rice_asks_the_variety_and_only_rice_does():
     out, _ = chat("0", "1", crop_no(conv.RICE))
     assert out.reply.kind == "ask_variety" and out.state.step == conv.RICE_VARIETY
-    out, provider = chat("0", "1", crop_no(conv.RICE), variety_no("IRRI"), mandi_no("Vehari"), "40", "4500")
-    assert provider.calls == [("offer", "IRRI", "Vehari", 40.0, 4500.0)]
+    out, provider = chat("0", "1", crop_no(conv.RICE), variety_no("IRRI"), mandi_no("Vehari"), "40")
+    assert provider.calls == [("advice", "IRRI", "Vehari", 40.0)]
     out, _ = chat("0", "1", crop_no("Cotton"))
     assert out.reply.kind == "ask_mandi"
 
 
 @pytest.mark.parametrize("qty, expected", [("100 man", 100.0), ("2000 kg", 50.0), ("۵۰", 50.0), ("12.5", 12.5)])
 def test_quantity_accepts_units_and_urdu_digits(qty, expected):
-    _, provider = chat("0", "1", crop_no("Wheat"), mandi_no("Vehari"), qty, "3500")
-    assert provider.calls[-1] == ("offer", "Wheat", "Vehari", expected, 3500.0)
+    _, provider = chat("0", "1", crop_no("Wheat"), mandi_no("Vehari"), qty)
+    assert provider.calls[-1] == ("advice", "Wheat", "Vehari", expected)
 
 
 def test_compare_flow_and_why_flow():
@@ -307,12 +295,12 @@ def test_unknown_text_after_advice_goes_to_chat_with_the_query_context():
 
 def test_no_price_at_that_mandi_asks_for_another_mandi():
     provider = FakeProvider(missing={("IRRI", "RahimYarKhan")})
-    out, _ = chat("0", "1", crop_no(conv.RICE), variety_no("IRRI"), mandi_no("RahimYarKhan"), "40", "4500",
+    out, _ = chat("0", "1", crop_no(conv.RICE), variety_no("IRRI"), mandi_no("RahimYarKhan"), "40",
                   provider=provider)
     assert out.reply.kind == "no_data" and out.state.step == conv.MANDI
-    assert out.state.draft_crop == "IRRI" and (out.state.draft_quantity, out.state.draft_offer) == (40, 4500)
+    assert out.state.draft_crop == "IRRI" and out.state.draft_quantity == 40
     out = say(mandi_no("Vehari"), out.state, provider)
-    assert out.reply.kind == "offer" and provider.calls[-1] == ("offer", "IRRI", "Vehari", 40, 4500)
+    assert out.reply.kind == "advice" and provider.calls[-1] == ("advice", "IRRI", "Vehari", 40)
 
 
 def test_service_not_ready_is_said_and_returns_to_the_menu():
@@ -332,70 +320,3 @@ def test_state_keeps_only_codes_and_numbers():
 def test_unknown_step_is_rejected():
     with pytest.raises(ValueError):
         State(step="anything")
-
-
-# ---------------------------------------------------------------- the buyer offer check
-
-@pytest.mark.parametrize("text, call", [
-    ("گندم بہاولپور 100 من آفر 3514", ("offer", "Wheat", "BahawalPur", 100.0, 3514.0)),
-    ("gandum bwp 100 man offer Rs 3514", ("offer", "Wheat", "BahawalPur", 100.0, 3514.0)),
-    ("offer 3514 gandum vehari 50", ("offer", "Wheat", "Vehari", 50.0, 3514.0)),
-    ("گندم آفر ۳۵۱۴ روپے فی من بہاولپور 80 من", ("offer", "Wheat", "BahawalPur", 80.0, 3514.0)),
-])
-def test_free_text_offer_checks_at_once(text, call):
-    out, provider = chat(text)
-    assert out.reply.kind == "offer" and provider.calls == [call]
-
-
-def test_an_offer_word_never_assumes_a_quantity_or_guesses_a_price():
-    out, provider = chat("gandum bahawalpur offer 3514")          # no quantity: ask, do not assume 100
-    assert out.reply.kind == "ask_quantity" and out.state.draft_offer == 3514 and provider.calls == []
-    out, provider = chat("gandum bahawalpur 100 man offer 3500 offer 3600")   # two prices: ask
-    assert out.reply.kind == "ask_offer" and out.state.draft_offer is None and provider.calls == []
-    out, provider = chat("gandum bahawalpur 100 man aafar")       # an offer word without a price: ask
-    assert out.reply.kind == "ask_offer" and provider.calls == []
-    out, _ = chat("آفر")                                          # the word alone starts the flow
-    assert out.reply.kind == "ask_crop" and out.state.pending == conv.OFFER
-
-
-def test_a_bare_price_is_never_read_as_an_offer_without_the_offer_step():
-    out, provider = chat("gandum bahawalpur 3514")   # a plain number is a quantity, as it always was
-    assert out.reply.kind == "advice" and provider.calls == [("advice", "Wheat", "BahawalPur", 3514.0)]
-
-
-@pytest.mark.parametrize("bad", ["0.0", "abc", "-5", "1000001", "3514 100"])
-def test_invalid_offer_value_keeps_the_offer_step(bad):
-    out, provider = chat("0", "1", crop_no("Wheat"), mandi_no("Vehari"), "100", bad)   # "0.0" is a price, not "0"
-    assert out.reply.kind == "ask_offer" and out.reply.data["invalid"] is True
-    assert out.state.step == conv.OFFER_STEP and provider.calls == []
-
-
-@pytest.mark.parametrize("price", ["Rs 3514", "3514 روپے", "۳۵۱۴"])
-def test_offer_step_accepts_currency_words_and_urdu_digits(price):
-    _, provider = chat("0", "1", crop_no("Wheat"), mandi_no("Vehari"), "100", price)
-    assert provider.calls == [("offer", "Wheat", "Vehari", 100.0, 3514.0)]
-
-
-def test_after_an_offer_2_compares_against_that_offer_and_1_explains():
-    out, provider = chat("gandum bwp 100 man offer 3514", "2")
-    assert out.reply.kind == "offer_compare" and provider.calls[-1] == ("offer", "Wheat", "BahawalPur", 100.0, 3514.0)
-    out, provider = chat("gandum bwp 100 man offer 3514", "1")
-    assert out.reply.kind == "why" and ("explain", "Wheat", "BahawalPur") in provider.calls
-
-
-def test_plain_advice_after_an_offer_forgets_the_offer():
-    out, provider = chat("gandum bwp 100 man offer 3514", "kapas vehari 20", "2")
-    assert out.reply.kind == "compare" and provider.calls[-1] == ("compare", "Cotton", "Vehari", 20.0)
-
-
-def test_root_menu_order_is_offer_first():
-    out, _ = chat("0")
-    assert out.reply.choices == (("1", "offer"), ("2", "compare"), ("3", "why"), ("4", "alerts_on"),
-                                 ("5", "alerts_off"), ("0", "menu"))
-
-
-def test_legacy_3_still_stops_alerts_and_menu_3_is_why():
-    out, _ = chat("3")
-    assert out.alert_action is False
-    out, _ = chat("0", "3")
-    assert out.reply.kind == "ask_crop" and out.state.pending == conv.WHY and out.alert_action is None

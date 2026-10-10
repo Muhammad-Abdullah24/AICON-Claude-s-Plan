@@ -57,7 +57,7 @@ def test_compare_mandis_best_first_and_flags_missing():
     priced = [r for r in rows if r["has_data"]]
     assert [r["net_price"] for r in priced] == sorted((r["net_price"] for r in priced), reverse=True)
     assert next(r for r in priced if r["mandi"] == "Vehari")["gain_vs_preferred"] == 0
-    assert {"mandi": "RahimYarKhan", "has_data": False, "is_best": False} in rows
+    assert {"mandi": "RahimYarKhan", "has_data": False} in rows
 
 
 def test_explanation_is_facts_and_says_it_is_a_baseline():

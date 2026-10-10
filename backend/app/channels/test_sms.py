@@ -42,8 +42,6 @@ def fresh_db(monkeypatch):
 class FakeProvider:
     def __init__(self, advice=None, registered=(PHONE,)):
         self.a, self.calls = dict(advice or ADVICE), []
-        from backend.app.channels.test_whatsapp import offer_result  # noqa: PLC0415 (one realistic shape)
-        self.offer_answer = offer_result()
         self.alerts = {p: False for p in registered}
 
     def advice(self, crop_option, mandi, quantity_maund, phone):
@@ -59,10 +57,6 @@ class FakeProvider:
                 {"mandi": "BahawalPur", "net_price": 3820, "transport_cost": 0, "gain_vs_preferred": 0,
                  "has_data": True, "is_stale": True},
                 {"mandi": "RahimYarKhan", "has_data": False}]
-
-    def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
-        self.calls.append(("offer", crop_option, mandi, quantity_maund, offer_price))
-        return dict(self.offer_answer, buyer_offer_price=offer_price, quantity_maund=quantity_maund)
 
     def set_alerts(self, phone, enabled):
         if phone not in self.alerts:
@@ -138,84 +132,29 @@ def test_fake_sender_records():
 def test_menu_fits_one_sms_and_lists_every_number():
     text = say(FakeProvider(), "0")
     assert sms_reply.parts(text) == 1
-    for n, label in (("1", "Offer check"), ("2", "Mandiyan"), ("3", "Kyun/Data"), ("4", "Alert on"),
+    for n, label in (("1", "Rate/mashwara"), ("2", "Mandiyan"), ("3", "Kyun"), ("4", "Alert on"),
                      ("5", "Alert band"), ("0", "Menu")):
         assert f"{n} {label}" in text
 
 
-def test_numeric_offer_check_flow():
+def test_numeric_flow_ends_in_the_same_advice_numbers():
     provider = FakeProvider()
     assert say(provider, "0", "1").startswith("Fasal? 1 Gandum 2 Kapas 3 Chawal 0 Menu")
     assert say(provider, CROP["Wheat"]).startswith("Mandi? 1 Bahawalpur")
     assert say(provider, MANDI["BahawalPur"]).startswith(sms_reply.ASK["ask_quantity"])
-    assert say(provider, "100").startswith(sms_reply.ASK["ask_offer"])
-    text = say(provider, "3514")
-    assert provider.calls == [("offer", "Wheat", "BahawalPur", 100.0, 3514.0)]
-    for part in ("FarmSight Gandum BWP: Reference data mehdood.", "AMIS: sab 12 din aik hi rate",
-                 "Offer Rs3514, reference Rs3820/man (AMIS 2026-10-09, 12/14 din).",
-                 "Farq -Rs306/man, 100 man par -Rs30600.", sms_reply.OFFER_CAVEAT_RU,
-                 "1 Kyun/Data 2 Mandiyan 3 Alert on 0 Menu"):
-        assert part in text, part
-    compare = say(provider, "2")
-    assert "Vehari net Rs3310" in compare and "(purana)" in compare and "RYK rate nahi" in compare
-
-
-def test_free_text_offer_sms_and_stale_warning_kept():
-    provider = FakeProvider()
-    provider.offer_answer = {**provider.offer_answer, "reference_strength": "LIMITED_STALE", "is_stale": True,
-                             "reference_price_as_of": "2026-07-17"}
-    text = say(provider, "gandum vehari 100 man offer 3000")
-    assert "DHYAN: purana rate (2026-07-17)" in text and "Reference data mehdood" in text
-
-
-@pytest.mark.parametrize("strength", ["LIMITED_SAME_PRICE", "LIMITED_STALE", "LIMITED_FROZEN", "LIMITED_FEW_DAYS"])
-def test_longest_realistic_offer_sms_keeps_every_required_part_whole(strength):
-    """Longest names, Super Basmati prices and the largest quantity the menu accepts (100,000 maund)."""
-    from backend.app.channels.test_whatsapp import offer_result  # noqa: PLC0415
-
-    r = offer_result(11500, 100000, reference_strength=strength, reference_price=12300.0,
-                     reference_price_as_of="2025-12-06", price_unchanged_since="2025-11-18",
-                     difference_vs_reference_per_maund=-800.0, total_difference_vs_reference=-80000000,
-                     estimated_commission={"pct": 2.5, "per_maund": 287.5, "total": 28750000, "source": "farmer"})
-    text = sms_reply.offer_sms("SuperBasmati", "RahimYarKhan", r, conv.post_choices(True))
-    check_sms(text)
-    for part in ("Reference data mehdood", "pakki range nahi", sms_reply.OFFER_CAVEAT_RU,
-                 "100000 man par -Rs80000000", "1 Kyun/Data 2 Mandiyan 3 Alert band 0 Menu"):
-        assert part in text, part
-
-
-def test_absurd_numbers_still_keep_the_warning_and_never_cut_a_sentence():
-    from backend.app.channels.test_whatsapp import offer_result  # noqa: PLC0415
-
-    r = offer_result(123456.75, 99999.5, reference_strength="LIMITED_STALE", reference_price=987654.0,
-                     total_difference_vs_reference=-86418742385, difference_vs_reference_per_maund=-864197.25)
-    text = sms_reply.offer_sms("SuperBasmati", "RahimYarKhan", r, conv.post_choices(True))
-    check_sms(text)
-    assert "Reference data mehdood" in text and "pakki range nahi" in text
-    assert "shamil." not in text   # never "included" from a cut "not included"
-
-
-def test_fit_never_cuts_a_sentence():
-    text = sms_reply.fit(["A" * 200 + ".", "Grade shamil nahi.", "B" * 200 + "."], (), conv.post_choices(False))
-    assert "Grade shamil nahi." in text and "B" * 10 not in text and len(text) <= sms_reply.MAX_CHARS
-    assert sms_reply.MORE_IN_APP in text
-
-
-def test_numeric_flow_ends_in_the_same_advice_numbers():
-    provider = FakeProvider()
-    text = say(provider, "gandum bahawalpur 100 man")
+    text = say(provider, "100")
     assert provider.calls == [("advice", "Wheat", "BahawalPur", 100.0)]
     for part in ("FarmSight Gandum Bahawalpur: bech dein.", "Aaj Rs3820/man (AMIS 2026-10-09).",
                  "4 hafte baad Rs3820 (Rs3607-Rs4071).", sms_reply.GUESS, "100 man rukne ka farq -Rs4848",
-                 "1 Kyun/Data 2 Mandiyan 3 Alert on 0 Menu"):
+                 "1 Kyun 2 Mandiyan 3 Alert on 0 Menu"):
         assert part in text, part
 
 
 def test_rice_variety_branch():
     provider = FakeProvider()
     assert say(provider, "0", "1", CROP[conv.RICE]).startswith("Kon se chawal? 1 Chawal Super Basmati 2 Chawal IRRI")
-    say(provider, VARIETY["IRRI"], MANDI["Vehari"], "40", "4500")
-    assert provider.calls == [("offer", "IRRI", "Vehari", 40.0, 4500.0)]
+    say(provider, VARIETY["IRRI"], MANDI["Vehari"], "40")
+    assert provider.calls == [("advice", "IRRI", "Vehari", 40.0)]
 
 
 def test_free_text_and_after_advice_numbers():
@@ -311,11 +250,10 @@ def test_route_is_off_without_an_adapter():
 
 def test_two_way_numeric_flow_through_the_webhook(webhook):
     client, sender, provider = webhook
-    for i, t in enumerate(["0", "1", CROP["Wheat"], MANDI["Vehari"], "50", "3400"]):
+    for i, t in enumerate(["0", "1", CROP["Wheat"], MANDI["Vehari"], "50"]):
         assert post(client, msg(t, f"s{i}")).json() == {"queued": 1}
-    assert [to for to, _ in sender.sent] == [PHONE] * 6
-    assert "Offer Rs3400, reference" in sender.sent[-1][1]
-    assert provider.calls == [("offer", "Wheat", "Vehari", 50.0, 3400.0)]
+    assert [to for to, _ in sender.sent] == [PHONE] * 5
+    assert "bech dein" in sender.sent[-1][1] and provider.calls == [("advice", "Wheat", "Vehari", 50.0)]
 
 
 def test_bad_token_and_malformed_payloads(webhook):

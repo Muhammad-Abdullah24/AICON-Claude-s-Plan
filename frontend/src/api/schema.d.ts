@@ -140,40 +140,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/reference": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Reference */
-        get: operations["reference_api_reference_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/channels/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Channels Preview */
-        get: operations["channels_preview_api_channels_preview_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/margin": {
         parameters: {
             query?: never;
@@ -540,41 +506,6 @@ export interface components {
             /** Results */
             results: components["schemas"]["AlertResult"][];
         };
-        /**
-         * ChannelPreview
-         * @description What WhatsApp and SMS would send, rendered by the channels' own code. Nothing is sent.
-         */
-        ChannelPreview: {
-            /** Whatsapp Menu */
-            whatsapp_menu: string;
-            /** Sms Menu */
-            sms_menu: string;
-            /** Menu Choices */
-            menu_choices: string[];
-            /** Whatsapp Offer */
-            whatsapp_offer?: string | null;
-            /** Whatsapp Offer Buttons */
-            whatsapp_offer_buttons?: string[];
-            /** Sms Offer */
-            sms_offer?: string | null;
-            /** Sms Offer Parts */
-            sms_offer_parts?: number | null;
-            /** Prices As Of */
-            prices_as_of?: string | null;
-            status: components["schemas"]["ChannelStatus"];
-        };
-        /**
-         * ChannelStatus
-         * @description Whether each channel is set up on this server. Flags only: no number, token or setting value.
-         */
-        ChannelStatus: {
-            /** Whatsapp Configured */
-            whatsapp_configured: boolean;
-            /** Sms Provider Configured */
-            sms_provider_configured: boolean;
-            /** Voice Notes Enabled */
-            voice_notes_enabled: boolean;
-        };
         /** ChatRequest */
         ChatRequest: {
             /** Question */
@@ -652,17 +583,6 @@ export interface components {
             prices_as_of?: string | null;
             /** Is Stale */
             is_stale?: boolean | null;
-            /** Price Unchanged Since */
-            price_unchanged_since?: string | null;
-            /** Reference Days */
-            reference_days?: number | null;
-            /** Reference Strength */
-            reference_strength?: ("STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE") | null;
-            /**
-             * Is Best
-             * @default false
-             */
-            is_best: boolean;
         };
         /** CropInfo */
         CropInfo: {
@@ -1224,45 +1144,6 @@ export interface components {
             tagged_by: "llm" | "rules";
             price_check?: components["schemas"]["NewsPriceCheck"] | null;
         };
-        /** OfferAlternative */
-        OfferAlternative: {
-            /**
-             * Mandi
-             * @enum {string}
-             */
-            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
-            /** Has Data */
-            has_data: boolean;
-            /**
-             * Is Own Mandi
-             * @default false
-             */
-            is_own_mandi: boolean;
-            /** Reference Price */
-            reference_price?: number | null;
-            /** Prices As Of */
-            prices_as_of?: string | null;
-            /** Is Stale */
-            is_stale?: boolean | null;
-            /** Price Unchanged Since */
-            price_unchanged_since?: string | null;
-            /** Reference Days */
-            reference_days?: number | null;
-            /** Transport Cost */
-            transport_cost?: number | null;
-            /** Net After Transport */
-            net_after_transport?: number | null;
-            /** Difference Vs Offer Per Maund */
-            difference_vs_offer_per_maund?: number | null;
-            /** Difference Vs Offer Total */
-            difference_vs_offer_total?: number | null;
-            /** Reference Strength */
-            reference_strength?: ("STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE") | null;
-            /** Better After Transport */
-            better_after_transport?: boolean | null;
-            /** Higher Quote Not Better */
-            higher_quote_not_better?: boolean | null;
-        };
         /** OfferCheckRequest */
         OfferCheckRequest: {
             /**
@@ -1282,15 +1163,8 @@ export interface components {
              * @default 100
              */
             quantity_maund: number;
-            /** Arhti Pct */
-            arhti_pct?: number | null;
         };
-        /**
-         * OfferCheckResponse
-         * @description A buyer's offer against recent AMIS reference prices at the farmer's mandi: a reference for negotiation,
-         *     not a fair, true or guaranteed price. The numbers are always given; `reference_strength` says how far they can
-         *     be leaned on, and a weak reference makes `result_status` REFERENCE_DATA_LIMITED.
-         */
+        /** OfferCheckResponse */
         OfferCheckResponse: {
             /** Data Source */
             data_source: string;
@@ -1311,115 +1185,28 @@ export interface components {
              * @constant
              */
             unit: "40kg";
-            /** Buyer Offer Price */
-            buyer_offer_price: number;
-            /**
-             * Offer Price Basis
-             * @constant
-             */
-            offer_price_basis: "GROSS_QUOTED";
-            /** Quantity Maund */
-            quantity_maund: number;
-            /** Reference Price */
-            reference_price: number;
-            /**
-             * Reference Price As Of
-             * Format: date
-             */
-            reference_price_as_of: string;
-            /** Reference Range Low */
-            reference_range_low: number;
-            /** Reference Range High */
-            reference_range_high: number;
-            /** Reference Days */
-            reference_days: number;
-            /** Window Days */
-            window_days: number;
-            /** Is Stale */
-            is_stale: boolean;
-            /** Price Unchanged Since */
-            price_unchanged_since: string | null;
-            /**
-             * Reference Strength
-             * @enum {string}
-             */
-            reference_strength: "STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE";
-            /**
-             * Range Position
-             * @enum {string}
-             */
-            range_position: "BELOW_REFERENCE_RANGE" | "WITHIN_REFERENCE_RANGE" | "ABOVE_REFERENCE_RANGE";
-            /**
-             * Result Status
-             * @enum {string}
-             */
-            result_status: "BELOW_REFERENCE_RANGE" | "WITHIN_REFERENCE_RANGE" | "ABOVE_REFERENCE_RANGE" | "REFERENCE_DATA_LIMITED";
-            /** Difference Vs Reference Per Maund */
-            difference_vs_reference_per_maund: number;
-            /** Total Difference Vs Reference */
-            total_difference_vs_reference: number;
-            /** Difference Vs Range Per Maund */
-            difference_vs_range_per_maund: number;
-            /** Total Difference Vs Range */
-            total_difference_vs_range: number;
-            /** Estimated Transport Cost */
-            estimated_transport_cost: number;
-            estimated_commission: components["schemas"]["OfferCommission"] | null;
-            /** Alternative Mandis */
-            alternative_mandis: components["schemas"]["OfferAlternative"][];
-            /** Limitations */
-            limitations: ("STALE_REFERENCE" | "FROZEN_REFERENCE" | "FEW_REFERENCE_DAYS" | "SAME_PRICE_ALL_WINDOW" | "COMMISSION_FARMER_ESTIMATE" | "COMMISSION_NOT_INCLUDED" | "TRANSPORT_IS_ESTIMATE" | "SYNTHETIC_DATA" | "QUALITY_GRADE_NOT_INCLUDED" | "BUYER_TERMS_NOT_INCLUDED")[];
-            /**
-             * Offer Price
-             * @deprecated
-             */
+            /** Offer Price */
             offer_price: number;
-            /**
-             * Fair Low
-             * @deprecated
-             */
+            /** Fair Low */
             fair_low: number;
-            /**
-             * Fair High
-             * @deprecated
-             */
+            /** Fair High */
             fair_high: number;
             /**
              * Verdict
-             * @deprecated
              * @enum {string}
              */
             verdict: "below" | "fair" | "above";
-            /**
-             * Difference Per Maund
-             * @deprecated
-             */
+            /** Difference Per Maund */
             difference_per_maund: number;
-            /**
-             * Difference Total
-             * @deprecated
-             */
+            /** Difference Total */
             difference_total: number;
+            /** Window Days */
+            window_days: number;
             /**
              * Prices As Of
              * Format: date
-             * @deprecated
              */
             prices_as_of: string;
-        };
-        /** OfferCommission */
-        OfferCommission: {
-            /** Pct */
-            pct: number;
-            /** Per Maund */
-            per_maund: number;
-            /** Total */
-            total: number;
-            /**
-             * Source
-             * @constant
-             */
-            source: "farmer";
         };
         /** PolicyEvent */
         PolicyEvent: {
@@ -1497,57 +1284,6 @@ export interface components {
              * @enum {string}
              */
             direction: "UP" | "DOWN" | "";
-        };
-        /**
-         * ReferenceResponse
-         * @description The recent reported AMIS reference at a mandi, without any offer (what an offer check compares with).
-         */
-        ReferenceResponse: {
-            /** Data Source */
-            data_source: string;
-            /** Is Synthetic */
-            is_synthetic: boolean;
-            /**
-             * Crop
-             * @enum {string}
-             */
-            crop: "wheat" | "cotton" | "irri" | "super_basmati";
-            /**
-             * Mandi
-             * @enum {string}
-             */
-            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
-            /**
-             * Unit
-             * @constant
-             */
-            unit: "40kg";
-            /** Reference Price */
-            reference_price: number;
-            /**
-             * Reference Price As Of
-             * Format: date
-             */
-            reference_price_as_of: string;
-            /** Reference Range Low */
-            reference_range_low: number;
-            /** Reference Range High */
-            reference_range_high: number;
-            /** Reference Days */
-            reference_days: number;
-            /** Window Days */
-            window_days: number;
-            /** Is Stale */
-            is_stale: boolean;
-            /** Price Unchanged Since */
-            price_unchanged_since: string | null;
-            /**
-             * Reference Strength
-             * @enum {string}
-             */
-            reference_strength: "STRONG" | "LIMITED_STALE" | "LIMITED_FROZEN" | "LIMITED_FEW_DAYS" | "LIMITED_SAME_PRICE";
-            /** Limitations */
-            limitations: ("STALE_REFERENCE" | "FROZEN_REFERENCE" | "FEW_REFERENCE_DAYS" | "SAME_PRICE_ALL_WINDOW")[];
         };
         /** SeasonalPoint */
         SeasonalPoint: {
@@ -1987,77 +1723,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OfferCheckResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reference_api_reference_get: {
-        parameters: {
-            query: {
-                crop: "wheat" | "cotton" | "irri" | "super_basmati";
-                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
-                /** @description Use only data on or before this date. Omit for the latest. */
-                as_of?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReferenceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    channels_preview_api_channels_preview_get: {
-        parameters: {
-            query: {
-                crop: "wheat" | "cotton" | "irri" | "super_basmati";
-                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
-                /** @description Maund. Default: profile, else 100. */
-                quantity_maund?: number | null;
-                offer_price?: number | null;
-                /** @description Use only data on or before this date. Omit for the latest. */
-                as_of?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChannelPreview"];
                 };
             };
             /** @description Validation Error */

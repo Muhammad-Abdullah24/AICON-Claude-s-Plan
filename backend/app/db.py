@@ -90,11 +90,9 @@ CREATE TABLE IF NOT EXISTS conversations (
     draft_crop TEXT,
     draft_mandi TEXT,
     draft_quantity REAL,
-    draft_offer REAL,
     last_crop TEXT,
     last_mandi TEXT,
     last_quantity REAL,
-    last_offer REAL,
     expires_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     PRIMARY KEY (channel, phone)
@@ -155,10 +153,6 @@ def _migrate(conn: sqlite3.Connection) -> None:
     for column, kind in (("mandi", "TEXT"), ("signal", "TEXT"), ("price", "REAL"), ("for_date", "TEXT")):
         if column not in have:
             conn.execute(f"ALTER TABLE alerts ADD COLUMN {column} {kind}")  # noqa: S608 (fixed names above)
-    have = {r["name"] for r in conn.execute("PRAGMA table_info(conversations)")}
-    for column in ("draft_offer", "last_offer"):   # the buyer's price in an offer check (numbers only)
-        if column not in have:
-            conn.execute(f"ALTER TABLE conversations ADD COLUMN {column} REAL")  # noqa: S608 (fixed names above)
 
 
 def reset(path: str = ":memory:") -> sqlite3.Connection:
@@ -304,8 +298,8 @@ def log_message(farmer_id: str | None, channel: str, direction: str, content: st
 # ---------------------------------------------------------------- channel conversations (task A11)
 
 CHANNELS = ("whatsapp", "sms")
-CONVERSATION_FIELDS = ("step", "pending", "draft_crop", "draft_mandi", "draft_quantity", "draft_offer", "last_crop",
-                       "last_mandi", "last_quantity", "last_offer")
+CONVERSATION_FIELDS = ("step", "pending", "draft_crop", "draft_mandi", "draft_quantity", "last_crop", "last_mandi",
+                       "last_quantity")
 SEEN_KEEP_HOURS = 24
 
 

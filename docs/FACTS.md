@@ -44,9 +44,6 @@ Open each source and confirm the number before it goes on a slide.
 | Production cost per crop | No source | Remove, or find a government source |
 | "Wheat is the most stable crop" as the lead demo | Wheat had a major crash in this period | Lead with the crisis replay |
 | R² of 0.92 | Measured on synthetic data | Replace with MASE on real data |
-| "FarmSight raises farmer income" / "saves Rs X" | No field evidence; the Indian SMS price trial above found no average effect | Do not claim it. Replays show the reference available that day, not money saved |
-| "This offer is unfair" / "exploitation" | An AMIS reference cannot see grade, buyer terms or credit ties | Say "below / within / above the recent reported reference", or "reference data is limited" |
-| AMIS price as a "fair", "true" or "guaranteed" price | It is a reported mandi price, sometimes old, frozen or repeated | Call it the reference mandi price, with its date and strength |
 
 ---
 

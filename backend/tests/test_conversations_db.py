@@ -133,9 +133,6 @@ class Provider:
     def compare(self, crop_option, mandi, quantity_maund, phone):
         return []
 
-    def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
-        return {"buyer_offer_price": offer_price}
-
 
 def turn(text, channel="whatsapp", phone=A, at=NOW):
     out = conv.handle(text, conv.load(channel, phone), Provider(), phone=phone, now=at)
@@ -149,11 +146,8 @@ def test_a_guided_flow_continues_across_messages_through_the_database():
     turn(str(conv.default_options().crops.index("Wheat") + 1))
     assert conv.load("whatsapp", A).step == conv.MANDI
     turn("1")
-    turn("100")
-    assert conv.load("whatsapp", A).step == conv.OFFER_STEP
-    out = turn("3514")
-    s = conv.load("whatsapp", A)
-    assert out.reply.kind == "offer" and s.step == conv.POST_ADVICE and s.last_offer == 3514
+    out = turn("100")
+    assert out.reply.kind == "advice" and conv.load("whatsapp", A).step == conv.POST_ADVICE
 
 
 def test_store_clears_after_a_completed_alert_change():
@@ -201,16 +195,3 @@ def test_the_column_default_is_off_too():
     conn.execute("INSERT INTO farmers (id, name, phone, district, created_at)"
                  " VALUES ('x', 'Raw', '1', 'vehari', 'now')")
     assert conn.execute("SELECT alerts_enabled FROM farmers WHERE id = 'x'").fetchone()[0] == 0
-
-
-def test_older_conversation_tables_gain_the_offer_columns(tmp_path):
-    path = tmp_path / "before_offer.sqlite"
-    with sqlite3.connect(path) as old:   # the conversations table as phase 2 created it, without offer columns
-        old.execute("CREATE TABLE conversations (channel TEXT NOT NULL, phone TEXT NOT NULL, step TEXT NOT NULL,"
-                    " pending TEXT, draft_crop TEXT, draft_mandi TEXT, draft_quantity REAL, last_crop TEXT,"
-                    " last_mandi TEXT, last_quantity REAL, expires_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
-                    " PRIMARY KEY (channel, phone))")
-    old.close()
-    db.reset(str(path))
-    db.save_conversation("sms", A, {"step": "offer", "pending": "offer", "draft_offer": 3514}, 30, NOW)
-    assert db.get_conversation("sms", A)["draft_offer"] == 3514

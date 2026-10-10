@@ -14,8 +14,7 @@ gateway app", not which one). So this module is the provider-neutral part only:
 
 Environment (.env, never committed):
     FS_SMS_PROVIDER          the adapter name in ADAPTERS; empty = SMS off (no adapter exists yet)
-    FS_SMS_REPLIES_PER_MIN   replies to one number per minute, default 10 (a whole offer check is 6 messages;
-                             the limit stops reply loops with auto-responders)
+    FS_SMS_REPLIES_PER_MIN   replies to one number per minute, default 5 (stops reply loops with auto-responders)
 
 Advice comes from the same service layer and conversation engine as WhatsApp, so the answer is the same.
 Phone numbers and message text are never logged.
@@ -48,12 +47,12 @@ CHANNEL = "sms"
 @dataclass(frozen=True)
 class SmsSettings:
     provider: str = ""
-    replies_per_minute: int = 10
+    replies_per_minute: int = 5
 
 
 def get_sms_settings() -> SmsSettings:
     return SmsSettings(provider=os.environ.get("FS_SMS_PROVIDER", "").strip().lower(),
-                       replies_per_minute=int(os.environ.get("FS_SMS_REPLIES_PER_MIN", "10")))
+                       replies_per_minute=int(os.environ.get("FS_SMS_REPLIES_PER_MIN", "5")))
 
 
 class SmsSender(Protocol):

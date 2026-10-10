@@ -103,15 +103,13 @@ def clip(text: str, limit: int = MAX_BODY) -> str:
 # The conversation engine (conversation.py) decides what to answer; these turn its reply intent into Urdu.
 
 CHOICE_UR = {
-    "offer": "خریدار کی آفر چیک کریں", "advice": "ریٹ اور مشورہ", "compare": "منڈیوں کا موازنہ",
-    "why": "وجہ اور ڈیٹا کی تفصیل", "alerts_on": "الرٹ شروع کریں", "alerts_off": "الرٹ بند کریں", "menu": "مینو",
-    "rice": "چاول",
+    "advice": "ریٹ اور مشورہ", "compare": "منڈیوں کا موازنہ", "why": "مشورے کی وجہ",
+    "alerts_on": "الرٹ چالو", "alerts_off": "الرٹ بند", "menu": "مینو", "rice": "چاول",
     "confirm": "درست ہے", "correct": "درست کریں",
 }
-SHORT_UR = {"why": "کیوں؟", "compare": "منڈیاں", "alerts_on": "الرٹ چالو", "alerts_off": "الرٹ بند", "menu": "مینو",
-            "offer": "آفر چیک"}
+SHORT_UR = {"why": "کیوں؟", "compare": "منڈیاں", "alerts_on": "الرٹ چالو", "alerts_off": "الرٹ بند", "menu": "مینو"}
 MENU_HEAD = "فارم سائٹ مینو: نمبر لکھ کر بھیجیں"
-MENU_TAIL = "یا سیدھا لکھیں، مثلاً: گندم بہاولپور 100 من آفر 3514"
+MENU_TAIL = "یا سیدھا لکھیں، مثلاً: گندم بہاولپور 100 من"
 MENU_NOTE = {
     "expired": "پچھلی بات چیت کا وقت ختم ہو گیا، دوبارہ شروع کریں۔",
     "no_session": "یہ نمبر کس سوال کا جواب ہے، معلوم نہیں۔ مینو سے چنیں:",
@@ -122,7 +120,6 @@ NOT_HEARD = "؟"  # a piece the voice note did not contain
 INVALID = "یہ انتخاب درست نہیں۔"
 ASK_NUMBERED = {"ask_crop": "کون سی فصل؟", "ask_variety": "کون سے چاول؟", "ask_mandi": "کون سی منڈی؟"}
 ASK_QUANTITY = "کتنے من؟ صرف تعداد لکھیں، مثلاً 100"
-ASK_OFFER = "خریدار نے فی من کتنا دیا؟ صرف رقم لکھیں، مثلاً 3514"
 NOT_REGISTERED = "الرٹ کے لیے یہ نمبر فارم سائٹ پر رجسٹر نہیں۔ پہلے ایپ میں اپنا پروفائل بنائیں۔"
 ALERT_BUTTON = {"alerts_on": ("start", "الرٹ چالو"), "alerts_off": ("stop", "الرٹ بند")}
 
@@ -158,91 +155,3 @@ def heard_text(crop_option: str | None, mandi: str | None, quantity_maund: float
     parts = [choice_label(crop_option) if crop_option else NOT_HEARD,
              choice_label(mandi) if mandi else NOT_HEARD, qty]
     return HEARD.format(heard="، ".join(parts))
-
-
-# ---------------------------------------------------------------- buyer offer check
-# The offer against recent AMIS *reference* prices (services.offer_check), never a fair or guaranteed price.
-# The words match the web app's (frontend/src/locales/ur.json, "offer").
-
-OFFER_STATUS_UR = {
-    "BELOW_REFERENCE_RANGE": "حالیہ حوالہ حد سے کم",
-    "WITHIN_REFERENCE_RANGE": "حالیہ حوالہ حد کے اندر",
-    "ABOVE_REFERENCE_RANGE": "حالیہ حوالہ حد سے زیادہ",
-    "REFERENCE_DATA_LIMITED": "حوالہ ڈیٹا محدود ہے",
-}
-LIMITED_UR = {
-    "LIMITED_SAME_PRICE": "AMIS نے رپورٹ ہونے والے تمام {days} دن ایک ہی حوالہ ریٹ بتایا۔",
-    "LIMITED_STALE": "آخری رپورٹ شدہ ریٹ {date} کا ہے، 8 ہفتے سے زیادہ پرانا۔",
-    "LIMITED_FROZEN": "AMIS {date} سے ایک ہی ریٹ دکھا رہا ہے، جس کا اکثر مطلب ہے کہ ریٹ تازہ نہیں کیا گیا۔",
-    "LIMITED_FEW_DAYS": "AMIS نے پچھلے {window} دن میں سے صرف {days} دن ریٹ رپورٹ کیا۔",
-}
-NOT_A_RANGE = "اس لیے فارم سائٹ اسے بازار کی قابلِ اعتماد حد نہیں مان سکتا۔"
-OFFER_CAVEAT = "کوالٹی، گریڈ اور خریدار کی شرائط شامل نہیں۔ یہ رپورٹ شدہ ریٹ حوالہ ہیں، وعدہ نہیں۔"
-ALT_VERDICT_UR = {
-    "better": "کرایہ نکال کر بہتر ہونے کا اندازہ", "notBetter": "کرایہ نکال کر بہتر ہونے کا اندازہ نہیں",
-    "higherNotBetter": "ریٹ زیادہ، لیکن کرایہ نکال کر بہتر نہیں", "unknown": "حوالہ ریٹ کمزور، موازنہ ممکن نہیں",
-    "noData": "ریٹ رپورٹ نہیں ہوا",
-}
-VERIFY_UR = "کرایہ اندازہ ہے۔ جانے سے پہلے تصدیق کریں کہ خریدار موجود ہے اور اس کی شرائط کیا ہیں۔"
-
-
-def alternative_verdict(a: Mapping) -> str:
-    """The API's own flags in one word (the same mapping as the web app's lib/offer.ts)."""
-    if not a.get("has_data"):
-        return "noData"
-    if a.get("better_after_transport") is None:
-        return "unknown"
-    if a["better_after_transport"]:
-        return "better"
-    return "higherNotBetter" if a.get("higher_quote_not_better") else "notBetter"
-
-
-def limited_reason_ur(r: Mapping) -> str | None:
-    if r["reference_strength"] == "STRONG":
-        return None
-    when = r.get("price_unchanged_since") or r["reference_price_as_of"]
-    return LIMITED_UR[r["reference_strength"]].format(days=r["reference_days"], window=r["window_days"],
-                                                      date=when)
-
-
-def offer_text(crop_option: str, mandi: str, r: Mapping) -> str:
-    crop, place = CROP_UR.get(crop_option, crop_option), MANDI_UR.get(mandi, mandi)
-    per, qty = r["difference_vs_reference_per_maund"], r["quantity_maund"]
-    side = "کم" if per < 0 else "زیادہ" if per > 0 else "برابر"
-    gap = f"آفر اس ریٹ سے {rs(abs(per))} فی من {side}؛ {qty:g} من پر {signed_rs(r['total_difference_vs_reference'])}" \
-        if per else "آفر آخری رپورٹ شدہ ریٹ کے برابر ہے۔"
-    lines = [
-        f"⚖️ {crop}، {place}: {OFFER_STATUS_UR[r['result_status']]}",
-        f"خریدار کی آفر: {rs(r['buyer_offer_price'])} فی من",
-        f"منڈی کا آخری رپورٹ شدہ ریٹ: {rs(r['reference_price'])} (AMIS، {r['reference_price_as_of']})",
-        f"حالیہ حوالہ حد: {rs(r['reference_range_low'])} سے {rs(r['reference_range_high'])} "
-        f"({r['window_days']} میں سے {r['reference_days']} دن رپورٹ)",
-        gap,
-    ]
-    reason = limited_reason_ur(r)
-    if reason:
-        lines.append(f"⚠️ {reason} {NOT_A_RANGE}")
-    c = r.get("estimated_commission")
-    if c:
-        lines.append(f"آپ کے بتائے ہوئے کمیشن ({c['pct']:g}%) پر تقریباً {rs(c['per_maund'])} فی من (آپ کا اپنا اندازہ)")
-    lines.append(OFFER_CAVEAT)
-    return "\n".join(lines)
-
-
-def offer_compare_text(crop_option: str, r: Mapping) -> str:
-    """Every mandi after estimated transport (the farmer's own first), against the buyer's offer."""
-    crop = CROP_UR.get(crop_option, crop_option)
-    lines = [f"{crop}: آفر {rs(r['buyer_offer_price'])} کے مقابلے میں منڈیاں (کرایہ نکال کر)"]
-    for a in r["alternative_mandis"]:
-        name, v = MANDI_UR.get(a["mandi"], a["mandi"]), alternative_verdict(a)
-        if a.get("is_own_mandi"):
-            name += " (آپ کی منڈی)"
-        if v == "noData":
-            lines.append(f"• {name}: {ALT_VERDICT_UR[v]}")
-            continue
-        old = f" (پرانا ریٹ، {a['prices_as_of']})" if a.get("is_stale") else ""
-        lines.append(f"• {name}: {ALT_VERDICT_UR[v]}۔ {rs(a['reference_price'])} − کرایہ {rs(a['transport_cost'])} = "
-                     f"{rs(a['net_after_transport'])}؛ {r['quantity_maund']:g} من پر "
-                     f"{signed_rs(a['difference_vs_offer_total'])}{old}")
-    lines.append(VERIFY_UR)
-    return "\n".join(lines)

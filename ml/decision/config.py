@@ -29,8 +29,3 @@ SELLING_WINDOW_TOLERANCE_PCT = 1.0
 
 # Alerts (B8). At most one alert per farmer in this many days, across all their crops.
 ALERT_MIN_DAYS_BETWEEN = 7
-
-# Offer check (ml/decision/offer.py): fewer reported AMIS price days than this in the window means the reference
-# is too thin to judge an offer by (REFERENCE_DATA_LIMITED). Team decision, 10 Oct: 5 of 14 days.
-OFFER_WINDOW_DAYS = 14
-OFFER_MIN_REFERENCE_DAYS = 5

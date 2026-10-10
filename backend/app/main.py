@@ -31,7 +31,6 @@ from backend.app.ids import CROP_FROM_DATA, CROP_NAMES, CROP_TO_DATA, MANDI_FROM
 from backend.app.schemas import (
     AdviceResponse,
     AlertRunResponse,
-    ChannelPreview,
     CompareResponse,
     CropId,
     CropPlanResponse,
@@ -51,7 +50,6 @@ from backend.app.schemas import (
     OfferCheckRequest,
     OfferCheckResponse,
     PolicyResponse,
-    ReferenceResponse,
     Storage,
     TokenResponse,
     WaitPlanResponse,
@@ -222,30 +220,10 @@ def compare_mandis(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None
 
 
 @router.post("/offer-check", response_model=OfferCheckResponse)
-def offer_check(body: OfferCheckRequest, as_of: AsOf = None,
-                farmer: dict | None = Depends(optional_farmer)) -> OfferCheckResponse:  # noqa: B008
-    # A commission is shown only if the farmer gave one: in this request, or in their profile.
-    arhti = body.arhti_pct if body.arhti_pct is not None else (farmer or {}).get("arhti_commission_pct")
+def offer_check(body: OfferCheckRequest, as_of: AsOf = None) -> OfferCheckResponse:
     r = _guard(services.offer_check, CROP_TO_DATA[body.crop], MANDI_TO_DATA[body.mandi], body.offer_price,
-               body.quantity_maund, as_of, arhti)
-    alternatives = [{**a, "mandi": MANDI_FROM_DATA[a["mandi"]]} for a in r.pop("alternative_mandis")]
-    return OfferCheckResponse(**LABEL, crop=body.crop, mandi=body.mandi, unit="40kg", offer_price=body.offer_price,
-                              alternative_mandis=alternatives, **r)
-
-
-@router.get("/reference", response_model=ReferenceResponse)
-def reference(crop: CropId, mandi: MandiId, as_of: AsOf = None) -> ReferenceResponse:
-    r = _guard(services.reference, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], as_of)
-    return ReferenceResponse(**LABEL, crop=crop, mandi=mandi, unit="40kg", **r)
-
-
-@router.get("/channels/preview", response_model=ChannelPreview)
-def channels_preview(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None,
-                     offer_price: Annotated[float | None, Query(gt=0, le=1_000_000)] = None,
-                     as_of: AsOf = None) -> ChannelPreview:
-    from backend.app.channels import preview  # noqa: PLC0415 (channels import the service layer)
-    return ChannelPreview(**_guard(preview.preview, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], quantity_maund or 100,
-                                   offer_price, as_of))
+               body.quantity_maund, as_of)
+    return OfferCheckResponse(**LABEL, crop=body.crop, mandi=body.mandi, unit="40kg", offer_price=body.offer_price, **r)
 
 
 @router.get("/margin", response_model=MarginResponse)
