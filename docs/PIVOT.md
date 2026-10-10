@@ -137,7 +137,7 @@ def wait_plan(crop_option: str, mandi: str, quantity_maund: float, cash_need_rs:
     # money: "own" | "bank" | "arhti"; storage: "godown" | "bags"
     return {
         "crop_option": "wheat", "mandi": "bahawalpur", "quantity_maund": 100,
-        "verdict": "SPLIT",            # SELL_ALL | SPLIT | HOLD_REST
+        "verdict": "SPLIT",            # SELL_ALL | SPLIT | HOLD_ALL
         "sell_now_maund": 60, "hold_maund": 40,
         "best_mandi": "bahawalpur", "best_net_price": 3655,
         "exits": [                      # rupees for the whole quantity
@@ -151,8 +151,12 @@ def wait_plan(crop_option: str, mandi: str, quantity_maund: float, cash_need_rs:
     }
 ```
 
-The response schema arrives in `schemas.py` with task U1. Until U4 is merged, Hamza can build the WhatsApp text against
-this sample dict.
+**Landed in U1.** The exact shape is `WaitPlanResponse` in `backend/app/schemas.py`, and that schema is the source of
+truth over the sketch above. Like the rest of `services.py`, the service takes and returns data names ("Wheat",
+"BahawalPur"); `main.py` maps them to API ids. `services.wait_plan` already exists and returns a placeholder answer
+labelled `data_source: "placeholder"`, `is_synthetic: True`, so H6 can call it today. U4 swaps in the real engine with
+the same signature. `services.news()` and `services.policy_events()` are wired the same way, with placeholders until
+H2/H3. U4 then calls Hamza's `get_news` / `get_policy_events` from them.
 
 ## 4. Phase U: Abd + Claude
 
