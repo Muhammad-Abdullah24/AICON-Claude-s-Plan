@@ -18,7 +18,7 @@ export function WeatherLine({ mandi }: { mandi: string }) {
         })}
       </span>
       {w.cached && <span>{t('data.weatherCached')}</span>}
-      <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="underline">
+      <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center underline">
         {t('data.weatherCredit')}
       </a>
     </p>

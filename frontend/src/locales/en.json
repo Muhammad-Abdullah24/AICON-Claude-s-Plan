@@ -37,7 +37,9 @@
     "quantity": "Your harvest",
     "maund": "maund",
     "quantityInvalid": "Enter a quantity above 0",
-    "quantityTooLarge": "Quantity can be at most {{max}} maund"
+    "quantityTooLarge": "Quantity can be at most {{max}} maund",
+    "change": "Change",
+    "done": "Done"
   },
   "signal": {
     "SELL": "Sell",
@@ -118,7 +120,8 @@
     "harvest": "Harvest",
     "sell": "Best sell",
     "notAvailable": "No price data at this mandi for: {{crops}}",
-    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee."
+    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee.",
+    "landInvalid": "Enter your land in acres, above 0"
   },
   "history": {
     "title": "Price history",

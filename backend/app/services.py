@@ -344,32 +344,16 @@ def margin(crop_option: str, price: float, arhti_pct: float | None = None) -> di
 
 # ---------------------------------------------------------------- crop plan (What to Grow) and selling window
 
-def _harvest_ratio(crop_option: str, mandi: str, ref_month: int) -> dict | None:
-    """The harvest ratio for the month of the latest price (H-B7), or the nearest earlier month with one
-    (a month with too few prices has none)."""
-    for back in range(12):
-        ratio = engine_inputs.harvest_ratio(crop_option, mandi, (ref_month - 1 - back) % 12 + 1)
-        if ratio:
-            return ratio
-    return None
-
-
 def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None) -> dict:
     """Crop options ranked by expected profit at the next harvest (Owner B's `ml.decision.crop_plan`), each with
-    its selling window after interest (`ml.decision.selling_window`). The latest price honours `as_of`; the
-    seasonal ratios are A6's tables across all years. A stale starting price raises the risk badge one level."""
-    inputs = []
-    for option in fcfg.CROP_OPTION_ID:
-        try:
-            price, price_date = latest_price(option, mandi, as_of)
-        except LookupError:
-            price, price_date = None, None
-        inputs.append({
-            "crop_option": option, "latest_price": price, "prices_as_of": price_date,
-            "is_stale": price_date is not None and is_stale(price_date, as_of),
-            "harvest_ratio": _harvest_ratio(option, mandi, date.fromisoformat(price_date).month) if price else None,
-            **engine_inputs.crop_economics(option),
-        })
+    its selling window after interest (`ml.decision.selling_window`). The inputs are Owner B's
+    `crop_plan_inputs`, which honour `as_of` (H-C21); the seasonal ratios are A6's tables across all years.
+    A stale starting price raises the risk badge one level (`ml.decision.risk_badge`)."""
+    inputs = engine_inputs.crop_plan_inputs(mandi, as_of)
+    for i in inputs:
+        # One staleness rule on every screen (more than 56 days, as on Home and Sell): the engine's inputs
+        # round to whole weeks, so a 57-62 day old price would be fresh here and stale there. See hand-off H-B16.
+        i["is_stale"] = i["prices_as_of"] is not None and is_stale(i["prices_as_of"], as_of)
     plan = decision.crop_plan(inputs, land_area_acres)
     by_option = {i["crop_option"]: i for i in inputs}
     items, missing = [], []

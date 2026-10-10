@@ -43,7 +43,7 @@ export function OfferCheck() {
         <button
           type="submit"
           disabled={offer === null || offer <= 0}
-          className="rounded-xl bg-ink px-4 py-2 text-cotton disabled:opacity-50"
+          className="min-h-12 rounded-xl bg-ink px-4 py-2 text-cotton disabled:opacity-50"
         >
           {t('offer.check')}
         </button>
