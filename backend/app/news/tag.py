@@ -15,25 +15,37 @@ from backend.app.news import config
 
 # "Rs 5,300", "Rs. 3500", "5,300 rupees" ... captured as a group of digits with optional commas.
 _PRICE = re.compile(r"(?:rs\.?|rupees?)\s*([\d,]{3,7})|([\d,]{3,7})\s*(?:rupees?|/-)", re.IGNORECASE)
-_PER_UNIT = re.compile(r"per\s*(?:40\s*-?\s*kg|maund|mann)|/\s*40\s*kg|per\s*md", re.IGNORECASE)
+_PER_UNIT = re.compile(r"per\s*(?:40\s*-?\s*kg|maund|mann)|/\s*40\s*kg|per\s*md|فی\s*من|40\s*کلو", re.IGNORECASE)
+_PER_KG = re.compile(r"per\s*kg|/\s*kg|per\s*kilo|فی\s*کلو", re.IGNORECASE)
+# The raw crop at a mandi, not a product made from it. A flour/atta price is NOT the wheat mandi price (N1).
+_GRAIN = re.compile(r"\b(?:wheat|gandum|cotton|phutti|kapas|rice|paddy|basmati|irri)\b"
+                    r"|گندم|کپاس|پھٹی|چاول|دھان|باسمتی|اری", re.IGNORECASE)
+_PRODUCT = re.compile(r"\b(?:flour|atta|maida|bread|bran)\b|آٹا|میدہ|روٹی|چوکر", re.IGNORECASE)
 
 
 def extract_price(text: str) -> int | None:
-    """A per-40kg (per-maund) price stated in the text, or None. Prefers a number next to 'per maund/40 kg'."""
-    candidates: list[int] = []
+    """A crop's per-40kg (per-maund) mandi price stated in the text, or None (N1).
+
+    Kept only when the headline is about the raw crop (`wheat`/`gandum`/...) and gives a per-40kg / per-maund figure.
+    A price tied to flour or atta, a per-kg or per-bag price, or a bare "Rs X" with no unit is skipped, so a
+    "flour hits Rs 5,200 per 40 kg" headline no longer counts as a wheat price and raises a false conflict.
+    """
+    if not _GRAIN.search(text):
+        return None
     for m in _PRICE.finditer(text):
         digits = (m.group(1) or m.group(2)).replace(",", "")
         if not digits.isdigit():
             continue
         value = int(digits)
-        if config.PRICE_MIN_RS_PER_40KG <= value <= config.PRICE_MAX_RS_PER_40KG:
-            # A price right next to "per maund / 40 kg" wins over a bare "Rs X".
-            near = text[max(0, m.start() - 15): m.end() + 15]
-            candidates.append((2 if _PER_UNIT.search(near) else 1, value))
-    if not candidates:
-        return None
-    candidates.sort(reverse=True)
-    return candidates[0][1]
+        if not (config.PRICE_MIN_RS_PER_40KG <= value <= config.PRICE_MAX_RS_PER_40KG):
+            continue
+        near = text[max(0, m.start() - 30): m.end() + 30]
+        if _PER_KG.search(near) or not _PER_UNIT.search(near):
+            continue                      # must be per 40 kg / maund, never per kg or an unqualified "Rs X"
+        if _PRODUCT.search(text[max(0, m.start() - 20): m.start()]):
+            continue                      # flour/atta sits right before the figure: it is the price's subject
+        return value
+    return None
 
 
 def tag_by_rules(title: str, summary: str = "") -> tuple[str, str | None]:
