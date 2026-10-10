@@ -50,3 +50,21 @@ Open each source and confirm the number before it goes on a slide.
 
 ---
 
+
+## Pivot: rates the "can you afford to wait?" engine uses (H4, checked 10 Oct 2026)
+
+These feed `ml/decision/config.py` (Abd) and the hold backtest (`ml/backtest/hold.py`). I checked each against a
+source. **Differences posted to the team are marked ⚠.**
+
+| Rate | Value used | Source checked | Status |
+|---|---|---|---|
+| Storage loss, proper godown | 3.5% over ~5 months | FAO, *Public sector storage of wheat in Pakistan* (http://www.fao.org/4/X5048E/x5048E13.htm); Dawn post-harvest pieces | ⚠ **Not confirmed exactly.** The FAO page gives no month-by-month rate. Documented Pakistani wheat storage losses run ~2% (metal bins) to 6.6% (jute bags, irrigated) in 1980s surveys, and 15–18% from poor handling generally (https://www.dawn.com/news/199707, https://www.dawn.com/news/966953). 3.5% is a reasonable low-to-mid godown figure but should be treated as an **assumption within a 2–7% band**, not a sourced constant. |
+| Storage loss, bags at home | 10% | As above (jute bags are the lossy end; FAO/GAIN) | ⚠ Plausible (bags are worse than godowns) but not a single sourced figure; an assumption. |
+| Bank / warehouse-receipt loan | 16.5% per year | `data/processed/economics_inputs.json` (`holding_interest_rate_pct_per_year`): SBP policy rate + ~5% spread | OK, matches our economics inputs. Re-check the policy-rate component near the demo. |
+| Arhti (commission-agent) money | 66% per year (≈ 4× the formal rate) | Arhti charges "four to five times the rate of interest than the formal institutions" (https://www.dawn.com/news/1708457); PIDE, *The Role of Arthi…* (https://pide.org.pk/research/the-role-of-arthi-in-agriculture-marketing-an-exploiter-or-facilitator-of-farmers/) | OK as a mid-high estimate. 4–5× of 16.5% = 66–82%. A worked cotton example gives ~46% (https://criterion-quarterly.com/the-anatomy-of-agricultural-credit-in-pakistan/), so the real cost spans ~46–82%; 66% sits inside it. The arhti also takes a 2–4% sale commission on top (PIDE). |
+| Kissan Card (Punjab) | Rs 30,000/acre, up to Rs 150,000/season, 1–12.5 acres, 6 months + 1 month grace, **inputs only** | CM Kissan Card, punjab.gov.pk/node/5690; Bank of Punjab (bop.com.pk/CMPunjabKissanCard); Dawn (https://www.dawn.com/news/1881918) | **Confirmed.** Up to Rs 1.5 lakh per season, Rs 30,000/acre, 1–12.5 acres, card valid 6 months + 1 month grace, interest-free, spent on fertiliser/seed/diesel through registered vendors. |
+
+**For the team (post in chat):** the storage-loss figures (3.5% godown, 10% bags) are the one place we are using an
+assumption dressed as a constant. Documented Pakistani wheat storage losses are a wide 2–18% depending on store type
+and handling. Suggest we either (a) label storage loss "estimate" in the UI and the backtest, or (b) show the hold
+result at two loss levels (3.5% and 10%), which the backtest already supports.

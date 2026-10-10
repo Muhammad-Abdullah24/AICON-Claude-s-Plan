@@ -239,3 +239,27 @@ Until the team agrees, B5 and B6 are built so that turning the direction call of
 - On the two backup demo weeks (docs/DATA_NOTES.md A7, both validation weeks) the wheat call is right: 24 March
   2025 **DOWN** (the price then fell 19.7%) and 4 August 2025 **UP** (it rose 48.6%). Two weeks are anecdotes,
   not evidence; the evidence is the 72% over 50 moves in 2025 and 81% over 21 moves in 2026.
+
+## Decision backtest: does waiting to sell actually pay? (H5, `ml/backtest/hold.py`)
+
+The pivot asks not "will the price rise?" but "can you afford to wait, and with whose money?" This backtest answers
+it from the real record. For every past year it compares **selling wheat in May** (the post-harvest low) with
+**waiting to September–October**, net of two real costs of holding: the interest on the money the unsold crop ties up,
+and 3.5% grain lost in storage (see `docs/FACTS.md`; 3.5% is an assumption inside a documented 2–7% godown band).
+Real AMIS weekly prices, median of each month, pooled across the three mandis and both later months — 52 mandi-years.
+"Always sell at harvest" is the baseline (net 0 by definition); a season is a **win** when waiting beat it.
+
+| Whose money (rate) | 3.5% storage loss | 10% storage loss |
+|---|---|---|
+| Own cash (0%) | paid **38/52 (73%)**, median +Rs 60/maund, worst-10% −Rs 97 | 18/52 (35%), median −Rs 41, worst-10% −Rs 323 |
+| Bank / warehouse receipt (16.5%) | 20/52 (38%), median −Rs 22, worst-10% −Rs 287 | 10/52 (19%), median −Rs 123, worst-10% −Rs 507 |
+| Arhti money (66%) | 6/52 (12%), median −Rs 292, worst-10% −Rs 870 | 3/52 (6%), median −Rs 374, worst-10% −Rs 1,082 |
+
+**The liquidity tax, in one line:** waiting usually pays *only if the farmer can afford to wait on their own cash*
+(73% of years). The moment they must borrow to hold, the odds flip — bank money wins 38% of the time, arhti money
+just 12%, and the median outcome turns negative. That is exactly why the app asks *whose money* before it says hold,
+and why "always sell at harvest" is a reasonable default for a farmer who needs cash now. The worst-10% column is the
+bad year a farmer must be able to survive: holding on arhti money can lose Rs 870–1,082 a maund.
+
+These are historical medians, not a promise about next season, and a single later month is used (so the figures
+differ slightly from a window). Reproduce: `hold_history("Wheat", mandi, 5, wait_months, annual_rate, loss_pct)`.
