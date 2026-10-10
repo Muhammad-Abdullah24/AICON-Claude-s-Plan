@@ -210,8 +210,14 @@ def respond(msg: dict, provider: AdviceProvider, memory: Memory = MEMORY, chat: 
         assumed = p.quantity_maund is None
         if assumed:
             p.quantity_maund = reply.DEFAULT_QUANTITY_MAUND
-        a = provider.advice(p.crop_option, p.mandi, p.quantity_maund, phone)
         memory.remember(phone, p)
+        wait = getattr(provider, "wait_plan", None)
+        if wait is not None:
+            try:
+                return buttons_message(reply.wait_text(wait(p.crop_option, p.mandi, p.quantity_maund, phone)))
+            except NotReady:
+                pass   # the wait engine (U4) is not merged yet: fall back to the SELL/WAIT advice
+        a = provider.advice(p.crop_option, p.mandi, p.quantity_maund, phone)
         return buttons_message(reply.advice_text(a, quantity_assumed=assumed))
     except LookupError:
         return text_message(reply.NO_DATA.format(mandi=reply.MANDI_UR.get(ctx.mandi or "", ctx.mandi),

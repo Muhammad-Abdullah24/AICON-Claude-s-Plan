@@ -98,6 +98,40 @@ def test_query_reply_uses_only_the_advice_numbers():
     assert len(body) <= reply.MAX_BODY
 
 
+def test_wait_text_lays_out_the_plan():
+    plan = {"crop_option": "wheat", "mandi": "bahawalpur", "quantity_maund": 100, "verdict": "SPLIT",
+            "sell_now_maund": 60, "hold_maund": 40, "best_mandi": "bahawalpur", "best_net_price": 3655,
+            "exits": [{"kind": "SELL_NOW", "net_total_rs": 365500},
+                      {"kind": "HOLD", "expected_total_rs": 372000, "worst_total_rs": 330000}],
+            "history": {"wins": 7, "n": 9}, "warnings": ["STALE_PRICE"], "prices_as_of": "2026-10-05"}
+    t = reply.wait_text(plan)
+    for expected in ("گندم", "بہاولپور", "کچھ ابھی بیچیں", "60 من", "40 من", "Rs 365,500",
+                     "Rs 372,000", "Rs 330,000", "9 سالوں", "7 بار", reply.WARNING_UR["STALE_PRICE"]):
+        assert expected in t
+    assert len(t) <= reply.MAX_BODY
+
+
+def test_a_query_uses_the_wait_plan_when_the_engine_is_ready():
+    class Ready(FakeProvider):
+        def wait_plan(self, crop_option, mandi, quantity_maund, phone):
+            return {"crop_option": crop_option, "mandi": mandi, "quantity_maund": quantity_maund, "verdict": "SPLIT",
+                    "sell_now_maund": 60, "hold_maund": 40, "best_mandi": mandi, "best_net_price": 3655,
+                    "exits": [{"kind": "SELL_NOW", "net_total_rs": 365500}], "history": {"wins": 7, "n": 9},
+                    "warnings": [], "prices_as_of": "2026-10-05", "is_stale": False}
+
+    body = body_of(whatsapp.respond(text_msg("گندم بہاولپور 100 من"), Ready(), whatsapp.Memory()))
+    assert "روک لیں" in body and "Rs 365,500" in body           # the wait-plan wording, not the advice reply
+
+
+def test_a_query_falls_back_to_advice_until_the_wait_engine_is_ready():
+    class NotReadyProvider(FakeProvider):
+        def wait_plan(self, crop_option, mandi, quantity_maund, phone):
+            raise advice_provider.NotReady("services.wait_plan")
+
+    body = body_of(whatsapp.respond(text_msg("گندم بہاولپور 100 من"), NotReadyProvider(), whatsapp.Memory()))
+    assert "رکیں" in body and "Rs 3,820" in body                # the SELL/WAIT advice reply
+
+
 def test_missing_quantity_assumes_100_and_says_so():
     body = body_of(whatsapp.respond(text_msg("gandum bahawalpur"), FakeProvider(), whatsapp.Memory()))
     assert "100 من مان کر" in body

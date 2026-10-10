@@ -94,3 +94,51 @@ def compare_text(crop_option: str, rows: Sequence[Mapping]) -> str:
 
 def clip(text: str, limit: int = MAX_BODY) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+# ---------------------------------------------------------------- wait plan (task H6; docs/PIVOT.md section 3.3)
+
+# The wait plan returns lowercase API ids; accept those and the data names ("Wheat", "BahawalPur") either way.
+CROP_UR_ANY = {**CROP_UR, "wheat": "گندم", "cotton": "کپاس (پھٹی)",
+               "irri": "چاول (اری)", "super_basmati": "چاول (سپر باسمتی)"}
+MANDI_UR_ANY = {**MANDI_UR, "bahawalpur": "بہاولپور", "vehari": "وہاڑی", "rahim_yar_khan": "رحیم یار خان"}
+
+VERDICT_UR = {
+    "SELL_ALL": "ابھی سب بیچ دیں",
+    "SPLIT": "کچھ ابھی بیچیں، باقی روک لیں",
+    "HOLD_REST": "فی الحال روک لیں",
+}
+EXIT_UR = {"SELL_NOW": "ابھی بیچنے پر", "ARHTI_OFFER": "آڑھتی کی پیشکش پر", "HOLD": "روکنے پر"}
+WARNING_UR = {
+    "NEWS_PRICE_CONFLICT": "⚠️ خبروں میں ریٹ مختلف آ رہا ہے، احتیاط کریں",
+    "STALE_PRICE": "⚠️ ریٹ پرانا ہے، احتیاط کریں",
+    "POLICY_UNCERTAIN": "⚠️ سرکاری پالیسی ابھی غیر یقینی ہے",
+    "HOLD_WHEAT_ONLY": "نوٹ: روکنے کا مشورہ صرف گندم کے لیے ہے",
+}
+
+
+def wait_text(plan: Mapping) -> str:
+    """One WhatsApp reply from the wait plan (docs/PIVOT.md 3.3): sell now or hold, with each way out in rupees,
+    how often holding paid in the past, and any warnings. Every number comes from the plan; this only lays it out."""
+    crop = CROP_UR_ANY.get(plan["crop_option"], plan["crop_option"])
+    mandi = MANDI_UR_ANY.get(plan["mandi"], plan["mandi"])
+    lines = [f"{crop}، {mandi}: {VERDICT_UR.get(plan['verdict'], plan['verdict'])}"]
+    if plan.get("sell_now_maund"):
+        lines.append(f"ابھی بیچیں: {plan['sell_now_maund']:g} من")
+    if plan.get("hold_maund"):
+        lines.append(f"روک لیں: {plan['hold_maund']:g} من")
+    if plan.get("best_net_price") is not None:
+        best = MANDI_UR_ANY.get(plan.get("best_mandi"), plan.get("best_mandi"))
+        lines.append(f"بہترین منڈی: {best} ({rs(plan['best_net_price'])} فی من اصل)")
+    for e in plan.get("exits", []):
+        label = EXIT_UR.get(e["kind"], e["kind"])
+        if e["kind"] == "HOLD":
+            lines.append(f"• {label}: اندازاً {rs(e['expected_total_rs'])}، برے سال میں {rs(e['worst_total_rs'])}")
+        else:
+            lines.append(f"• {label}: {rs(e['net_total_rs'])}")
+    h = plan.get("history") or {}
+    if h.get("n"):
+        lines.append(f"پچھلے {h['n']} سالوں میں رکنا {h['wins']} بار فائدہ مند رہا")
+    lines += [WARNING_UR[w] for w in plan.get("warnings", []) if w in WARNING_UR]
+    lines.append(DISCLAIMER)
+    return clip("\n".join(lines))
