@@ -46,25 +46,41 @@ def test_over_borrowing_from_the_arhti():
     assert p["planned_borrow_rs"] == 400000
     assert p["planned_interest_rs"] == 132000                                         # 400,000 x 66% x 6/12
     assert p["over_borrow_rs"] == 400000 - 290000
-    assert p["extra_cost_rs"] == 132000 - 11550
+    assert p["plan_comparison"] == "COMPARED" and p["missing_inputs"] == []
+    assert p["net_impact_rs"] == p["extra_cost_rs"] == 132000 - 11550 and p["saving_rs"] == 0
 
 
-def test_a_planned_loan_below_the_need_is_not_over_borrowing():
+def test_a_cheaper_plan_is_a_saving_never_a_negative_cost():
     p = loan_plan(5, ITEMS, 0, [KISSAN, BANK], MONTHS, planned_borrow_rs=100000, planned_rate_pct=0)
     assert p["over_borrow_rs"] == 0
-    assert p["extra_cost_rs"] == -11550     # cheaper than the ladder only because it is smaller than the need
+    # Cheaper than the ladder only because it is smaller than the need: shown as a saving, not as -11,550 cost.
+    assert p["net_impact_rs"] == -11550 and p["saving_rs"] == 11550 and p["extra_cost_rs"] == 0
 
 
-def test_planned_amount_without_a_rate_shows_over_borrowing_but_no_cost():
+def test_planned_amount_without_a_rate_is_insufficient_information_not_zero_percent():
     p = loan_plan(5, ITEMS, 0, [KISSAN, BANK], MONTHS, planned_borrow_rs=400000)
-    assert p["over_borrow_rs"] == 110000
-    assert p["planned_interest_rs"] is None and p["extra_cost_rs"] is None
+    assert p["over_borrow_rs"] == 110000                       # needs no rate
+    assert p["plan_comparison"] == "INSUFFICIENT_INFORMATION" and p["missing_inputs"] == ["planned_rate_pct"]
+    for k in ("planned_interest_rs", "net_impact_rs", "extra_cost_rs", "saving_rs"):
+        assert p[k] is None, k
+    zero = loan_plan(5, ITEMS, 0, [KISSAN, BANK], MONTHS, planned_borrow_rs=400000, planned_rate_pct=0)
+    assert zero["plan_comparison"] == "COMPARED"               # a stated 0% is a rate; a missing one is not
+
+
+def test_an_option_without_a_rate_is_never_assumed_free():
+    unknown = {"id": "akhuwat", "annual_rate_pct": None, "max_rs": 80000}
+    no_key = {"id": "mystery", "max_rs": 80000}
+    p = loan_plan(5, ITEMS, 0, [unknown, no_key, KISSAN, BANK], MONTHS)
+    assert [s["id"] for s in p["ladder"]] == ["kissan_card", "bank"]       # not placed first as if 0%
+    assert p["unpriced_options"] == ["akhuwat", "mystery"]
+    assert p["missing_inputs"] == ["annual_rate_pct:akhuwat", "annual_rate_pct:mystery"]
 
 
 def test_no_plan_given():
     p = loan_plan(5, ITEMS, 0, [KISSAN, BANK], MONTHS)
+    assert p["plan_comparison"] == "NOT_REQUESTED" and p["missing_inputs"] == [] and p["unpriced_options"] == []
     assert p["planned_borrow_rs"] is None and p["planned_interest_rs"] is None
-    assert p["over_borrow_rs"] is None and p["extra_cost_rs"] is None
+    assert p["over_borrow_rs"] is None and p["extra_cost_rs"] is None and p["saving_rs"] is None
 
 
 def test_uncovered_when_the_eligible_options_run_out():
@@ -97,7 +113,8 @@ def test_options_with_no_room_are_skipped():
 
 
 @pytest.mark.parametrize("kwargs", [dict(acres=-1), dict(savings_rs=-1), dict(months_to_harvest=-1),
-                                    dict(planned_borrow_rs=-1)])
+                                    dict(planned_borrow_rs=-1),
+                                    dict(planned_borrow_rs=1, planned_rate_pct=-1)])
 def test_negative_inputs_are_rejected(kwargs):
     args = dict(acres=5, input_items=ITEMS, savings_rs=0, options=[KISSAN], months_to_harvest=MONTHS) | kwargs
     with pytest.raises(ValueError):
