@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
 
-import { ErrorBox } from './Status'
+import { ScreenError } from './Status'
 
 /**
  * A screen that throws while rendering shows the usual error box with "try again" instead of a blank page. On demo
@@ -16,7 +16,7 @@ export class ScreenBoundary extends Component<{ children: ReactNode }, { error: 
 
   render() {
     if (this.state.error !== null) {
-      return <ErrorBox error={this.state.error} onRetry={() => window.location.reload()} />
+      return <ScreenError onRetry={() => window.location.reload()} />
     }
     return this.props.children
   }

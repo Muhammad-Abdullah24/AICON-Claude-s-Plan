@@ -235,7 +235,8 @@
     "replay": "Replaying {{date}}: prices and advice as the app would have shown them that day. Weather and chat are today's.",
     "replayExit": "Back to today",
     "notFound": "No price data for this crop at this mandi.",
-    "invalid": "Some of the details you entered are not valid. Please check them."
+    "invalid": "Some of the details you entered are not valid. Please check them.",
+    "screenError": "Something went wrong on this screen."
   },
   "wait": {
     "title": "Can you afford to wait?",
