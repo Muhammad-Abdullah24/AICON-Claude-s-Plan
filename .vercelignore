@@ -1,0 +1,10 @@
+# Keep Vercel from seeing the Python backend (it would try to deploy it as a function).
+# The backend deploys to Render; only the frontend goes to Vercel. See docs/DEPLOY.md.
+backend/
+ml/
+data/
+artifacts/
+docs/
+pyproject.toml
+conftest.py
+*.py
