@@ -19,7 +19,7 @@ export function LanguageToggle() {
             lang={o.lang}
             aria-pressed={active}
             onClick={() => void i18n.changeLanguage(o.lang)}
-            className={`min-h-9 min-w-12 rounded-[10px] px-3 text-sm ${
+            className={`min-h-11 min-w-12 rounded-[10px] px-3 text-sm ${
               active ? 'bg-paper font-semibold text-ink shadow-sm' : 'text-slate hover:text-ink'
             }`}
           >

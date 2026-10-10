@@ -389,6 +389,119 @@ class CropPlanResponse(Labelled):
     is_estimate: bool
 
 
+# ---------------------------------------------------------------- wait plan, news, policy (docs/PIVOT.md)
+
+Money = Literal["own", "bank", "arhti"]         # whose money pays for waiting
+Storage = Literal["godown", "bags"]             # a proper store, or bags at home
+WaitVerdict = Literal["SELL_ALL", "SPLIT", "HOLD_ALL"]
+WaitWarning = Literal[
+    "STALE_PRICE",              # the farmer's mandi price is over 56 days old
+    "NEWS_PRICE_CONFLICT",      # a news price is more than 10% away from AMIS (news_check says which)
+    "POLICY_UNCERTAIN",         # a support-price, cap/ban or import item in the last 14 days
+    "HOLD_WHEAT_ONLY",          # holding is only worked out for wheat; other crops get SELL_ALL
+    "CASH_NEED_EXCEEDS_CROP",   # selling everything today does not cover the cash the farmer needs
+    "TOO_FEW_SEASONS",          # under 3 past seasons to judge holding, so no HOLD advice
+]
+NewsTag = Literal["SUPPORT_PRICE", "PROCUREMENT", "CAP_OR_BAN", "IMPORT", "PRICE_REPORT", "OTHER"]
+
+
+class WaitExit(Strict):
+    kind: Literal["SELL_NOW", "ARHTI_OFFER", "HOLD"]
+    mandi: MandiId | None = None    # SELL_NOW: the best mandi after transport
+    per_maund: float                # net per 40 kg: after transport (SELL_NOW); the offer (ARHTI_OFFER);
+                                    # the median past outcome after interest and storage loss (HOLD)
+    total_rs: int                   # per_maund x the whole quantity
+    worst_total_rs: int | None = None   # HOLD only: the 1-in-10 bad year
+    cost_rs: int | None = None          # HOLD only: interest + storage loss on the whole quantity
+
+
+class HoldSeason(Strict):
+    year: int
+    start_price: float
+    later_price: float
+    net_gain_per_maund: int         # later x (1 - loss) - start x (1 + rate x months / 12)
+    paid: bool
+
+
+class HoldHistory(Strict):
+    start_month: int
+    later_month: int
+    annual_rate_pct: float
+    loss_pct: float
+    n: int
+    wins: int
+    median_net_per_maund: int
+    worst_p10_net_per_maund: int
+    seasons: list[HoldSeason]       # oldest first: also feeds the "liquidity tax" chart
+
+
+class NewsPriceCheck(Strict):
+    amis_price: float
+    amis_date: dt.date
+    news_price: float
+    news_date: dt.date
+    news_source: str
+    news_url: str
+    difference_pct: float           # (news - amis) / amis x 100
+
+
+class WaitPlanResponse(Labelled):
+    crop: CropId
+    mandi: MandiId
+    unit: Unit
+    quantity_maund: float
+    cash_need_rs: float
+    wait_months: int
+    money: Money
+    annual_rate_pct: float          # the rate used: the farmer's own, else the default for `money`
+    storage: Storage
+    loss_pct: float                 # storage loss used for `storage`
+    verdict: WaitVerdict
+    sell_now_maund: float
+    hold_maund: float
+    exits: list[WaitExit]           # SELL_NOW always; ARHTI_OFFER when an offer was given; HOLD for wheat
+    history: HoldHistory | None     # None when holding is not worked out (not wheat, or too few seasons)
+    confidence: Confidence
+    warnings: list[WaitWarning]
+    news_check: NewsPriceCheck | None = None
+    prices_as_of: dt.date
+    is_stale: bool
+
+
+class NewsItem(Strict):
+    title: str
+    url: str
+    source: str
+    published: dt.date
+    tag: NewsTag
+    crop: CropId | None
+    summary_ur: str
+    summary_en: str
+    price_rs_per_40kg: float | None     # only when the text itself states a price for the crop
+
+
+class NewsResponse(Labelled):
+    items: list[NewsItem]           # newest first
+    fetched_at: dt.datetime
+    is_snapshot: bool               # served from the saved copy (offline, or the live feed failed)
+    tagged_by: Literal["llm", "rules"]
+    price_check: NewsPriceCheck | None = None   # when crop and mandi are given and a news price disagrees with AMIS
+
+
+class PolicyEvent(Strict):
+    date: dt.date
+    tag: NewsTag
+    text_ur: str
+    text_en: str
+    source: str
+    url: str
+
+
+class PolicyResponse(Labelled):
+    crop: CropId
+    events: list[PolicyEvent]       # newest first, none after as_of
+
+
 # ---------------------------------------------------------------- weather
 
 class WeatherResponse(Strict):

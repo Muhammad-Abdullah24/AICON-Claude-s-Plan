@@ -29,8 +29,14 @@ def market(monkeypatch):
                 "quantity_maund": quantity_maund, "rupee_impact": -100, "interest_cost": 100, "is_stale": False,
                 "prices_as_of": (as_of or DAY).isoformat(), "is_synthetic": False}
 
+    def alert_candidate(crop_option, mandi, signal, previous_signal, as_of=None):
+        _, _, change, frozen = table[crop_option]
+        return {"crop_option": crop_option, "mandi": mandi, "signal": signal, "previous_signal": previous_signal,
+                "prices_as_of": "week start, replaced by the advice's date", "change_4w_pct": change,
+                "band_q10_pct": -10.0, "band_q90_pct": 10.0, "is_frozen": frozen, "is_stale": False}
+
     monkeypatch.setattr(services, "get_advice", get_advice)
-    monkeypatch.setattr(alerts, "recent_change", lambda crop, mandi, as_of: (table[crop][2], table[crop][3]))
+    monkeypatch.setattr(alerts.engine_inputs, "alert_candidate", alert_candidate)
     return table
 
 
@@ -111,9 +117,28 @@ def test_real_data_replays_the_april_2025_wheat_drop(fresh_db):
     assert item["prices_as_of"] <= "2025-04-21"
 
 
-def test_recent_change_uses_only_weeks_up_to_as_of():
-    change, _ = alerts.recent_change("Wheat", "BahawalPur", dt.date(2025, 4, 21))
-    assert change == pytest.approx(-19.72, abs=0.01)
+def test_candidate_uses_only_weeks_up_to_as_of_and_the_advice_date():
+    day = dt.date(2025, 4, 21)
+    advice = services.get_advice("Wheat", "BahawalPur", 100, as_of=day)
+    c = alerts._candidate(advice, "SELL", day)
+    assert c["change_4w_pct"] == pytest.approx(-19.72, abs=0.01)
+    # The alert carries the same price date and staleness the farmer sees in the app (H-C21, H-B16).
+    assert (c["prices_as_of"], c["is_stale"]) == (advice["prices_as_of"], advice["is_stale"])
+
+
+def test_a_57_day_old_price_is_stale_in_alerts_as_on_home():
+    """The engine's inputs round to whole weeks; the app's one rule is more than 56 days (H-B16)."""
+    day = dt.date(2026, 3, 16)   # Rahim Yar Khan cotton: no mandi price from March, last one 57-62 days back
+    advice = services.get_advice("Cotton", "RahimYarKhan", 100, as_of=day)
+    age = (day - dt.date.fromisoformat(advice["prices_as_of"])).days
+    assert 56 < age <= 62 and advice["is_stale"]
+    assert alerts._candidate(advice, None, day)["is_stale"] is True
+
+
+def test_crop_plan_staleness_matches_home():
+    day = dt.date(2026, 3, 16)
+    items = {i["crop_option"]: i for i in services.crop_plan("RahimYarKhan", 10, day)["items"]}
+    assert items["Cotton"]["is_stale"] == services.get_advice("Cotton", "RahimYarKhan", 100, as_of=day)["is_stale"]
 
 
 def test_old_databases_gain_the_new_alert_columns(tmp_path):

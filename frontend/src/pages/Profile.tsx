@@ -8,7 +8,7 @@ import { ErrorBox } from '../components/Status'
 import { Note, Toggle } from '../components/ui/Disclosure'
 import { parseTypedNumber } from '../lib/format'
 
-const input = 'w-full rounded-xl border-2 border-line bg-paper px-3 py-2 focus:border-ink focus:outline-none'
+const input = 'min-h-12 w-full rounded-xl border-2 border-line bg-paper px-3 py-2 focus:border-ink focus:outline-none'
 
 /** Phone login (no OTP in the MVP; blueprint decision 10), registration, and the alerts switch. */
 export function Profile() {
@@ -123,7 +123,7 @@ function Guest() {
           placeholder="+92…" className={`${input} figures`} />
         <p className="text-xs text-slate">{t('profile.demoHint')}</p>
         {notFound && <p className="text-sm text-madder">{t('profile.notFound')}</p>}
-        <button type="submit" disabled={phone.length < 7} className="rounded-xl bg-ink px-4 py-2 text-cotton disabled:opacity-50">
+        <button type="submit" disabled={phone.length < 7} className="min-h-12 rounded-xl bg-ink px-4 py-2 text-cotton disabled:opacity-50">
           {t('profile.loginButton')}
         </button>
       </form>
@@ -147,7 +147,7 @@ function Guest() {
         </label>
         {exists && <p className="text-sm text-madder">{t('profile.exists')}</p>}
         <button type="submit" disabled={!reg.name || reg.phone.length < 7}
-          className="rounded-xl bg-wheat px-4 py-2 font-bold text-ink disabled:opacity-50">
+          className="min-h-12 rounded-xl bg-wheat px-4 py-2 font-bold text-ink disabled:opacity-50">
           {t('profile.create')}
         </button>
       </form>

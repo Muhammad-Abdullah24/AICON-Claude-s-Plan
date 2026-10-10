@@ -33,7 +33,7 @@ function ProfileButton() {
     <Link
       to="/profile"
       aria-label={farmer ? farmer.name : t('nav.profile')}
-      className="flex size-11 items-center justify-center rounded-full bg-slate-soft text-ink hover:bg-line"
+      className="flex size-12 items-center justify-center rounded-full bg-slate-soft text-ink hover:bg-line"
     >
       <User aria-hidden className="size-5" />
     </Link>

@@ -66,7 +66,9 @@
     "quantity": "Your harvest",
     "maund": "maund",
     "quantityInvalid": "Enter a quantity above 0",
-    "quantityTooLarge": "Quantity can be at most {{max}} maund"
+    "quantityTooLarge": "Quantity can be at most {{max}} maund",
+    "change": "Change",
+    "done": "Done"
   },
   "signal": {
     "SELL": "Sell",
@@ -88,7 +90,8 @@
   "direction": {
     "UP": "Our model: the price is likely to rise in the next 4 weeks.",
     "DOWN": "Our model: the price is likely to fall in the next 4 weeks.",
-    "accuracy": "(It called {{pct}}% of the big moves in 2025 right. Not a price forecast.)"
+    "accuracy": "(It called {{pct}}% of the big moves in 2025 right. Not a price forecast.)",
+    "upButSell": "The price may rise, but probably not by more than the interest of waiting, so the advice is to sell."
   },
   "actions": {
     "why": "Why?",
@@ -252,7 +255,8 @@
     "harvest": "Harvest",
     "sell": "Best sell",
     "notAvailable": "No price data at this mandi for: {{crops}}",
-    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee."
+    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee.",
+    "landInvalid": "Enter your land in acres, above 0"
   },
   "history": {
     "title": "Price history",

@@ -226,3 +226,49 @@ def test_chat_route_uses_api_ids(client):
 def test_dates_in_responses_are_iso(client):
     f = client.get("/api/forecast", params={"crop": "wheat", "mandi": "vehari"}).json()
     dt.date.fromisoformat(f["prices_as_of"])
+
+
+# ---------------------------------------------------------------- pivot contract (docs/PIVOT.md, U1)
+# Placeholder answers for now; these tests pin the shape and the labelling, not the numbers. U4 tightens them.
+
+def test_wait_plan_shape_and_split(client):
+    r = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "quantity_maund": 100,
+                                             "cash_need_rs": 200_000, "offer": 2900})
+    assert r.status_code == 200
+    p = r.json()
+    assert p["crop"] == "wheat" and p["mandi"] == "bahawalpur" and p["unit"] == "40kg"
+    assert p["sell_now_maund"] + p["hold_maund"] == p["quantity_maund"] == 100
+    kinds = [e["kind"] for e in p["exits"]]
+    assert kinds[0] == "SELL_NOW" and "ARHTI_OFFER" in kinds
+    assert p["exits"][0]["mandi"] in MANDIS
+    if p["is_synthetic"]:   # never let a placeholder pass for advice
+        assert p["data_source"] == "placeholder"
+
+
+def test_wait_plan_defaults_by_money_and_storage(client):
+    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "vehari", "money": "arhti",
+                                             "storage": "bags"}).json()
+    assert p["money"] == "arhti" and p["annual_rate_pct"] > 16.5 and p["loss_pct"] > 3.5
+    own = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "vehari", "annual_rate": 12}).json()
+    assert own["annual_rate_pct"] == 12
+
+
+@pytest.mark.parametrize("params", [{"money": "friend"}, {"storage": "roof"}, {"wait_months": 0},
+                                    {"wait_months": 7}, {"cash_need_rs": -1}, {"offer": 0}])
+def test_wait_plan_rejects_bad_input(client, params):
+    assert client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", **params}).status_code == 422
+
+
+def test_wait_plan_404_without_data(client):
+    assert client.get("/api/wait-plan", params={"crop": "irri", "mandi": "rahim_yar_khan"}).status_code == 404
+
+
+def test_news_uses_api_ids(client):
+    n = client.get("/api/news", params={"crop": "wheat", "mandi": "bahawalpur"}).json()
+    assert "items" in n and "is_snapshot" in n
+    assert all(i["crop"] in CROPS + [None] for i in n["items"])
+
+
+def test_policy_respects_as_of(client):
+    events = client.get("/api/policy", params={"crop": "wheat", "as_of": "2026-04-01"}).json()["events"]
+    assert all(e["date"] <= "2026-04-01" for e in events)

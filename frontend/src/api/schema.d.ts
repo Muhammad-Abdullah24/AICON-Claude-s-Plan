@@ -208,6 +208,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/wait-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Wait Plan */
+        get: operations["wait_plan_api_wait_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * News
+         * @description Today's Pakistan farm news (not replayed with as_of: like weather, it is always today's). News never
+         *     changes the advice; it can only add a warning or lower confidence (docs/PIVOT.md rule 8).
+         */
+        get: operations["news_api_news_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Policy */
+        get: operations["policy_api_policy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/alerts/run": {
         parameters: {
             query?: never;
@@ -978,6 +1033,40 @@ export interface components {
                 number
             ];
         };
+        /** HoldHistory */
+        HoldHistory: {
+            /** Start Month */
+            start_month: number;
+            /** Later Month */
+            later_month: number;
+            /** Annual Rate Pct */
+            annual_rate_pct: number;
+            /** Loss Pct */
+            loss_pct: number;
+            /** N */
+            n: number;
+            /** Wins */
+            wins: number;
+            /** Median Net Per Maund */
+            median_net_per_maund: number;
+            /** Worst P10 Net Per Maund */
+            worst_p10_net_per_maund: number;
+            /** Seasons */
+            seasons: components["schemas"]["HoldSeason"][];
+        };
+        /** HoldSeason */
+        HoldSeason: {
+            /** Year */
+            year: number;
+            /** Start Price */
+            start_price: number;
+            /** Later Price */
+            later_price: number;
+            /** Net Gain Per Maund */
+            net_gain_per_maund: number;
+            /** Paid */
+            paid: boolean;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Phone */
@@ -1062,6 +1151,78 @@ export interface components {
             name_ur: string;
             /** Name En */
             name_en: string;
+        };
+        /** NewsItem */
+        NewsItem: {
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+            /** Source */
+            source: string;
+            /**
+             * Published
+             * Format: date
+             */
+            published: string;
+            /**
+             * Tag
+             * @enum {string}
+             */
+            tag: "SUPPORT_PRICE" | "PROCUREMENT" | "CAP_OR_BAN" | "IMPORT" | "PRICE_REPORT" | "OTHER";
+            /** Crop */
+            crop: ("wheat" | "cotton" | "irri" | "super_basmati") | null;
+            /** Summary Ur */
+            summary_ur: string;
+            /** Summary En */
+            summary_en: string;
+            /** Price Rs Per 40Kg */
+            price_rs_per_40kg: number | null;
+        };
+        /** NewsPriceCheck */
+        NewsPriceCheck: {
+            /** Amis Price */
+            amis_price: number;
+            /**
+             * Amis Date
+             * Format: date
+             */
+            amis_date: string;
+            /** News Price */
+            news_price: number;
+            /**
+             * News Date
+             * Format: date
+             */
+            news_date: string;
+            /** News Source */
+            news_source: string;
+            /** News Url */
+            news_url: string;
+            /** Difference Pct */
+            difference_pct: number;
+        };
+        /** NewsResponse */
+        NewsResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /** Items */
+            items: components["schemas"]["NewsItem"][];
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Is Snapshot */
+            is_snapshot: boolean;
+            /**
+             * Tagged By
+             * @enum {string}
+             */
+            tagged_by: "llm" | "rules";
+            price_check?: components["schemas"]["NewsPriceCheck"] | null;
         };
         /** OfferAlternative */
         OfferAlternative: {
@@ -1260,6 +1421,41 @@ export interface components {
              */
             source: "farmer";
         };
+        /** PolicyEvent */
+        PolicyEvent: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /**
+             * Tag
+             * @enum {string}
+             */
+            tag: "SUPPORT_PRICE" | "PROCUREMENT" | "CAP_OR_BAN" | "IMPORT" | "PRICE_REPORT" | "OTHER";
+            /** Text Ur */
+            text_ur: string;
+            /** Text En */
+            text_en: string;
+            /** Source */
+            source: string;
+            /** Url */
+            url: string;
+        };
+        /** PolicyResponse */
+        PolicyResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /** Events */
+            events: components["schemas"]["PolicyEvent"][];
+        };
         /**
          * PricePoint
          * @description One week. `price` is None for a week with no AMIS price: draw a gap, never join across it.
@@ -1406,6 +1602,93 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WaitExit */
+        WaitExit: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "SELL_NOW" | "ARHTI_OFFER" | "HOLD";
+            /** Mandi */
+            mandi?: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
+            /** Per Maund */
+            per_maund: number;
+            /** Total Rs */
+            total_rs: number;
+            /** Worst Total Rs */
+            worst_total_rs?: number | null;
+            /** Cost Rs */
+            cost_rs?: number | null;
+        };
+        /** WaitPlanResponse */
+        WaitPlanResponse: {
+            /** Data Source */
+            data_source: string;
+            /** Is Synthetic */
+            is_synthetic: boolean;
+            /**
+             * Crop
+             * @enum {string}
+             */
+            crop: "wheat" | "cotton" | "irri" | "super_basmati";
+            /**
+             * Mandi
+             * @enum {string}
+             */
+            mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+            /**
+             * Unit
+             * @constant
+             */
+            unit: "40kg";
+            /** Quantity Maund */
+            quantity_maund: number;
+            /** Cash Need Rs */
+            cash_need_rs: number;
+            /** Wait Months */
+            wait_months: number;
+            /**
+             * Money
+             * @enum {string}
+             */
+            money: "own" | "bank" | "arhti";
+            /** Annual Rate Pct */
+            annual_rate_pct: number;
+            /**
+             * Storage
+             * @enum {string}
+             */
+            storage: "godown" | "bags";
+            /** Loss Pct */
+            loss_pct: number;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "SELL_ALL" | "SPLIT" | "HOLD_ALL";
+            /** Sell Now Maund */
+            sell_now_maund: number;
+            /** Hold Maund */
+            hold_maund: number;
+            /** Exits */
+            exits: components["schemas"]["WaitExit"][];
+            history: components["schemas"]["HoldHistory"] | null;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "HIGH" | "MEDIUM" | "LOW";
+            /** Warnings */
+            warnings: ("STALE_PRICE" | "NEWS_PRICE_CONFLICT" | "POLICY_UNCERTAIN" | "HOLD_WHEAT_ONLY" | "CASH_NEED_EXCEEDS_CROP" | "TOO_FEW_SEASONS")[];
+            news_check?: components["schemas"]["NewsPriceCheck"] | null;
+            /**
+             * Prices As Of
+             * Format: date
+             */
+            prices_as_of: string;
+            /** Is Stale */
+            is_stale: boolean;
         };
         /** WeatherNow */
         WeatherNow: {
@@ -1842,6 +2125,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CropPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wait_plan_api_wait_plan_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                mandi: "bahawalpur" | "vehari" | "rahim_yar_khan";
+                /** @description Maund. Default: profile, else 100. */
+                quantity_maund?: number | null;
+                /** @description Rs needed now. */
+                cash_need_rs?: number;
+                /** @description How long the rest could wait. */
+                wait_months?: number;
+                /** @description Whose money pays for waiting. */
+                money?: "own" | "bank" | "arhti";
+                /** @description % a year. */
+                annual_rate?: number | null;
+                storage?: "godown" | "bags";
+                /** @description Arhti's offer per 40 kg. */
+                offer?: number | null;
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    news_api_news_get: {
+        parameters: {
+            query?: {
+                crop?: ("wheat" | "cotton" | "irri" | "super_basmati") | null;
+                mandi?: ("bahawalpur" | "vehari" | "rahim_yar_khan") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    policy_api_policy_get: {
+        parameters: {
+            query: {
+                crop: "wheat" | "cotton" | "irri" | "super_basmati";
+                /** @description Use only data on or before this date. Omit for the latest. */
+                as_of?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyResponse"];
                 };
             };
             /** @description Validation Error */

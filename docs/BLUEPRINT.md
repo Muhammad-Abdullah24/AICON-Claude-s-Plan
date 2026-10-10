@@ -2,6 +2,74 @@
 
 ---
 
+## 0. 🔁 Amendment, 10 Oct 2026: "Can you afford to wait?"
+
+> Agreed by the team on 10 Oct. Where this section conflicts with the rest of the blueprint, **this section wins**.
+> Who builds what, file ownership and the interfaces: [`docs/PIVOT.md`](PIVOT.md).
+
+**Why we changed.** The SELL/WAIT signal said SELL in **828 of 828** farmer-weeks (2025 to Oct 2026, all
+crop-mandi pairs), because the deployed forecast is the persistence baseline (NFR-01). So waiting could only ever cost
+interest. It also showed SELL beside the model's "likely to rise" 229 times. Meanwhile, mandi prices are already free
+in Pakistan (Telenor's 7272 voice bot, BaKhabar Kissan, AMIS), and research shows price information alone doesn't
+raise what farmers get. Liquidity does: harvest loans in a Kenyan randomised trial (Burke, Bergquist & Miguel, QJE 2019)
+earned a 29% return. In the 2026 season, Punjab wheat sold at Rs 2,900–3,100 at harvest. AMIS was held at Rs 3,450 by an
+official cap, and the open market reached about Rs 5,300 by October. **Those who could wait gained; most farmers couldn't wait.**
+
+**The new core question.** Not "will the price rise?", which nobody can know, but **"can you afford to wait, and with
+whose money?"** For the farmer's own crop and quantity:
+
+1. **Questions:**
+   - Cash needed now (Rs).
+   - How long the rest could wait (1–6 months).
+   - Whose money pays for waiting: own (0%), bank or warehouse-receipt loan (16.5%/yr), or arhti (66%/yr, about 4× the formal rate). The farmer can edit the rate.
+   - Storage: godown (3.5% loss) or bags at home (10% loss).
+   - Optionally, the arhti's offer.
+2. **Answer:**
+   - A **split**: sell enough now for the cash need at the best mandi after transport, and hold the rest **only if**
+     holding paid in most past seasons with *this farmer's* money and storage (AMIS backtest, real weeks only, no peeking
+     past `as_of`).
+   - The verdict is `SELL_ALL`, `SPLIT` or `HOLD_ALL`, with the three ways out in rupees: sell now, the arhti's offer,
+     and hold (expected and 1-in-10 worst).
+3. **Holding is worked out for wheat only** for now (we have no sourced storage costs for cotton or rice). Other crops
+   get SELL_ALL with the `HOLD_WHEAT_ONLY` warning, plus the mandi comparison.
+
+The backtest on our own data (28 mandi-years, sell in May vs September–October) gives **opposite answers for the same
+crop and mandi**:
+
+| Waiting paid in… | Godown | Bags at home |
+|---|---|---|
+| Own money | 22/28 | 10/28 |
+| Bank, 16.5% | 11/28 | 5/28 |
+| Arhti, 66% | 4/28 | 1/28 |
+
+**News (new; NS-10 amended).** Today's Pakistan farm news (Google News RSS, Pakistan English edition, cached, with a
+saved copy for offline demos), tagged by Gemini with keyword rules as fallback. There are also dated, sourced wheat
+policy events, which work in replay. **News never changes the advice.** It can only add a warning (`NEWS_PRICE_CONFLICT`
+when a reported price is more than 10% away from AMIS; `POLICY_UNCERTAIN` for a support-price, cap/ban or import item
+in the last 14 days) and lower confidence by one level.
+
+**Other changes:**
+- **The forecast never overrides the cost of waiting.** The wheat direction call stays on screen, worded as "the price
+  may rise, but waiting costs more" when that's the case.
+- **NS-08 amended:** FarmSight compares what different money costs the farmer. It still never lends, scores credit or
+  arranges a loan.
+- **Decision 18 superseded:** holding now has storage loss and a choice of money.
+- **What to Grow is fixed, not dropped:**
+  - Crops are compared only within the same season (wheat is the only Rabi crop we track).
+  - A stale price never ranks first.
+  - Rice gets a water-need note at Bahawalpur.
+  - Wheat shows the support-price status.
+- **Compare Mandis:** a stale price can't be "best".
+- **New endpoints** (section 12): `GET /api/wait-plan`, `GET /api/news`, `GET /api/policy`.
+
+**Facts to keep straight in the pitch:**
+- The Kissan Card is an **input** loan: Rs 30,000/acre, up to Rs 150,000 a season, 1–12.5 acres, 6 months + 1 month
+  grace. It is not a holding loan. Its role in the pitch: take inputs on the card instead of the arhti's advance, so the
+  crop isn't tied to him.
+- Warehouse receipts: 37 accredited warehouses, all in Punjab, and hard to use for lots of 5–10 tonnes.
+
+---
+
 ## 1. 📌 Project Overview
 
 > **Product focus (10 Oct 2026).** FarmSight's primary job is now **checking a buyer's offer before selling**: the
@@ -1147,6 +1215,9 @@ backup demo weeks (section 14, `docs/DEMO.md`) give the answer the app would hav
 | `GET` | `/api/advice?crop=&mandi=&quantity_maund=&as_of=` | Public (profile quantity and arhti used when logged in) | SELL/WAIT, confidence, expected price, gross gain, interest cost (4 weeks), net rupee impact, `direction`. Decided by `ml.decision.advise`. Logged in the `recommendations` table | UC-03 |
 | `GET` | `/api/compare-mandis?crop=&mandi=&quantity_maund=&as_of=` | Public | Net price per mandi after estimated transport from the farmer's mandi, best first; mandis without data or with stale data flagged Each row also has `reference_strength`, `reference_days` and `price_unchanged_since`; `is_best` is true only for the top row and only when its reference is STRONG (a stale, frozen, thin or repeated price is never "best") | UC-04 |
 | `GET` | `/api/crop-plan?mandi=&land_area_acres=&as_of=` | Public (profile used when logged in) | Ranked crops (`ml.decision.crop_plan`): harvest price estimate and range, profit per acre (with past-years range) and for the land, risk, season months, selling window after interest (`sell_at_harvest`, `sell_window_months`) | UC-05, UC-06 |
+| `GET` | `/api/wait-plan?crop=&mandi=&quantity_maund=&cash_need_rs=&wait_months=&money=&annual_rate=&storage=&offer=&as_of=` | Public (profile quantity used when logged in) | **Section 0.** Sell-now / hold split for the cash need; ways out (`SELL_NOW`, `ARHTI_OFFER`, `HOLD`) in rupees; hold backtest `history` (wheat); `confidence`; `warnings`; `news_check` | UC-03 |
+| `GET` | `/api/news?crop=&mandi=` | Public | **Section 0.** Today's tagged farm news (not replayed); `price_check` when a news price is more than 10% away from AMIS | UC-03 |
+| `GET` | `/api/policy?crop=&as_of=` | Public | **Section 0.** Dated, sourced policy events up to `as_of` | UC-03, UC-05 |
 | `POST` | `/api/offer-check` | Public | `{crop, mandi, offer_price, quantity_maund, arhti_pct?}` (offer = gross quoted price; `arhti_pct` only shown, never applied) → `buyer_offer_price`, `reference_price` (+ `_as_of`), `reference_range_low/high` (AMIS low/high over 14 days), `reference_days`, `window_days`, `is_stale`, `price_unchanged_since`, `reference_strength` (STRONG / LIMITED_STALE / LIMITED_FROZEN / LIMITED_FEW_DAYS (< 5 days) / LIMITED_SAME_PRICE), `range_position`, `result_status` (BELOW / WITHIN / ABOVE_REFERENCE_RANGE, or REFERENCE_DATA_LIMITED when the reference is not strong), differences per maund and in total vs the reference and the range, `estimated_transport_cost`, `estimated_commission` (farmer's own rate only), `alternative_mandis` (every mandi, the farmer's own first with `is_own_mandi: true` and its table transport, usually Rs 0; net after estimated transport; `better_after_transport` null when that mandi's reference is weak), `limitations` codes. Deprecated aliases kept: `offer_price, fair_low, fair_high, verdict, difference_per_maund, difference_total, prices_as_of` | UC-07 |
 | `GET` | `/api/reference?crop=&mandi=&as_of=` | Public | The recent reported AMIS reference without an offer: `reference_price` (+ `_as_of`), `reference_range_low/high`, `reference_days`, `window_days`, `is_stale`, `price_unchanged_since`, `reference_strength`, `limitations` (strength codes). The same numbers the offer check uses | UC-07 |
 | `GET` | `/api/channels/preview?crop=&mandi=&quantity_maund=&offer_price=&as_of=` | Public | What WhatsApp and SMS would send, rendered by the channel code: `whatsapp_menu`, `sms_menu`, `menu_choices`, and with an offer `whatsapp_offer`, `whatsapp_offer_buttons`, `sms_offer`, `sms_offer_parts`, `prices_as_of`; `status` flags only (`whatsapp_configured`, `sms_provider_configured`, `voice_notes_enabled`), never a setting value. Nothing is sent | UC-07, UC-10 |
@@ -1331,6 +1402,8 @@ from past 4-week swings; the model did not beat it on prices), and `direction` i
 | 20 | Sowing-window advice (old UC-06)? | ✅ Decided (v0.2.0) | Team | Dropped. Sowing dates are set by agronomy and shifting them changes yield (conflicts with NS-04). UC-06 now advises the best selling window within the harvest season |
 | 21 | Is the "15–30% income loss" figure sourced? | ⏳ Action | Team | No source in our data. Cite one or remove it from the pitch before Phase 5 |
 | 22 | AMIS terms of use and README acknowledgements | ⏳ Action | Data owner | Confirm AMIS terms; add AMIS, Open-Meteo, API cost tables and news sources to the README acknowledgements (repo `docs/PLAN.md` 6.4) |
+| 23 | Core question after 828/828 SELL | ✅ Decided (10 Oct) | Team | "Can you afford to wait, and with whose money?": wait plan with a split, three ways out and a hold backtest by money and storage (section 0). Supersedes decision 18 |
+| 24 | Live news? | ✅ Decided (10 Oct) | Team | Yes: Google News RSS (Pakistan English edition), cached, with a saved copy. News can warn or lower confidence, never change the advice (section 0). Amends NS-10 |
 
 ---
 
