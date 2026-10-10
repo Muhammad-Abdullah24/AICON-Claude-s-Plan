@@ -1189,6 +1189,11 @@ export interface components {
             input_need_rs: number;
             /** Borrow Needed Rs */
             borrow_needed_rs: number;
+            /**
+             * Harvest Cost Rs
+             * @default 0
+             */
+            harvest_cost_rs: number;
             /** Options */
             options: components["schemas"]["LoanOption"][];
             /** Ladder */

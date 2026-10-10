@@ -497,6 +497,7 @@ class LoanPlanResponse(Labelled):
     input_cost_note: str            # where the per-acre costs came from and how they were escalated
     input_need_rs: float            # sum(rs_per_acre) x acres
     borrow_needed_rs: float         # max(0, input_need - savings)
+    harvest_cost_rs: float = 0      # harvesting and threshing on this land: paid in April from the crop, not borrowed
     options: list[LoanOption]       # cheapest first; ineligible options are listed too, with the reason
     ladder: list[LoanLadderSlice]   # borrow_needed filled from the cheapest eligible option up
     ladder_interest_rs: float

@@ -357,7 +357,11 @@ def test_loan_plan_runs_on_real_tables_with_a_cheapest_first_ladder(client):
     assert p["crop"] == "wheat" and p["acres"] == 5
     assert p["data_source"] == "official_tables" and p["is_synthetic"] is False
     assert "COST_ESTIMATE" in p["warnings"]                                  # costs are escalated, always flagged
-    assert p["input_need_rs"] == round(83995 * 5)                            # Rs 83,995/acre (D1) x 5 acres
+    # Rs 63,265/acre of cash due before the sale (D1) x 5 acres; harvesting (Rs 20,730/acre) is paid in April from
+    # the crop, so it is reported apart, never borrowed in October.
+    assert p["input_need_rs"] == round(63265 * 5)
+    assert p["harvest_cost_rs"] == round(20730 * 5)
+    assert all(i["item"] != "harvesting" for i in p["input_items"])
     assert p["borrow_needed_rs"] == p["input_need_rs"]                       # no savings -> borrow it all
     assert p["months_to_harvest"] >= 1 and p["plan_comparison"] == "NOT_REQUESTED"
     rates = [s_rate(p, slice_["id"]) for slice_ in p["ladder"]]
