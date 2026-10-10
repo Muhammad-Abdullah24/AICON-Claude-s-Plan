@@ -73,7 +73,22 @@ class ServicesProvider:
         """services.offer_check: the offer against the mandi's last 14 days. Without a quantity only the per-maund
         gap is meaningful (the service's default total is not shown)."""
         fn = self._fn("offer_check")
-        return fn(crop_option, mandi, offer, quantity_maund) if quantity_maund else fn(crop_option, mandi, offer)
+        r = fn(crop_option, mandi, offer, quantity_maund) if quantity_maund else fn(crop_option, mandi, offer)
+        return {**r, "evidence": self._offer_evidence(crop_option, mandi, r)}
+
+    def _offer_evidence(self, crop_option, mandi, r) -> list[str]:
+        """Why the 14-day range may not be a real fair range, from the checks the app's other screens use. Read
+        only: the offer check's numbers are untouched. FROZEN: AMIS repeated this price; STALE: older than the
+        staleness rule; LIMITED: one price for the whole window, so low and high are the same number."""
+        from backend.app import services  # noqa: PLC0415 (lazy, as in _fn)
+        flags = []
+        if services.frozen_since(services._series(crop_option, mandi), r["prices_as_of"]) is not None:
+            flags.append("FROZEN")
+        if services.is_stale(r["prices_as_of"]):
+            flags.append("STALE")
+        if r["fair_low"] == r["fair_high"]:
+            flags.append("LIMITED")
+        return flags
 
     def set_alerts(self, phone, enabled):
         self._fn("set_alerts")(phone, enabled)

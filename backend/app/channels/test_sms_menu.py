@@ -211,3 +211,69 @@ def test_simpapp_sms_0_then_1_then_an_offer():
         assert len(outbox.sent) == 4 and all(to == "+923001234567" for to, _ in outbox.sent)
     finally:
         db.reset()
+
+
+# ---------------------------------------------------------------- limited evidence: a reference price, not a fair range
+
+FAIR_WORDS = ("مناسب حد", "✅")
+
+
+def test_frozen_bahawalpur_wheat_is_a_reference_price_not_a_fair_range():
+    """Real data: AMIS has reported one wheat price at Bahawalpur for the whole 14-day window."""
+    from backend.app.channels.provider import ServicesProvider
+    o = ServicesProvider().offer_check("Wheat", "BahawalPur", 3700, 100, PHONE)
+    assert o["fair_low"] == o["fair_high"] and "LIMITED" in o["evidence"]
+    text = reply.offer_text("Wheat", "BahawalPur", 3700, o, 100)
+    ref = reply.rs(o["fair_low"])
+    assert f"منڈی کا رپورٹ شدہ ریٹ (صرف حوالہ): {ref} (AMIS، {o['prices_as_of']} تک)" in text
+    assert reply.OFFER_EVIDENCE_UR["LIMITED"].format(days=14) in text
+    gap = o["fair_low"] - 3700
+    assert reply.OFFER_REFERENCE_GAP["below"].format(diff=reply.rs(gap)) in text
+    assert f"100 من پر: {reply.signed_rs(-gap * 100)}" in text
+    assert text.endswith(reply.OFFER_NOT_ADVICE) and not any(w in text for w in FAIR_WORDS)
+
+
+def test_an_offer_equal_to_the_frozen_price_is_not_called_fair():
+    from backend.app.channels.provider import ServicesProvider
+    p = ServicesProvider()
+    ref = p.offer_check("Wheat", "BahawalPur", 3700, None, PHONE)["fair_low"]
+    o = p.offer_check("Wheat", "BahawalPur", ref, None, PHONE)
+    assert o["verdict"] == "fair"   # the engine's verdict is unchanged; only the words are
+    text = reply.offer_text("Wheat", "BahawalPur", ref, o, None)
+    assert reply.OFFER_REFERENCE_EQUAL in text and not any(w in text for w in FAIR_WORDS) and "من پر" not in text
+
+
+def test_a_real_range_keeps_the_fair_range_wording():
+    from backend.app.channels.provider import ServicesProvider
+    o = ServicesProvider().offer_check("Cotton", "BahawalPur", 9000, 50, PHONE)
+    assert o["fair_low"] < o["fair_high"] and o["evidence"] == []
+    text = reply.offer_text("Cotton", "BahawalPur", 9000, o, 50)
+    assert "مناسب حد (اس منڈی میں پچھلے 14 دن)" in text and reply.OFFER_NOT_ADVICE not in text
+
+
+@pytest.mark.parametrize("flags", [["FROZEN"], ["STALE"], ["LIMITED"], ["FROZEN", "STALE", "LIMITED"]])
+@pytest.mark.parametrize("verdict, gap, words", [
+    ("below", -150, reply.OFFER_REFERENCE_GAP["below"].format(diff="Rs 150")),
+    ("above", 50, reply.OFFER_REFERENCE_GAP["above"].format(diff="Rs 50")),
+    ("fair", 0, reply.OFFER_REFERENCE_WITHIN),
+])
+def test_every_limited_evidence_flag_switches_to_reference_wording(flags, verdict, gap, words):
+    o = {**OFFER_RESULT, "verdict": verdict, "difference_per_maund": gap, "difference_total": gap * 100,
+         "evidence": flags}
+    text = reply.offer_text("Wheat", "Vehari", 3800, o, 100)
+    assert "Rs 3,700 سے Rs 3,850" in text and words in text and text.endswith(reply.OFFER_NOT_ADVICE)
+    assert all(reply.OFFER_EVIDENCE_UR[f].format(days=14) in text for f in flags)
+    assert not any(w in text for w in FAIR_WORDS)
+    assert ("100 من پر" in text) == (verdict != "fair")
+
+
+def test_sms_offer_on_limited_evidence_through_the_menu():
+    class Frozen(Provider):
+        def offer_check(self, *a):
+            return {**super().offer_check(*a), "fair_low": 3820, "fair_high": 3820, "evidence": ["LIMITED"]}
+
+    p = Frozen(verdict="below")
+    say("گندم بہاولپور 100 من", p)
+    say("1", p)
+    out = say("3700", p)
+    assert "صرف حوالہ" in out and reply.OFFER_NOT_ADVICE in out and not any(w in out for w in FAIR_WORDS)
