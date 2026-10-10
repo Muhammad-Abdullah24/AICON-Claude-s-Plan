@@ -4,6 +4,13 @@
 
 ## 1. 📌 Project Overview
 
+> **Product focus (10 Oct 2026).** FarmSight's primary job is now **checking a buyer's offer before selling**: the
+> offer against the recent AMIS reference at the mandi (with how strong that reference is), the difference for the
+> farmer's quantity, and other mandis after estimated transport (UC-07, FR-08, section 12). It is an independent
+> calculation and negotiation aid, not a replacement for arhtis, buyers, transport, storage or credit. The forecast,
+> SELL/WAIT signal and model direction call stay as labelled **market outlook** background (UC-02, UC-03). Where this
+> document still describes the signal as the headline, the offer check takes precedence.
+
 | Field | Description |
 |-------|-------------|
 | **App Name** | FarmSight |

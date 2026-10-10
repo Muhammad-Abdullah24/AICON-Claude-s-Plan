@@ -38,7 +38,8 @@ function StatusLine({ ok, children }: { ok: boolean; children: ReactNode }) {
   )
 }
 
-function PreviewBody({ p }: { p: ChannelPreview }) {
+/** The page body for a preview from the API (exported for tests). */
+export function PreviewBody({ p }: { p: ChannelPreview }) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language as Lang
   const s = p.status

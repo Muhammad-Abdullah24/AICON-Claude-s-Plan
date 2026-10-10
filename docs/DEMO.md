@@ -33,21 +33,21 @@ decision 12). Never say a number on stage that the app does not show.
 
 | Time | Screen | What we show and say |
 |---|---|---|
-| 0:00–0:30 | – | **Problem.** Farmers sell at harvest into a glut, at the nearest mandi, without knowing their margin. Wheat at Bahawalpur fell 29% in four weeks in spring 2024 (Rs 4,825 → 3,432 from 18 Mar 2024, AMIS; history, not a model result). |
-| 0:30–1:15 | **Home** (wheat, Bahawalpur, 100 maund) | Card: **بیچ دیں (SELL)**. Today **Rs 3,820**, in 4 weeks Rs 3,820, likely **Rs 3,607 to Rs 4,071**. Waiting 4 weeks on 100 maund: **−Rs 4,848**, the interest cost of waiting (16.5% a year for 4 weeks). "How sure: somewhat sure". Then the model's line: **"likely to rise in the next 4 weeks (it called 72% of the big moves in 2025 right; not a price forecast)"**. Say: a rise is likely, but not enough to beat the interest and the 5% bar, so SELL. Label: "Real data · Source: AMIS Punjab · per 40 kg · prices as of 9 October 2026". Weather line: live from Open-Meteo. |
-| 1:15–2:00 | **Why?** | SHAP reasons from the model, in Urdu with arrows: the time of year (about +Rs 18 per 40 kg), heat and weather (+Rs 12), rainfall (+Rs 12); and, honestly, "the price shown is a simple estimate". Open "details" for one second: the price chart with the 4-week range; weeks without an AMIS price are gaps, not invented lines. |
-| 2:00–2:40 | **Compare mandis**, then the **offer check** on Home | Bahawalpur is best: Rs 3,820. Rahim Yar Khan Rs 3,475 minus Rs 291 transport = Rs 3,184 (**−Rs 63,600** on 100 maund). Vehari's last price is 17 Jul 2026, shown in amber as old. Offer check: a buyer offers **Rs 3,514** → "Rs 306 a maund below the fair range" (**−Rs 30,600** on 100 maund; fair range = the mandi's last 14 days). |
-| 2:40–3:30 | **What to grow** (Bahawalpur, 12.5 acres, logged in as Ahmed) | Ranked by profit per acre: 1 Super Basmati **Rs 1,691,610** (**amber: prices only to 7 Apr 2026**), 2 cotton **Rs 956,049** (Rs 76,484 an acre; past years Rs 40,065 to Rs 126,840), 3 IRRI Rs 681,254, 4 wheat **Rs 56,211** (Rs 4,497 an acre; past years from a loss of Rs 30,934 to a profit of Rs 35,487). Every crop shows "price risk: high" (year-to-year swings are large). Month strip: sowing, harvest, best time to sell. Wheat, cotton, IRRI: "best to sell at harvest: holding usually does not beat the interest"; Super Basmati: December. Say: Super Basmati is first on paper but its price is six months old, which is why the app marks it. |
-| 3:30–4:10 | **WhatsApp** on the phone | Type "گندم بہاولپور 100 من" → the same advice as the web, with buttons کیوں؟ / منڈیاں / الرٹ بند and the line "1 کیوں؟ · 2 منڈیاں · 3 الرٹ بند · 0 مینو". If typing Urdu is slow on stage, use the numbered menu instead (section 3a): `0`, `1`, `1`, `1`, `100`. Say: "a farmer who cannot type can do all of it with digits". Then show the alert (section 3). |
-| 4:10–4:40 | **Chat** (Ask) | "گندم کا ریٹ اگلے ہفتے کتنا ہوگا؟" → Urdu answer that uses only the app's numbers (every number is checked; if Gemini adds one, the template answer is shown instead). Voice notes are not available (A10): a voice note gets "type it, or send 0 for the menu". Do not send one on stage. |
-| 4:40–5:00 | – | **Close.** "The same information traders have, in the farmer's language." Limits, in one breath: AMIS mandi prices (some series stale or frozen, and we show it); the baseline is right within its range 81% of the time on 2025 data; our model must beat it or we ship the baseline. |
+| 0:00–0:30 | – | **Problem.** A buyer at the farm gate offers a price and wants an answer now. The farmer has no quick, independent reference in Urdu, and selling at harvest is when prices are weakest: wheat at Bahawalpur fell 29% in four weeks in spring 2024 (Rs 4,825 → 3,432 from 18 Mar 2024, AMIS; history, not a model result). FarmSight is one thing: **check a buyer's offer before you sell**. |
+| 0:30–1:30 | **Home: check an offer** (cotton, Bahawalpur, 60 maund, buyer offers **Rs 8,500**) | **"Below the recent reference range"**. Latest reported mandi price **Rs 9,200** (AMIS, 9 Oct 2026); recent reference range **Rs 8,900 to Rs 9,240**, AMIS reported 12 of the last 14 days ("Recent report" badge). The offer is **Rs 700 a maund below** the latest price: **−Rs 42,000 on 60 maund** (−Rs 24,000 against the bottom of the range). Then the next steps: ask the buyer how the price was set and whether grade changed it; compare mandis; use this as an independent reference; and, honestly, "FarmSight cannot remove a credit, transport or cash constraint". Say: "a reference, not a fair price; grade and terms are not in it". |
+| 1:30–2:10 | Same form: **wheat, Bahawalpur, 100 maund, Rs 3,514** | **"Reference data is limited"** in the wheat card: AMIS reported **the same price, Rs 3,820, on all 12 reported days**. The numbers stay (−Rs 306 a maund, **−Rs 30,600** on 100 maund) but FarmSight gives no verdict on the offer, and offers safe next steps instead (another mandi, the latest dates, ask the mandi) and "What FarmSight cannot know". Say: this is the honesty we built in. |
+| 2:10–2:50 | **Compare mandis** (cotton, the Rs 8,500 offer) | Your mandi first: Bahawalpur Rs 9,200, transport Rs 0, **+Rs 42,000** against the offer on 60 maund. Vehari: Rs 7,500 reported, −Rs 165 transport = Rs 7,335, **not estimated better after transport** (−Rs 69,906). Rahim Yar Khan: higher net on paper (Rs 8,859) but **only 2 reports in 14 days**, so **"reference too weak to compare"**, never "best". The caution banner: "not necessarily the best mandi; check a buyer is there and arrange transport". |
+| 2:50–3:40 | **WhatsApp** on the phone, then the **WhatsApp / SMS** page | Numbered menu: `0`, `1` (check an offer), `2` (cotton), `1` (Bahawalpur), `60`, `8500` → the same result as the web, in Urdu; `2` → the mandis against the offer. Free text works too: "گندم بہاولپور 100 من آفر 3514". On the web, open **WhatsApp / SMS**: the real menu and the real Roman Urdu SMS for the last check (2 SMS parts), rendered by the channel code. Say plainly: **SMS is a tested adapter, not live** (no SMS provider yet), and voice notes are off. |
+| 3:40–4:20 | **Data details**, then **Market outlook** | Data details: the same strength labels, the reference price and date, "What FarmSight cannot know" (grade, buyer terms, trucks, credit or urgent cash, whether a buyer is there). Market outlook (secondary): we tested price forecasting; our XGBoost model did not beat the simple baseline on held-out data (5.64% vs 5.60% error), so the outlook is background, **not a reason to hold the crop**. For wheat it shows the model's direction call (72% of 2025's big moves right), labelled. |
+| 4:20–5:00 | – | **Close.** "Before you sell, check once: an independent reference in the farmer's language." Limits, in one breath: AMIS reports can be old, frozen or repeated, and we say so; transport is an estimate; we cannot see grade, terms, credit or buyers; no field trial yet, so no income claims. |
 
-**Must work:** Home, Why, Compare, What to grow. If WhatsApp or chat fails, say so and move on: the web shows the
-same numbers.
+**Must work:** Home (offer check), Compare, Data details. If WhatsApp fails, say so and move on: the web shows the
+same numbers. Re-check every figure above with section 7 on the morning of the demo.
 
-**Strongest proof (30 seconds, if time allows or a judge asks):** open `/?as_of=2025-03-24`, then `/?as_of=2025-08-04`
-(section 4). The model called **DOWN** before the 2025 pre-harvest crash and **UP** before the summer rally, both
-held-out weeks.
+**If a judge asks for a past week (30 seconds):** open `/?as_of=2025-03-24` (section 4) and check an offer of Rs 2,750
+for wheat at Bahawalpur, 100 maund: the reference that day was strong (Rs 2,990, range Rs 2,760 to Rs 2,990, 14 of 14
+days), so the result is "below the recent reference range", −Rs 24,000 on 100 maund. Say: **this is what reference
+information was available that day**, not money anyone saved: there was no real offer.
 
 ## 3. The alert on the phone
 
@@ -91,13 +91,14 @@ on the Meta test number):
 
 | Send | Reply |
 |---|---|
-| `0` | Menu: 1 ریٹ اور مشورہ · 2 منڈیوں کا موازنہ · 3 مشورے کی وجہ · 4 الرٹ چالو · 5 الرٹ بند · 0 مینو |
+| `0` | Menu: 1 خریدار کی آفر چیک کریں · 2 منڈیوں کا موازنہ · 3 وجہ اور ڈیٹا کی تفصیل · 4 الرٹ شروع کریں · 5 الرٹ بند کریں · 0 مینو |
 | `1` | کون سی فصل؟ 1 گندم · 2 کپاس (پھٹی) · 3 چاول |
-| `1` | کون سی منڈی؟ 1 بہاولپور · 2 وہاڑی · 3 رحیم یار خان |
+| `2` | کون سی منڈی؟ 1 بہاولپور · 2 وہاڑی · 3 رحیم یار خان |
 | `1` | کتنے من؟ |
-| `100` | The advice card, the same numbers as Home (re-check them in section 7) |
-| `1` | Why: the same reasons as the Why screen |
-| `2` | Compare mandis |
+| `60` | خریدار نے فی من کتنا دیا؟ |
+| `8500` | The offer result, the same numbers as Home: "حالیہ حوالہ حد سے کم", Rs 8,500 vs Rs 9,200, 60 من پر −Rs 42,000 |
+| `2` | Every mandi after estimated transport against the Rs 8,500 offer, Bahawalpur first |
+| `1` | Why / data details |
 
 If a number gets "یہ نمبر کس سوال کا جواب ہے" (no session), the 30 minutes ran out: send `0` and start again.
 Always start with `0`: outside a session a bare `3` keeps its old meaning and turns alerts **off**.
@@ -106,11 +107,12 @@ Always start with `0`: outside a session a bare `3` keeps its old meaning and tu
 tested as an adapter with the same menu in Roman Urdu, two SMS at most; it goes live once we pick an SMS gateway". Do
 not show it as working, and do not show voice notes.
 
-## 4. Backup: replay a past week
+## 4. Backup: replay a past week ("what reference was available that day?")
 
-If the live data looks odd on the day, open the app with **`?as_of=<date>`**. A yellow banner on every screen says
-"Replaying <date>" and every price screen shows what the app would have said that day (no price after that date is
-used). "Back to today" ends it. Weather and chat stay live, and the banner says so.
+If the live data looks odd on the day, open the app with **`?as_of=<date>`**. A banner on every screen says
+"Replaying <date>" and every price screen shows what reference information was available that day (no price after
+that date is used). "Back to today" ends it. Weather and chat stay live, and the banner says so. **Never present a
+replay as money saved**: there was no real buyer's offer, so there is no counterfactual.
 
 Use **held-out** weeks only (the model never trained on them; say "held-out week", not "unseen test"):
 
@@ -142,7 +144,14 @@ News (8 Oct 2026) with no mandi named. AMIS mandi prices across Punjab are Rs 3,
 mandis Rs 4,450), and South Punjab is at the low end: Bahawalpur 3,820, Rahim Yar Khan 3,475. That gap is exactly
 why "where to sell" matters. (Details: `docs/DATA_NOTES.md` section A7.)
 
-**"It always says SELL."** Yes, by design for now: the SELL/WAIT card runs on the baseline price, which can never
+**"Is this offer unfair?"** FarmSight does not say that. It shows the recent reported reference, how strong it is, and
+the difference for the farmer's quantity. It cannot see the crop's grade, the buyer's terms or any credit tie, so
+proving an offer unfair would need field evidence we do not have.
+
+**"Are you replacing arhtis?"** No. Commission agents often give credit, transport and quick settlement. FarmSight is a
+calculation and negotiation aid for the farmer to use alongside them.
+
+**"It always says SELL."** (Market outlook, now secondary.) Yes, by design for now: the SELL/WAIT card runs on the baseline price, which can never
 clear the 5% bar for WAIT, and the interest cost of waiting is real. Prices rise 5% or more in 4 weeks only 14–19% of
 weeks. Our XGBoost model did not predict prices better than the baseline on held-out 2025 data (5.64% vs 5.60%
 error), so we do not let its prices drive the decision (NFR-01).
@@ -173,6 +182,9 @@ After the model lands (or on the morning of the demo), with the backend running:
 
 ```bash
 curl "http://127.0.0.1:8000/api/advice?crop=wheat&mandi=bahawalpur&quantity_maund=100"
+curl -X POST "http://127.0.0.1:8000/api/offer-check" -H "Content-Type: application/json" -d "{\"crop\":\"cotton\",\"mandi\":\"bahawalpur\",\"offer_price\":8500,\"quantity_maund\":60}"
+curl "http://127.0.0.1:8000/api/reference?crop=wheat&mandi=bahawalpur"
+curl "http://127.0.0.1:8000/api/channels/preview?crop=cotton&mandi=bahawalpur&quantity_maund=60&offer_price=8500"
 curl "http://127.0.0.1:8000/api/explain?crop=wheat&mandi=bahawalpur"
 curl "http://127.0.0.1:8000/api/compare-mandis?crop=wheat&mandi=bahawalpur&quantity_maund=100"
 curl "http://127.0.0.1:8000/api/crop-plan?mandi=bahawalpur&land_area_acres=12.5"
