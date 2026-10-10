@@ -2,12 +2,13 @@
 
 Our slot: **Sunday 11 October 2026, 11:27–11:32, SEECS Lecture Hall.** Five minutes. Everyone speaks.
 
-Every figure below is **real app output from 10 Oct 2026** (AMIS prices up to 9 Oct 2026) with Owner B's deployed
-model and engine. The price forecast is the labelled baseline ("the price stays the same, with the range of past
-4-week swings"): the XGBoost model did not beat it on prices (NFR-01, `docs/MODEL_CARD.md`). For **wheat**, the model's
-**direction call** (likely up / likely down, no price) and its SHAP reasons are shown, because it called 72% of 2025's
-big wheat moves right. **Re-run section 7 on the morning of the demo** and fix any number that moved (blueprint
-decision 12). Never say a number on stage that the app does not show.
+**The story (BLUEPRINT section 0, docs/PIVOT.md): small farmers don't lack prices; their loan forces them to sell at
+the harvest low.** FarmSight plans the loan at sowing, so the farmer can afford to wait at harvest.
+
+Every figure in section 2 is **real app output from 10 Oct 2026 (afternoon)**, with AMIS prices up to 9 Oct, unless it
+says *TBD*. TBD figures come from the loan planner (cards L1, L2a, D1), which isn't merged yet; fill them in from the
+app before rehearsal. **Re-run section 7 on demo morning** and fix any number that moved. Never say a number on stage
+that the app doesn't show.
 
 ---
 
@@ -22,29 +23,24 @@ decision 12). Never say a number on stage that the app does not show.
       still correct output; say "the template answer, same numbers".
 - [ ] WhatsApp (needs A3 done): the demo phone has messaged the bot in the last 24 hours, so alerts arrive as free
       text. Run `POST /api/alerts/run?dry_run=true` with `X-Admin-Token` to see the alert before sending it.
-- [ ] Backup tab open at `/?as_of=2025-03-24` (section 4), and the backup recording on the desktop. If we play it,
+- [ ] Replay tab open at `/?as_of=2026-05-10` (Act 2), plus a backup tab at `/?as_of=2025-03-24` (section 4), and the backup recording on the desktop. If we play it,
       we say it is a recording.
 - [ ] Phone brightness up, notifications off, laptop on charger.
 
-## 2. The five minutes (real output, 10 Oct 2026)
+## 2. The five minutes
 
 | Time | Screen | What we show and say |
 |---|---|---|
-| 0:00–0:30 | – | **Problem.** Farmers sell at harvest into a glut, at the nearest mandi, without knowing their margin. Wheat at Bahawalpur fell 29% in four weeks in spring 2024 (Rs 4,825 → 3,432 from 18 Mar 2024, AMIS; history, not a model result). |
-| 0:30–1:15 | **Home** (wheat, Bahawalpur, 100 maund) | Card: **بیچ دیں (SELL)**. Today **Rs 3,820**, in 4 weeks Rs 3,820, likely **Rs 3,607 to Rs 4,071**. Waiting 4 weeks on 100 maund: **−Rs 4,848**, the interest cost of waiting (16.5% a year for 4 weeks). "How sure: somewhat sure". Then the model's line: **"likely to rise in the next 4 weeks (it called 72% of the big moves in 2025 right; not a price forecast)"**. Say: a rise is likely, but not enough to beat the interest and the 5% bar, so SELL. Label: "Real data · Source: AMIS Punjab · per 40 kg · prices as of 9 October 2026". Weather line: live from Open-Meteo. |
-| 1:15–2:00 | **Why?** | SHAP reasons from the model, in Urdu with arrows: the time of year (about +Rs 18 per 40 kg), heat and weather (+Rs 12), rainfall (+Rs 12); and, honestly, "the price shown is a simple estimate". Open "details" for one second: the price chart with the 4-week range; weeks without an AMIS price are gaps, not invented lines. |
-| 2:00–2:40 | **Compare mandis**, then the **offer check** on Home | Bahawalpur is best: Rs 3,820. Rahim Yar Khan Rs 3,475 minus Rs 291 transport = Rs 3,184 (**−Rs 63,600** on 100 maund). Vehari's last price is 17 Jul 2026, shown in amber as old. Offer check: a buyer offers **Rs 3,514** → "Rs 306 a maund below the fair range" (**−Rs 30,600** on 100 maund; fair range = the mandi's last 14 days). |
-| 2:40–3:30 | **What to grow** (Bahawalpur, 12.5 acres, logged in as Ahmed) | Ranked by profit per acre: 1 Super Basmati **Rs 1,691,610** (**amber: prices only to 7 Apr 2026**), 2 cotton **Rs 956,049** (Rs 76,484 an acre; past years Rs 40,065 to Rs 126,840), 3 IRRI Rs 681,254, 4 wheat **Rs 56,211** (Rs 4,497 an acre; past years from a loss of Rs 30,934 to a profit of Rs 35,487). Every crop shows "price risk: high" (year-to-year swings are large). Month strip: sowing, harvest, best time to sell. Wheat, cotton, IRRI: "best to sell at harvest: holding usually does not beat the interest"; Super Basmati: December. Say: Super Basmati is first on paper but its price is six months old, which is why the app marks it. |
-| 3:30–4:10 | **WhatsApp** on the phone | Type "گندم بہاولپور 100 من" → the same advice as the web, with buttons کیوں؟ / منڈیاں / الرٹ بند. Then show the alert (section 3). |
-| 4:10–4:40 | **Chat** (Ask) | "گندم کا ریٹ اگلے ہفتے کتنا ہوگا؟" → Urdu answer that uses only the app's numbers (every number is checked; if Gemini adds one, the template answer is shown instead). Voice notes are not built (A10): type the question. |
-| 4:40–5:00 | – | **Close.** "The same information traders have, in the farmer's language." Limits, in one breath: AMIS mandi prices (some series stale or frozen, and we show it); the baseline is right within its range 81% of the time on 2025 data; our model must beat it or we ship the baseline. |
+| 0:00–0:40 | – | **Problem, with sources.** 2026 harvest: Punjab wheat sold at **Rs 2,900–3,100** (Friday Times, ProPakistani). By October the open market was about **Rs 5,300** (ARY). Traders and big farmers who could wait gained. Small farmers couldn't: their loans fell due in April, and about **half of what a smallholder borrows "for the crop" goes to household needs** (Sindh study: 51.5% reached the farm). Mandi prices are already free (Telenor 7272, AMIS), and price information alone doesn't raise farmers' prices. **Money does:** harvest loans earned a 29% return in a Kenyan trial. |
+| 0:40–1:40 | **Loan planner** (Act 1: October, sowing now) | Ahmed, 5 acres of wheat, plans to borrow **Rs 4,00,000 from his arhti** (TBD: use the planner's example). The planner shows the cash inputs his wheat needs (**Rs TBD**/acre × 5, from the official API cost table, fertiliser at today's prices). It fills that from the cheapest money first: **Kissan Card Rs 1,50,000 at 0%**, then PM Youth (0%, age 21–45) or Akhuwat (0%, small), then Zarkhez-e (18%). What over-borrowing from the arhti costs him by harvest: **Rs TBD**. Say: "He borrows less, more cheaply, so at harvest he owes less." |
+| 1:40–3:00 | **Home: wait plan**, replay **`/?as_of=2026-05-10`** (Act 2: harvest) | Wheat, Bahawalpur, 100 maund; Rs 1,00,000 due now; wait 5 months. **Own money and a godown:** verdict **SPLIT: sell 29 maund now, hold 71**. Sell-now Rs 3,450 at Bahawalpur (best after transport; Vehari Rs 3,185, Rahim Yar Khan Rs 3,159). The arhti's offer of **Rs 2,900** is **Rs 55,000 less on 100 maund**. Holding: "waiting paid in **7 of 9** past seasons with your setup", typical +Rs 65/maund, a bad year −Rs 128. **Then switch to arhti money and bags at home:** verdict **SELL ALL**: waiting paid in **1 of 9**, the typical result is −Rs 389/maund, and interest plus storage loss come to Rs 1,29,375. Say: **"Same crop, same mandi, same day: opposite advice. The only difference is whose money he holds with."** |
+| 3:00–3:30 | **Why?** (liquidity chart) | Each past year at Bahawalpur, sell in May vs October: green when holding paid (2025: +Rs 895/maund, 2022: +Rs 820), red when it didn't (2024: −Rs 289). 2026 is marked: AMIS was held at the Rs 3,500 cap while the open market climbed. |
+| 3:30–4:10 | **Back to today** (Act 3: the news) | Banner: the news price differs from AMIS (AMIS Rs 3,820 on 9 Oct; **check the headline on the morning: it must be a wheat price per 40 kg, not flour**, card N1). Policy card: **support price still undecided** (Punjab Rs 4,200, Sindh Rs 5,000), and the Kissan Ittehad demand. Say: news never changes the advice; it lowers confidence and tells the farmer why. |
+| 4:10–4:40 | **WhatsApp** on the phone | "گندم بہاولپور 100 من", then "رکھیں" → the same wait plan in Urdu. No smartphone app needed. |
+| 4:40–5:00 | – | **Close.** "Everyone tells the farmer the price. FarmSight tells him how much to borrow, from whom, and whether he can afford to wait, in his language." Limits in one breath: AMIS mandi prices (2026 capped, and we show it); the backtest is history, not a promise; holding is worked out for wheat only for now. |
 
-**Must work:** Home, Why, Compare, What to grow. If WhatsApp or chat fails, say so and move on: the web shows the
-same numbers.
-
-**Strongest proof (30 seconds, if time allows or a judge asks):** open `/?as_of=2025-03-24`, then `/?as_of=2025-08-04`
-(section 4). The model called **DOWN** before the 2025 pre-harvest crash and **UP** before the summer rally, both
-held-out weeks.
+**Must work:** the loan planner, the wait plan in replay, and today's news banner. If WhatsApp fails, say so and move
+on: the web shows the same numbers.
 
 ## 3. The alert on the phone
 
@@ -111,41 +107,45 @@ What to Grow in replay uses the seasonal tables, which were built from every yea
 
 ## 6. Questions judges may ask
 
-**"Wheat is Rs 5,300 in Punjab, why does the app say Rs 3,820?"** Rs 5,300 is an open-market rate reported by ARY
-News (8 Oct 2026) with no mandi named. AMIS mandi prices across Punjab are Rs 3,475 to Rs 4,700 (median of 18
-mandis Rs 4,450), and South Punjab is at the low end: Bahawalpur 3,820, Rahim Yar Khan 3,475. That gap is exactly
-why "where to sell" matters. (Details: `docs/DATA_NOTES.md` section A7.)
+**"Isn't this just a calculator?"** The calculation is the point: no app in Pakistan combines the farmer's own loan, his
+storage and 11 years of mandi history into one decision. Telenor and BaKhabar give prices; Zarkhez-e and the Kissan
+Card give loans; PMEX offers warehouses. Nobody tells one farmer which way out is best for his 100 maund.
 
-**"It always says SELL."** Yes, by design for now: the SELL/WAIT card runs on the baseline price, which can never
-clear the 5% bar for WAIT, and the interest cost of waiting is real. Prices rise 5% or more in 4 weeks only 14–19% of
-weeks. Our XGBoost model did not predict prices better than the baseline on held-out 2025 data (5.64% vs 5.60%
-error), so we do not let its prices drive the decision (NFR-01).
+**"Where's the AI?"** Three places, each labelled: the hold backtest over 11 years of AMIS prices (the evidence behind
+every hold or sell); the XGBoost direction call for wheat (72% of 2025's big moves right; it never sets a price); and
+Gemini for Urdu answers and news tagging (it never invents a number; the app checks every one). We tried to forecast
+prices with XGBoost and it didn't beat "price stays the same" (5.64% vs 5.60% error), so we don't let it drive advice.
 
-**"Then why does it say 'likely to rise' and SELL?"** The model is good at direction for wheat (72% of 2025's big moves
-called right) but not at size. Likely up is not the same as up by more than 5% plus 4 weeks of interest. We show both,
-honestly labelled.
+**"Wheat is Rs 5,300; why does the app say Rs 3,820?"** AMIS reports the mandi rate, which the Punjab cap held near
+Rs 3,500 through the summer (The News, 28 Apr 2026). Open-market reports are higher. We show both: AMIS for the advice,
+the news banner for the gap.
 
-**"How accurate is it?"** On 328 real 2025 weeks (held out): the baseline's average error is 5.60% (6.66% without
-weeks where AMIS repeated the same price), and its range held the real price 81% of the time. The XGBoost model:
-5.64% (not better, so not used for prices); direction of moves over 3%: 60% across crops, 72% for wheat. Wheat was
-chosen after seeing validation, so the one-time 2026 test run confirms or rejects it. Sources: `ml/eval/report.md`,
-`docs/MODEL_CARD.md`. A backtest, not a field trial.
+**"Does holding really pay?"** Sometimes, and it depends on the money. At Bahawalpur, selling in May vs October: with own
+money and a godown, waiting paid in 7 of 9 seasons; with arhti money and bags, in 1 of 9. Across our three mandis it's
+the same pattern (`docs/MODEL_CARD.md`, "Decision backtest").
 
-**"Is the data real?"** Yes: AMIS Punjab daily mandi prices, Jan 2015 to Oct 2026, for these 3 mandis and 4 crop
-options (no IRRI at Rahim Yar Khan). Old prices are shown in amber and lower the confidence; a price AMIS repeated for
-4+ weeks says "price unchanged since". Costs come from the Agriculture Policy Institute; transport and rice milling
-yield are estimates and labelled so.
+**"Can a small farmer really get 0% money?"** The Kissan Card (Punjab, 1–12.5 acres): Rs 30,000/acre, up to Rs 1,50,000
+a season, for inputs only. PM Youth Tier 1: up to Rs 5 lakh at 0%, age 21–45. Akhuwat: small 0% loans with guarantors.
+Each option in the app links its official source and says when the farmer isn't eligible.
 
-**"Where does the LLM come in?"** Only to rephrase chat answers in Urdu. The "Why?" reasons are SHAP values from the
-XGBoost model turned into fixed sentences, not LLM text. It never makes a number: every number in its
-answer must already be in the farmer's advice, or the template answer is sent instead. Prompts are in
-`docs/PROMPTS.md`. No phone or personal data goes to Gemini.
+**"Why only wheat for holding?"** Wheat is storable, and we have sourced storage-loss figures for it (FAO). Cotton and
+rice storage costs aren't sourced yet, so the app says "sell" and shows the mandi comparison.
+
+**"Is the data real?"** Yes: AMIS Punjab daily mandi prices, Jan 2015 to Oct 2026, for 3 mandis and 4 crop options; the
+official API cost tables; loan terms from the government and bank pages. Old prices are shown in amber; a price AMIS
+repeated for weeks says "unchanged since".
 
 ## 7. Regenerate these numbers
 
 After the model lands (or on the morning of the demo), with the backend running:
 
 ```bash
+curl "http://127.0.0.1:8000/api/wait-plan?crop=wheat&mandi=bahawalpur&quantity_maund=100&wait_months=5&offer=2900&cash_need_rs=100000&as_of=2026-05-10"
+curl "http://127.0.0.1:8000/api/wait-plan?crop=wheat&mandi=bahawalpur&quantity_maund=100&wait_months=5&offer=2900&cash_need_rs=100000&as_of=2026-05-10&money=arhti&storage=bags"
+curl "http://127.0.0.1:8000/api/compare-mandis?crop=wheat&mandi=bahawalpur&quantity_maund=100&as_of=2026-05-10"
+curl "http://127.0.0.1:8000/api/news?crop=wheat&mandi=bahawalpur"
+curl "http://127.0.0.1:8000/api/policy?crop=wheat"
+curl "http://127.0.0.1:8000/api/loan-plan?crop=wheat&acres=5&planned_borrow_rs=400000&planned_lender=arhti"   # after L2a
 curl "http://127.0.0.1:8000/api/advice?crop=wheat&mandi=bahawalpur&quantity_maund=100"
 curl "http://127.0.0.1:8000/api/explain?crop=wheat&mandi=bahawalpur"
 curl "http://127.0.0.1:8000/api/compare-mandis?crop=wheat&mandi=bahawalpur&quantity_maund=100"
