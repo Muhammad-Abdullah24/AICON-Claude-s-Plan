@@ -1,0 +1,22 @@
+import type { IconName } from '../ui/Icon'
+
+export interface NavItem {
+  to: string
+  key: string
+  icon: IconName
+}
+
+/** The app's eight existing screens, in their existing order. The shell only changes how they are reached. */
+export const NAV: NavItem[] = [
+  { to: '/', key: 'home', icon: 'home' },
+  { to: '/why', key: 'why', icon: 'why' },
+  { to: '/compare', key: 'compare', icon: 'pin' },
+  { to: '/grow', key: 'grow', icon: 'sprout' },
+  { to: '/history', key: 'history', icon: 'trend' },
+  { to: '/margin', key: 'margin', icon: 'receipt' },
+  { to: '/chat', key: 'chat', icon: 'chat' },
+  { to: '/profile', key: 'profile', icon: 'user' },
+]
+
+/** On a phone the first four sit in the bottom bar; the rest open from "More", so no screen is lost. */
+export const BOTTOM_COUNT = 4
