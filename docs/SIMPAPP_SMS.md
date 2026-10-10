@@ -3,7 +3,8 @@
 The app turns an Android phone with a Pakistani SIM into our SMS gateway: it forwards each SMS the phone receives to
 our webhook, and sends our reply from the same SIM. Code: `backend/app/channels/simpapp.py`. An SMS gets the same
 conversation as WhatsApp (same parser, commands and Urdu replies); `backend/app/channels/sms.py` turns a reply into
-SMS text, with the WhatsApp buttons as `1 کیوں؟ | 2 منڈیاں | 3 الرٹ بند`.
+SMS text, with the WhatsApp buttons as `2 منڈیاں | 3 کیوں؟ | 5 الرٹ بند | 0 مینو`. On SMS a bare number is the
+menu (`backend/app/channels/sms_menu.py`): 0 menu, 1 buyer-offer check, 2 compare, 3 why, 4 alerts on, 5 alerts off.
 
 **Pilot gateway, not carrier-grade.** One phone and one SIM: nothing works while it is off, offline or out of
 signal, and the SIM's own limits and charges apply. The app's "queued"/"sent" is not "delivered".
@@ -50,11 +51,14 @@ Text the gateway phone's number from another Pakistani mobile and expect **one S
 
 | Send | Expected reply |
 |---|---|
-| `0` or `hi` (first message) | the help text: how to write crop, mandi and quantity (`0` is not a command; after a query it is treated as a question) |
-| `گندم بہاولپور 100 من` | today's advice, ending with `1 کیوں؟ \| 2 منڈیاں \| 3 الرٹ بند` |
-| `1` | why: the reasons for the advice |
-| `2` | the mandi comparison |
-| `3` | alerts off (`شروع` turns them on again) |
+| `0` | the menu (options 1 to 5) |
+| `1` | "which crop and mandi?" (or, after a query, straight to the price question) |
+| `گندم بہاولپور 100 من` | "how much did the buyer offer per maund?" |
+| `3800` | the offer against the mandi's fair range of the last 14 days, below/fair/above, and the gap on 100 maund |
+| `2` | the mandi comparison for that crop |
+| `3` | why: the reasons for the advice |
+| `5` | alerts off; `4` turns them on again (`stop`/`بند` also turn them off) |
+| `گندم بہاولپور 100 من` (any time) | today's advice, ending with `2 منڈیاں \| 3 کیوں؟ \| 5 الرٹ بند \| 0 مینو` |
 
 Duplicate check: the app identifies a message only by sender, timestamp and text, so a resend of the same event
 (same `timestamp`) is answered `duplicate` and gets no reply. To test it without the phone, post the same

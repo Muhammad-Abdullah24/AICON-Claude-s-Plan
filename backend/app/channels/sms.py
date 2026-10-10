@@ -1,8 +1,8 @@
 """SMS channel, provider-neutral (task A11): phone numbers, the SMS form of a reply, and the outbound interface.
 
-SMS has no conversation of its own. An incoming SMS goes through the same parser, memory and replies as WhatsApp
-(`whatsapp.respond`), and `render` turns that reply into plain text: the WhatsApp quick-reply buttons become the
-numeric commands the parser already understands (1 why, 2 compare, 3 stop alerts).
+SMS shares WhatsApp's conversation (`whatsapp.respond`: parser, memory, replies). In front of it sits the SMS
+number menu (channels/sms_menu.py: 0 menu, 1 buyer offer, 2 compare, 3 why, 4 alerts on, 5 alerts off), and
+`render` turns a reply into plain text, the WhatsApp quick-reply buttons becoming those menu numbers.
 
 The provider is picked by SMS_PROVIDER: `textbee` (backend/app/channels/textbee.py) or `simpapp` (the "SMS Gateway
 API" Android app, backend/app/channels/simpapp.py); both send from an Android phone's SIM. Unset, SMS is off.
@@ -19,7 +19,6 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from backend.app.channels import reply
-from backend.app.channels.parse import COMMANDS
 from backend.app.channels.provider import AdviceProvider
 
 log = logging.getLogger("farmsight.sms")
@@ -82,12 +81,13 @@ def mask_phone(phone: str) -> str:
 
 # ---------------------------------------------------------------- the SMS form of a reply
 
-def _digit(command: str) -> str:
-    return next(w for w in COMMANDS[command] if w.isdigit())
+# The SMS number menu (channels/sms_menu.py). Kept here so the hint line below every reply uses the same numbers.
+SMS_MENU = {"0": "menu", "1": "offer", "2": "compare", "3": "why", "4": "start", "5": "stop"}
+_DIGIT = {command: digit for digit, command in SMS_MENU.items()}
 
-
-# The WhatsApp buttons as the parser's own number commands, e.g. "1 کیوں؟ | 2 منڈیاں | 3 الرٹ بند".
-COMMAND_LINE = " | ".join(f"{_digit(cmd)} {title}" for cmd, title in reply.BUTTONS)
+# The WhatsApp buttons as SMS menu numbers, then the menu itself: "2 منڈیاں | 3 کیوں؟ | 5 الرٹ بند | 0 مینو".
+_BUTTONS = sorted(reply.BUTTONS, key=lambda b: _DIGIT[b[0]])
+COMMAND_LINE = " | ".join([*(f"{_DIGIT[cmd]} {title}" for cmd, title in _BUTTONS), f"0 {reply.SMS_MENU_WORD}"])
 
 
 def render(message: dict) -> str:
@@ -123,11 +123,11 @@ def answer(event_key: str, phone: str, text: str, advice: AdviceProvider, outbou
     outcome on the event. Never raises: a farmer gets no stack trace, and the event is not tried again.
     """
     from backend.app import db  # noqa: PLC0415
-    from backend.app.channels import whatsapp  # noqa: PLC0415 (whatsapp imports the chat stack)
+    from backend.app.channels import sms_menu, whatsapp  # noqa: PLC0415 (whatsapp imports the chat stack)
 
     msg = {"from": db.digits(phone), "id": event_key, "type": "text", "text": {"body": text}}
     try:
-        body = render(whatsapp.respond(msg, advice, chat=whatsapp.default_chat(advice)))
+        body = render(sms_menu.respond(msg, advice, chat=whatsapp.default_chat(advice)))
     except Exception as e:  # noqa: BLE001
         log.warning("SMS event …%s: no reply built (%s)", event_key[-8:], type(e).__name__)
         db.finish_sms_event(event_key, "ERROR")

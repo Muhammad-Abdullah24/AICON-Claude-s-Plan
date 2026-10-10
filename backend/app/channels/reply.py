@@ -94,6 +94,74 @@ def compare_text(crop_option: str, rows: Sequence[Mapping]) -> str:
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------- SMS number menu (channels/sms_menu.py)
+
+SMS_MENU = ("نمبر بھیجیں:\n"
+            "1 خریدار کی آفر جانچیں\n"
+            "2 منڈیوں کا موازنہ\n"
+            "3 کیوں؟ (وجہ اور ڈیٹا)\n"
+            "4 الرٹ شروع\n"
+            "5 الرٹ بند\n"
+            "یا فصل، منڈی اور مقدار لکھیں، مثلاً: گندم بہاولپور 100 من")
+SMS_MENU_WORD = "مینو"
+OFFER_ASK_QUERY = "کس فصل اور منڈی کی آفر؟ مثلاً: گندم بہاولپور 100 من"
+OFFER_ASK_PRICE = "{crop}، {mandi}: خریدار نے فی من کتنا ریٹ دیا؟ صرف رقم لکھیں، مثلاً 3900"
+OFFER_ASK_PRICE_AGAIN = "فی من ریٹ صرف رقم میں لکھیں، مثلاً 3900۔ مینو کے لیے 0 بھیجیں۔"
+OFFER_VERDICT = {"below": "⚠️ مناسب حد سے {diff} فی من کم", "fair": "✅ مناسب حد کے اندر",
+                 "above": "✅ مناسب حد سے {diff} فی من زیادہ"}
+
+
+# When the 14-day prices are frozen, stale or a single repeated value, they are only a reported reference price:
+# never called a "fair range", and an offer is never called fair on that evidence alone.
+OFFER_EVIDENCE_UR = {
+    "FROZEN": "⚠️ AMIS نے یہی ریٹ کئی دن دہرایا",
+    "STALE": "⚠️ ریٹ پرانا ہے",
+    "LIMITED": "⚠️ پچھلے {days} دن میں ایک ہی ریٹ ملا",
+}
+OFFER_REFERENCE_GAP = {"below": "آفر اس ریٹ سے {diff} فی من کم ہے", "above": "آفر اس ریٹ سے {diff} فی من زیادہ ہے"}
+OFFER_REFERENCE_EQUAL = "آفر اس ریٹ کے برابر ہے"
+OFFER_REFERENCE_WITHIN = "آفر ان ریٹس کے بیچ میں ہے"
+OFFER_NOT_ADVICE = "یہ صرف حساب ہے، بیچنے کا مشورہ یا قیمت کی گارنٹی نہیں۔"
+
+
+def _offer_reference_text(crop_option: str, mandi: str, offer: float, o: Mapping, flags: Sequence[str],
+                          quantity_maund: float | None) -> str:
+    """Limited evidence: the mandi's reported price as a reference, the plain difference from it, and no verdict."""
+    single = o["fair_low"] == o["fair_high"]
+    shown = rs(o["fair_low"]) if single else f"{rs(o['fair_low'])} سے {rs(o['fair_high'])}"
+    lines = [
+        f"{CROP_UR.get(crop_option, crop_option)}، {MANDI_UR.get(mandi, mandi)}: خریدار کی آفر {rs(offer)} فی من",
+        f"منڈی کا رپورٹ شدہ ریٹ (صرف حوالہ): {shown} (AMIS، {o['prices_as_of']} تک)",
+        *(OFFER_EVIDENCE_UR[f].format(days=o["window_days"]) for f in flags),
+    ]
+    if o["verdict"] in OFFER_REFERENCE_GAP:
+        lines.append(OFFER_REFERENCE_GAP[o["verdict"]].format(diff=rs(abs(o["difference_per_maund"]))))
+        if quantity_maund and o.get("difference_total") is not None:
+            lines.append(f"{quantity_maund:g} من پر: {signed_rs(o['difference_total'])}")
+    else:
+        lines.append(OFFER_REFERENCE_EQUAL if single else OFFER_REFERENCE_WITHIN)
+    lines.append(OFFER_NOT_ADVICE)
+    return "\n".join(lines)
+
+
+def offer_text(crop_option: str, mandi: str, offer: float, o: Mapping, quantity_maund: float | None) -> str:
+    """The buyer-offer check (services.offer_check), in the app's own words. Only the numbers it gives. With frozen,
+    stale or single-value evidence (o["evidence"]), a reference price instead of a fair range."""
+    flags = [f for f in ("FROZEN", "STALE", "LIMITED") if f in (o.get("evidence") or ())]
+    if flags:
+        return _offer_reference_text(crop_option, mandi, offer, o, flags, quantity_maund)
+    lines = [
+        f"{CROP_UR.get(crop_option, crop_option)}، {MANDI_UR.get(mandi, mandi)}: خریدار کی آفر {rs(offer)} فی من",
+        OFFER_VERDICT[o["verdict"]].format(diff=rs(abs(o["difference_per_maund"]))),
+        f"مناسب حد (اس منڈی میں پچھلے {o['window_days']} دن): {rs(o['fair_low'])} سے {rs(o['fair_high'])}"
+        f" (AMIS، {o['prices_as_of']} تک)",
+    ]
+    if quantity_maund and o["verdict"] != "fair" and o.get("difference_total") is not None:
+        lines.append(f"{quantity_maund:g} من پر: {signed_rs(o['difference_total'])}")
+    lines.append(DISCLAIMER)
+    return "\n".join(lines)
+
+
 def clip(text: str, limit: int = MAX_BODY) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 

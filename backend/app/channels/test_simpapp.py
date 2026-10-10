@@ -113,14 +113,14 @@ def test_incoming_sms_goes_through_the_shared_conversation(gateway):
     assert r.status_code == 200 and r.json() == {"status": "accepted"} and "sms_text" not in r.text
     advice = FakeProvider().advice("Wheat", "BahawalPur", 100, "")
     assert outbox.sent == [(SENDER, reply.advice_text(advice) + "\n" + sms.COMMAND_LINE)]
-    post(client, incoming("1", timestamp=1760090060))     # the existing "why" command
+    post(client, incoming("3", timestamp=1760090060))     # SMS menu 3: the existing "why" command
     assert outbox.sent[1][1].startswith(reply.why_text(advice, FakeProvider().explain("Wheat", "BahawalPur", "")))
 
 
-def test_first_message_without_a_query_gets_the_help_text(gateway):
+def test_zero_sends_the_sms_menu(gateway):
     client, outbox, _ = gateway
     post(client, incoming("0"))
-    assert outbox.sent[0][1] == reply.NOT_UNDERSTOOD   # "0" is no command today: the help text, unchanged
+    assert outbox.sent[0][1] == reply.SMS_MENU
 
 
 def test_repeated_delivery_gets_no_second_reply(gateway):

@@ -65,11 +65,12 @@ A reply is never re-sent, even after a timeout, because a second SMS is worse th
 
 From any other Pakistani mobile, text the gateway phone's number:
 
-1. `hi` (or `مدد`): the help message (how to ask, the crops and mandis).
+1. `0`: the SMS menu (1 buyer offer, 2 compare, 3 why, 4 alerts on, 5 alerts off).
 2. `گندم بہاولپور 100 من` (or `gandum bahawalpur 100 mann`): the advice, ending with
-   `1 کیوں؟ | 2 منڈیاں | 3 الرٹ بند`.
-3. `1`: the reasons. Check that **one** SMS arrives for each message sent.
-4. `2`: the mandi comparison. (`3` turns alerts off; `شروع` turns them back on.)
+   `2 منڈیاں | 3 کیوں؟ | 5 الرٹ بند | 0 مینو`.
+3. `3`: the reasons. Check that **one** SMS arrives for each message sent.
+4. `1`, then a price such as `3800`: the buyer-offer check. `2`: the mandi comparison. (`5` turns alerts off;
+   `4` turns them back on.)
 5. Retry: in the TextBee dashboard's webhook delivery log, resend one delivered event. The backend answers
    `duplicate`, and no second SMS arrives.
 6. On Render's log, check that only the last three digits of a number appear, and no message text.

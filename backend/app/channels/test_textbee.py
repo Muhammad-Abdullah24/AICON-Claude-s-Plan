@@ -168,8 +168,8 @@ def test_pakistani_numbers_are_normalised(raw, e164):
     assert sms.normalize_pk_phone(raw) == e164
 
 
-def test_render_turns_buttons_into_the_parsers_number_commands():
-    assert sms.COMMAND_LINE == "1 کیوں؟ | 2 منڈیاں | 3 الرٹ بند"
+def test_render_turns_buttons_into_the_sms_menu_numbers():
+    assert sms.COMMAND_LINE == "2 منڈیاں | 3 کیوں؟ | 5 الرٹ بند | 0 مینو"
     assert sms.render(whatsapp.text_message("سلام")) == "سلام"
     assert sms.render(whatsapp.buttons_message("مشورہ")) == "مشورہ\n" + sms.COMMAND_LINE
     long = sms.render(whatsapp.buttons_message("ا" * 2000))
@@ -186,14 +186,14 @@ def test_signed_message_goes_through_the_shared_conversation(gateway):
     advice = FakeProvider().advice("Wheat", "BahawalPur", 100, "")
     assert to == SENDER and text == reply.advice_text(advice) + "\n" + sms.COMMAND_LINE
     assert db.sms_event_status(event()["idempotencyKey"]) == "ACCEPTED"
-    # "1" is the existing "why" command, and the conversation remembers the query, as on WhatsApp.
-    post(client, event("1", key="key-for-the-why-question"))
+    # SMS menu "3" is the existing "why" command, and the conversation remembers the query, as on WhatsApp.
+    post(client, event("3", key="key-for-the-why-question"))
     assert outbox.sent[1][1].startswith(reply.why_text(advice, FakeProvider().explain("Wheat", "BahawalPur", "")))
 
 
 def test_stop_reaches_the_existing_alerts_consent(gateway):
     client, outbox, provider = gateway
-    post(client, event("3"))
+    post(client, event("5"))   # SMS menu 5: alerts off
     assert provider.alerts == {"923001234567": False} and outbox.sent[0][1] == reply.STOPPED
 
 
