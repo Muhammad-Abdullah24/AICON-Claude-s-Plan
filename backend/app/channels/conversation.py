@@ -5,9 +5,13 @@ data and the numbered choices to show). Each channel renders the intent in its o
 reply.py, SMS Roman Urdu), so the advice, numbers and warnings are the same everywhere. It never computes a
 number: advice, reasons and mandi comparisons come from the shared AdviceProvider (services.py, interface I6).
 
-Main menu:  0 menu   1 rate and advice   2 compare mandis   3 why   4 alerts on   5 alerts off
-Guided:     crop -> rice variety (rice only) -> mandi -> quantity (not for "why") -> answer
-After it:   1 why   2 compare   3 alerts on/off   0 menu
+Main menu:  1 check a buyer offer   2 compare mandis   3 why / data details   4 alerts on   5 alerts off   0 menu
+Guided:     crop -> rice variety (rice only) -> mandi -> quantity (not for "why") -> buyer's price (offer only)
+            -> answer
+After it:   1 why   2 compare (against the offer, after an offer check)   3 alerts on/off   0 menu
+
+Checking a buyer's offer is FarmSight's main job, so it is 1. Free-text advice ("گندم بہاولپور 100 من") still
+answers at once, and "... آفر 3514" checks an offer; a price is read as the offer only after an offer word.
 
 Rules:
 - A bare number means something only in the farmer's current step, and every reply that expects a number lists
@@ -29,7 +33,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
-from backend.app.channels.parse import _CHAR_MAP, _quantity, normalise, parse
+from backend.app.channels.parse import _CHAR_MAP, _quantity, amount, extract_offer, normalise, parse
 from backend.app.channels.provider import AdviceProvider, NotReady
 from backend.app.ids import CROP_TO_DATA, MANDI_TO_DATA
 
@@ -37,10 +41,11 @@ SESSION_MINUTES = int(os.environ.get("FS_CHANNEL_SESSION_MINUTES", "30"))
 DEFAULT_QUANTITY_MAUND = 100   # only for a full free-text query without a quantity, as before; the reply says so
 MAX_QUANTITY_MAUND = 100_000
 
-MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE, VOICE_CONFIRM = (
-    "menu", "crop", "rice_variety", "mandi", "quantity", "post_advice", "voice_confirm")
-STEPS = (MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, POST_ADVICE, VOICE_CONFIRM)
-ADVICE, COMPARE, WHY = "advice", "compare", "why"
+MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, OFFER_STEP, POST_ADVICE, VOICE_CONFIRM = (
+    "menu", "crop", "rice_variety", "mandi", "quantity", "offer", "post_advice", "voice_confirm")
+STEPS = (MENU, CROP, RICE_VARIETY, MANDI, QUANTITY, OFFER_STEP, POST_ADVICE, VOICE_CONFIRM)
+ADVICE, COMPARE, WHY, OFFER = "advice", "compare", "why", "offer"
+MAX_OFFER = 1_000_000   # the API's limit (schemas.OfferCheckRequest)
 RICE = "rice"   # draft crop while the variety is still unknown
 
 LEGACY_STOP = "3"   # the pre-menu WhatsApp command "3 = stop alerts", honoured only outside a session
@@ -66,13 +71,15 @@ def default_options() -> Options:
 @dataclass(frozen=True)
 class State:
     step: str = MENU
-    pending: str | None = None              # advice | compare | why: what the guided flow ends in
+    pending: str | None = None              # advice | compare | why | offer: what the guided flow ends in
     draft_crop: str | None = None
     draft_mandi: str | None = None
     draft_quantity: float | None = None
+    draft_offer: float | None = None        # the buyer's price per maund, once given
     last_crop: str | None = None            # the last answered query, for "why" and "compare" after it
     last_mandi: str | None = None
     last_quantity: float | None = None
+    last_offer: float | None = None         # set after an offer check: "compare" then compares with it
     expires_at: datetime | None = None      # set by the store when saved
 
     def __post_init__(self):
@@ -86,8 +93,9 @@ class State:
 
 @dataclass(frozen=True)
 class Reply:
-    kind: str     # menu | post_menu | ask_crop | ask_variety | ask_mandi | ask_quantity | advice | why | compare
-                  # | alerts | no_data | not_ready | not_understood | chat | voice_confirm | not_registered
+    kind: str     # menu | post_menu | ask_crop | ask_variety | ask_mandi | ask_quantity | ask_offer | advice | why
+                  # | compare | offer | offer_compare | alerts | no_data | not_ready | not_understood | chat
+                  # | voice_confirm | not_registered
     data: dict[str, Any] = field(default_factory=dict)
     choices: tuple[tuple[str, str], ...] = ()   # (number, code) the farmer can reply with, in order
 
@@ -103,7 +111,7 @@ class Outcome:
 
 # ---------------------------------------------------------------- choices
 
-MAIN_CHOICES = (("1", ADVICE), ("2", COMPARE), ("3", WHY), ("4", "alerts_on"), ("5", "alerts_off"), ("0", MENU))
+MAIN_CHOICES = (("1", OFFER), ("2", COMPARE), ("3", WHY), ("4", "alerts_on"), ("5", "alerts_off"), ("0", MENU))
 
 
 def _numbered(items: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
@@ -174,20 +182,49 @@ class _Engine:
             qty = _quantity(normalise(text))
             if qty is not None and normalise(text).split()[0][0].isdigit():   # "100 man", "2000 kg"
                 return self._set_quantity(state, qty)
+        if state is not None and state.step == OFFER_STEP and (price := amount(text)) is not None:
+            return self._set_offer(state, price)   # "Rs 3514", "3514 روپے فی من"
+        clause = extract_offer(text)
+        if clause.mentioned:
+            return self._offer_words(clause, state)
         return self._words(text, state)
+
+    def _offer_words(self, clause, s: State | None) -> Outcome:
+        """A message with an offer word: check an offer, filling in what it names and asking for the rest.
+        No quantity is assumed here (the totals depend on it), and an unclear price is asked for."""
+        p = parse(clause.rest)
+        fresh = s is None or s.pending != OFFER or s.step not in (CROP, RICE_VARIETY, MANDI, QUANTITY, OFFER_STEP)
+        base = replace(s or State(), pending=OFFER)
+        if fresh:
+            base = replace(base, draft_crop=None, draft_mandi=None, draft_quantity=None, draft_offer=None)
+        if p.kind == "query":
+            crop = RICE if "variety" in p.missing else p.crop_option
+            if crop and not (crop == RICE and base.draft_crop in self.o.rice_varieties):
+                base = replace(base, draft_crop=crop)
+            if p.mandi:
+                base = replace(base, draft_mandi=p.mandi)
+            if p.quantity_maund is not None:
+                base = replace(base, draft_quantity=p.quantity_maund)
+        if clause.offer is not None:
+            if not 0 < clause.offer <= MAX_OFFER:
+                return self._ask(replace(base, step=OFFER_STEP, draft_offer=None), invalid=True)
+            base = replace(base, draft_offer=clause.offer)
+        return self._advance(base)
 
     # ------------------------------------------------ bare numbers, read by the current step
     def _number(self, s: State, raw: str) -> Outcome:
         if s.step == QUANTITY:
             return self._set_quantity(s, float(raw))
+        if s.step == OFFER_STEP:
+            return self._set_offer(s, float(raw))
         if "." in raw:
             return self._invalid(s)
         n = int(raw)
         if s.step == MENU:
             if n in (1, 2, 3):
-                pending = {1: ADVICE, 2: COMPARE, 3: WHY}[n]
+                pending = {1: OFFER, 2: COMPARE, 3: WHY}[n]
                 return self._advance(replace(s, pending=pending, draft_crop=None, draft_mandi=None,
-                                             draft_quantity=None))
+                                             draft_quantity=None, draft_offer=None))
             if n in (4, 5):
                 return self._alerts(s, n == 4)
             return self._invalid(s)
@@ -226,6 +263,9 @@ class _Engine:
             return self._menu(s)
         if p.kind in ("stop", "start"):
             return self._alerts(s, p.kind == "start")
+        if p.kind == OFFER:   # "آفر" alone: start an offer check
+            return self._advance(replace(s or State(), step=MENU, pending=OFFER, draft_crop=None, draft_mandi=None,
+                                         draft_quantity=None, draft_offer=None))
         if p.kind in (WHY, COMPARE):
             if s is not None and s.has_last:
                 return self._from_last(s, p.kind)
@@ -237,11 +277,11 @@ class _Engine:
                 assumed = p.quantity_maund is None
                 qty = DEFAULT_QUANTITY_MAUND if assumed else p.quantity_maund
                 base = replace(s or State(), pending=ADVICE, draft_crop=crop, draft_mandi=p.mandi,
-                               draft_quantity=qty)
+                               draft_quantity=qty, draft_offer=None)
                 return self._advance(base, quantity_assumed=assumed)
-            guided = s is not None and s.step in (CROP, RICE_VARIETY, MANDI, QUANTITY)
+            guided = s is not None and s.step in (CROP, RICE_VARIETY, MANDI, QUANTITY, OFFER_STEP)
             base = s if guided else replace(s or State(), pending=ADVICE, draft_crop=None, draft_mandi=None,
-                                            draft_quantity=None)
+                                            draft_quantity=None, draft_offer=None)
             if crop and not (crop == RICE and base.draft_crop in self.o.rice_varieties):
                 base = replace(base, draft_crop=crop)
             if p.mandi:
@@ -250,7 +290,7 @@ class _Engine:
                 base = replace(base, draft_quantity=p.quantity_maund)
             return self._advance(base)
         # not understood
-        if s is not None and s.step in (CROP, RICE_VARIETY, MANDI, QUANTITY):
+        if s is not None and s.step in (CROP, RICE_VARIETY, MANDI, QUANTITY, OFFER_STEP):
             return self._invalid(s)
         if s is not None and s.has_last:
             return Outcome(Reply("chat", {"question": text, "crop_option": s.last_crop, "mandi": s.last_mandi,
@@ -261,7 +301,8 @@ class _Engine:
     # ------------------------------------------------ steps
     def _menu(self, s: State | None, note: str | None = None) -> Outcome:
         base = s or State()
-        state = replace(base, step=MENU, pending=None, draft_crop=None, draft_mandi=None, draft_quantity=None)
+        state = replace(base, step=MENU, pending=None, draft_crop=None, draft_mandi=None, draft_quantity=None,
+                        draft_offer=None)
         return Outcome(Reply("menu", {"note": note} if note else {}, MAIN_CHOICES), state, "save")
 
     def _ask(self, s: State, invalid: bool = False) -> Outcome:
@@ -273,6 +314,9 @@ class _Engine:
         if s.step == MANDI:
             return Outcome(Reply("ask_mandi", {**data, "crop_option": s.draft_crop}, _numbered(self.o.mandis)),
                            s, "save")
+        if s.step == OFFER_STEP:
+            return Outcome(Reply("ask_offer", {**data, "crop_option": s.draft_crop, "mandi": s.draft_mandi,
+                                               "quantity_maund": s.draft_quantity}, (("0", MENU),)), s, "save")
         return Outcome(Reply("ask_quantity", {**data, "crop_option": s.draft_crop, "mandi": s.draft_mandi},
                              (("0", MENU),)), s, "save")
 
@@ -296,6 +340,11 @@ class _Engine:
             return self._invalid(s)
         return self._advance(replace(s, draft_quantity=qty))
 
+    def _set_offer(self, s: State, price: float) -> Outcome:
+        if not 0 < price <= MAX_OFFER:
+            return self._invalid(s)
+        return self._advance(replace(s, draft_offer=price))
+
     def _advance(self, s: State, quantity_assumed: bool = False) -> Outcome:
         """Ask for the next missing piece, or answer when nothing is missing."""
         if s.draft_crop is None:
@@ -306,20 +355,31 @@ class _Engine:
             return self._ask(replace(s, step=MANDI))
         if s.pending != WHY and s.draft_quantity is None:
             return self._ask(replace(s, step=QUANTITY))
+        if s.pending == OFFER and s.draft_offer is None:
+            return self._ask(replace(s, step=OFFER_STEP))
         return self._answer(s, s.pending or ADVICE, s.draft_crop, s.draft_mandi, s.draft_quantity,
-                            quantity_assumed)
+                            quantity_assumed, s.draft_offer)
 
     def _from_last(self, s: State, action: str) -> Outcome:
         if action == COMPARE and s.last_quantity is None:
             return self._ask(replace(s, step=QUANTITY, pending=COMPARE, draft_crop=s.last_crop,
                                      draft_mandi=s.last_mandi, draft_quantity=None))
-        return self._answer(s, action, s.last_crop, s.last_mandi, s.last_quantity, False)
+        return self._answer(s, action, s.last_crop, s.last_mandi, s.last_quantity, False, s.last_offer)
 
     def _answer(self, s: State, action: str, crop: str, mandi: str, qty: float | None,
-                quantity_assumed: bool) -> Outcome:
-        after = State(step=POST_ADVICE, last_crop=crop, last_mandi=mandi, last_quantity=qty)
+                quantity_assumed: bool, offer: float | None = None) -> Outcome:
+        # An offer is remembered only by an offer check; a plain advice query starts without one.
+        keep = offer if action in (OFFER, WHY, COMPARE) else None
+        after = State(step=POST_ADVICE, last_crop=crop, last_mandi=mandi, last_quantity=qty, last_offer=keep)
         choices = post_choices(self.alerts_enabled)
         try:
+            if action == OFFER or (action == COMPARE and offer is not None):
+                check = getattr(self.provider, "offer", None)
+                if check is None:
+                    raise NotReady("offer check")
+                r = check(crop, mandi, qty, offer, self.phone)
+                return Outcome(Reply(OFFER if action == OFFER else "offer_compare",
+                                     {"crop_option": crop, "mandi": mandi, "result": r}, choices), after, "save")
             if action == ADVICE:
                 a = self.provider.advice(crop, mandi, qty, self.phone)
                 return Outcome(Reply("advice", {"advice": a, "quantity_assumed": quantity_assumed}, choices),
@@ -333,14 +393,15 @@ class _Engine:
             return Outcome(Reply("why", {"advice": a, "reasons": reasons}, choices), after, "save")
         except LookupError:
             # No price for this crop at this mandi: keep the crop, ask for another mandi.
-            retry = State(step=MANDI, pending=action, draft_crop=crop, draft_quantity=qty,
-                          last_crop=s.last_crop, last_mandi=s.last_mandi, last_quantity=s.last_quantity)
+            retry = State(step=MANDI, pending=action, draft_crop=crop, draft_quantity=qty, draft_offer=offer,
+                          last_crop=s.last_crop, last_mandi=s.last_mandi, last_quantity=s.last_quantity,
+                          last_offer=s.last_offer)
             return Outcome(Reply("no_data", {"crop_option": crop, "mandi": mandi}, _numbered(self.o.mandis)),
                            retry, "save")
         except NotReady:
             return Outcome(Reply("not_ready", {}, (("0", MENU),)),
                            replace(s, step=MENU, pending=None, draft_crop=None, draft_mandi=None,
-                                   draft_quantity=None), "save")
+                                   draft_quantity=None, draft_offer=None), "save")
 
     def _alerts(self, s: State | None, enabled: bool) -> Outcome:
         if s is not None and s.step == POST_ADVICE:   # stay with the advice, the "3" label flips
@@ -353,7 +414,7 @@ class _Engine:
 
 def to_fields(state: State) -> dict:
     return {k: getattr(state, k) for k in ("step", "pending", "draft_crop", "draft_mandi", "draft_quantity",
-                                           "last_crop", "last_mandi", "last_quantity")}
+                                           "draft_offer", "last_crop", "last_mandi", "last_quantity", "last_offer")}
 
 
 def from_fields(row: dict | None, options: Options | None = None) -> State | None:
@@ -367,7 +428,7 @@ def from_fields(row: dict | None, options: Options | None = None) -> State | Non
         state = State(**{k: row.get(k) for k in (*to_fields(State()), "expires_at")})
     except (TypeError, ValueError):
         return None
-    if state.pending not in (None, ADVICE, COMPARE, WHY) or state.draft_crop not in crops \
+    if state.pending not in (None, ADVICE, COMPARE, WHY, OFFER) or state.draft_crop not in crops \
             or state.last_crop not in crops or state.draft_mandi not in (*o.mandis, None) \
             or state.last_mandi not in (*o.mandis, None):
         return None

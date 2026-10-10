@@ -135,7 +135,7 @@ Farmer: 100    FarmSight: FarmSight Gandum Bahawalpur: bech dein. Aaj Rs3820/man
 
 **SMS boundary.** `backend/app/channels/sms.py` has the vendor-neutral parts: the `SmsSender` interface (with a
 `NullSmsSender` when nothing is configured and a `FakeSmsSender` for tests), the inbound route, de-duplication, a
-per-number reply limit (`FS_SMS_REPLIES_PER_MIN`, default 5) and the Roman Urdu replies. To go live, the team picks a
+per-number reply limit (`FS_SMS_REPLIES_PER_MIN`, default 10) and the Roman Urdu replies. To go live, the team picks a
 vendor, writes its `SmsAdapter` from the vendor's official documentation (its signature or token check, payload,
 acknowledgement and sender), registers it in `sms.ADAPTERS` and sets `FS_SMS_PROVIDER` to its name. Until then
 `FS_SMS_PROVIDER` should stay empty.
