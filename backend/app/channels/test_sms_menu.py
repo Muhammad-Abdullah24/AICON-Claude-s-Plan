@@ -277,3 +277,12 @@ def test_sms_offer_on_limited_evidence_through_the_menu():
     say("1", p)
     out = say("3700", p)
     assert "صرف حوالہ" in out and reply.OFFER_NOT_ADVICE in out and not any(w in out for w in FAIR_WORDS)
+
+
+def test_naming_another_crop_while_asked_for_a_price_restarts_and_is_not_read_as_a_price():
+    p = Provider()
+    say("گندم بہاولپور 100 من", p)
+    say("1", p)
+    assert say("kapas bahawalpur 50 mann", p) == ask_price(crop="کپاس (پھٹی)")   # not an offer of Rs 50
+    say("9000", p)
+    assert p.offers == [("Cotton", "BahawalPur", 9000, 50)]

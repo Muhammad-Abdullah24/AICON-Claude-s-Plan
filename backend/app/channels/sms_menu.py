@@ -139,13 +139,14 @@ def _continue_offer(phone: str, text: str, o: Offer, provider: AdviceProvider) -
     """The next step of an offer in progress, or None when the message is something else (a command)."""
     p = parse(text)
     if o.ready:
-        offer = _price(text)
-        if offer is not None:
-            return _check(phone, o, offer, provider)
-        if p.kind == "query":   # another crop or mandi named: the questions start again from it
+        if p.kind == "query":   # a crop or mandi named: the questions start again from it ("50 mann" is no price)
             o = Offer()
-        elif p.kind == "unknown":
-            return _text(reply.OFFER_ASK_PRICE_AGAIN)
+        else:
+            offer = _price(text)
+            if offer is not None:
+                return _check(phone, o, offer, provider)
+            if p.kind == "unknown":
+                return _text(reply.OFFER_ASK_PRICE_AGAIN)
     if p.kind == "query":
         o.take(p)
         PENDING.put(phone, o)
