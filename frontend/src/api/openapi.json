@@ -1743,6 +1743,29 @@
         }
       }
     },
+    "/api/channels/sms/textbee/webhook": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Receive",
+        "operationId": "receive_api_channels_sms_textbee_webhook_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Receive Api Channels Sms Textbee Webhook Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat": {
       "post": {
         "tags": [

@@ -376,6 +376,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/channels/sms/textbee/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive */
+        post: operations["receive_api_channels_sms_textbee_webhook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat": {
         parameters: {
             query?: never;
@@ -2502,6 +2519,28 @@ export interface operations {
         };
     };
     receive_webhooks_whatsapp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    receive_api_channels_sms_textbee_webhook_post: {
         parameters: {
             query?: never;
             header?: never;

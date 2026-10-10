@@ -80,6 +80,13 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     used_fallback INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sms_inbound_events (
+    idempotency_key TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS farmer_loans (
     id TEXT PRIMARY KEY,
     farmer_id TEXT NOT NULL REFERENCES farmers(id) ON DELETE CASCADE,
@@ -315,3 +322,27 @@ def log_message(farmer_id: str | None, channel: str, direction: str, content: st
     with conn:
         conn.execute("INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                      (str(uuid.uuid4()), farmer_id, alert_id, channel, direction, content, status, now()))
+
+
+# ---------------------------------------------------------------- inbound SMS events (TextBee webhook)
+
+def claim_sms_event(idempotency_key: str, provider: str) -> bool:
+    """True the first time an event key is seen, False on every retry of it. Holds no phone number or text."""
+    conn = connect()
+    with conn:
+        cur = conn.execute("INSERT OR IGNORE INTO sms_inbound_events VALUES (?, ?, 'RECEIVED', ?, ?)",
+                           (idempotency_key, provider, now(), now()))
+    return cur.rowcount == 1
+
+
+def finish_sms_event(idempotency_key: str, status: str) -> None:
+    conn = connect()
+    with conn:
+        conn.execute("UPDATE sms_inbound_events SET status = ?, updated_at = ? WHERE idempotency_key = ?",
+                     (status, now(), idempotency_key))
+
+
+def sms_event_status(idempotency_key: str) -> str | None:
+    row = connect().execute("SELECT status FROM sms_inbound_events WHERE idempotency_key = ?",
+                            (idempotency_key,)).fetchone()
+    return row["status"] if row else None
