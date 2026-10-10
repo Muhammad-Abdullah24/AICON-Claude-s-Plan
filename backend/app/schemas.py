@@ -253,9 +253,45 @@ class MarginResponse(Labelled):
 
 # ---------------------------------------------------------------- crop plan
 
+EvidenceIssue = Literal[
+    "STALE_PRICE",      # the reference price is over 56 days old (the app's one staleness rule)
+    "FROZEN_PRICE",     # the reference price sits in a stretch where AMIS repeated one price for 28+ days
+    "FEW_YEARS",        # too few years of seasonal history for this crop at this mandi
+]
+SeasonStatus = Literal[
+    "RANKED",                       # at least 2 crops of this season have reliable evidence; they are ranked
+    "TOO_FEW_CROPS",                # fewer than 2 crops of this season tracked here (e.g. wheat is the only Rabi crop)
+    "NOT_ENOUGH_CURRENT_EVIDENCE",  # enough crops, but fewer than 2 with reliable evidence: no ranking
+]
+
+
+class ContextNote(Strict):
+    id: Literal["RICE_WATER_BAHAWALPUR"]   # the text is in the front end's "grow.notes" block
+    source: str
+    source_date: dt.date
+    url: str
+
+
+class CropPlanSeason(Strict):
+    season: Season
+    status: SeasonStatus
+    n_crops: int                    # crops of this season with price data here
+    n_comparable: int               # of those, with reliable current evidence
+
+
+class SupportPriceContext(Strict):
+    """The latest wheat SUPPORT_PRICE item from the policy timeline: policy context, not a mandi price and not a
+    price anyone is promised."""
+    state: Literal["CURRENT", "OUTDATED", "UNAVAILABLE"]
+    event: PolicyEvent | None
+    age_days: int | None
+    max_age_days: int               # older than this is OUTDATED
+
+
 class CropPlanItem(Strict):
     crop: CropId
-    rank: int
+    rank: int | None                # within its season, among crops with reliable evidence; None = not ranked
+    season: Season
     latest_price: float
     latest_price_date: dt.date
     harvest_price_estimate: float
@@ -278,12 +314,17 @@ class CropPlanItem(Strict):
     profit_per_acre_low: float          # with the lowest and highest harvest ratio seen across years
     profit_per_acre_high: float
     is_stale: bool
+    is_frozen: bool
+    evidence_issues: list[EvidenceIssue]    # empty = comparable; otherwise why this crop is not ranked
+    notes: list[ContextNote]                # sourced context for this crop at this mandi
 
 
 class CropPlanResponse(Labelled):
     mandi: MandiId
     land_area_acres: float
-    items: list[CropPlanItem]       # best expected profit first
+    items: list[CropPlanItem]       # by season (Rabi, Kharif); ranked crops first, then the rest by profit
+    seasons: list[CropPlanSeason]   # whether each season could be compared, and why not
+    support_price_context: SupportPriceContext
     not_available: list[CropId]     # crop options with no price data at this mandi
     is_estimate: bool
 

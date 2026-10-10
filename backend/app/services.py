@@ -22,6 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ml import decision
+from ml.decision import grow
 from ml.decision import inputs as engine_inputs
 from ml.features import config as fcfg
 
@@ -345,10 +346,13 @@ def margin(crop_option: str, price: float, arhti_pct: float | None = None) -> di
 # ---------------------------------------------------------------- crop plan (What to Grow) and selling window
 
 def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None) -> dict:
-    """Crop options ranked by expected profit at the next harvest (Owner B's `ml.decision.crop_plan`), each with
-    its selling window after interest (`ml.decision.selling_window`). The inputs are Owner B's
-    `crop_plan_inputs`, which honour `as_of` (H-C21); the seasonal ratios are A6's tables across all years.
-    A stale starting price raises the risk badge one level (`ml.decision.risk_badge`)."""
+    """Crop options with their expected profit at the next harvest (Owner B's `ml.decision.crop_plan`) and selling
+    window after interest (`ml.decision.selling_window`), compared only within a season and only on reliable
+    evidence (`ml.decision.grow`, F4): a stale, frozen or thin-history price is never ranked, and a season with fewer
+    than two comparable crops is not ranked at all. The inputs are Owner B's `crop_plan_inputs`, which honour `as_of`
+    (H-C21); the seasonal ratios are A6's tables across all years. A stale starting price also raises the risk badge
+    one level (`ml.decision.risk_badge`). Wheat's support-price status comes from the policy timeline (H3)."""
+    from backend.app.news.policy import get_policy_events  # noqa: PLC0415
     inputs = engine_inputs.crop_plan_inputs(mandi, as_of)
     for i in inputs:
         # One staleness rule on every screen (more than 56 days, as on Home and Sell): the engine's inputs
@@ -380,13 +384,15 @@ def crop_plan(mandi: str, land_area_acres: float = 10, as_of: date | None = None
             "best_sell_gain_pct": window["best_net_pct"] if window else None,
             "sell_at_harvest": bool(window and window["sell_at_harvest"]),
             "sell_window_months": window["window_months"] if window else [],
-            "is_stale": c["is_stale"], **calendar(option),
+            "is_stale": c["is_stale"], "is_frozen": c["is_frozen"], "enough_years": c["enough_years"],
+            "season": c["season"], "notes": grow.context_notes(option, mandi), **calendar(option),
         })
-    # A stale starting price never ranks first (F4): fresh crops lead, then stale ones, each by expected profit.
-    items.sort(key=lambda i: (i["is_stale"], -i["expected_profit"]))
-    for rank, item in enumerate(items, start=1):
-        item["rank"] = rank
-    return {"items": items, "not_available": missing}
+    compared = grow.rank_within_seasons(items)
+    for item in compared["items"]:
+        del item["enough_years"]   # carried as FEW_YEARS in evidence_issues
+    ref = as_of or date.today()
+    return {"items": compared["items"], "seasons": compared["seasons"], "not_available": missing,
+            "support_price_context": grow.support_price_context(get_policy_events("wheat", ref), ref)}
 
 
 # ---------------------------------------------------------------- meta

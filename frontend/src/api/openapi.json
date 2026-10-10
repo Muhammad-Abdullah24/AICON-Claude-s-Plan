@@ -2165,6 +2165,37 @@
         ],
         "title": "CompareRow"
       },
+      "ContextNote": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "const": "RICE_WATER_BAHAWALPUR",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "source_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Source Date"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "source_date",
+          "url"
+        ],
+        "title": "ContextNote"
+      },
       "CropInfo": {
         "properties": {
           "id": {
@@ -2241,8 +2272,23 @@
             "title": "Crop"
           },
           "rank": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Rank"
+          },
+          "season": {
+            "type": "string",
+            "enum": [
+              "RABI",
+              "KHARIF"
+            ],
+            "title": "Season"
           },
           "latest_price": {
             "type": "number",
@@ -2381,6 +2427,29 @@
           "is_stale": {
             "type": "boolean",
             "title": "Is Stale"
+          },
+          "is_frozen": {
+            "type": "boolean",
+            "title": "Is Frozen"
+          },
+          "evidence_issues": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "STALE_PRICE",
+                "FROZEN_PRICE",
+                "FEW_YEARS"
+              ]
+            },
+            "type": "array",
+            "title": "Evidence Issues"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/ContextNote"
+            },
+            "type": "array",
+            "title": "Notes"
           }
         },
         "additionalProperties": false,
@@ -2388,6 +2457,7 @@
         "required": [
           "crop",
           "rank",
+          "season",
           "latest_price",
           "latest_price_date",
           "harvest_price_estimate",
@@ -2409,7 +2479,10 @@
           "sell_window_months",
           "profit_per_acre_low",
           "profit_per_acre_high",
-          "is_stale"
+          "is_stale",
+          "is_frozen",
+          "evidence_issues",
+          "notes"
         ],
         "title": "CropPlanItem"
       },
@@ -2443,6 +2516,16 @@
             "type": "array",
             "title": "Items"
           },
+          "seasons": {
+            "items": {
+              "$ref": "#/components/schemas/CropPlanSeason"
+            },
+            "type": "array",
+            "title": "Seasons"
+          },
+          "support_price_context": {
+            "$ref": "#/components/schemas/SupportPriceContext"
+          },
           "not_available": {
             "items": {
               "type": "string",
@@ -2469,10 +2552,50 @@
           "mandi",
           "land_area_acres",
           "items",
+          "seasons",
+          "support_price_context",
           "not_available",
           "is_estimate"
         ],
         "title": "CropPlanResponse"
+      },
+      "CropPlanSeason": {
+        "properties": {
+          "season": {
+            "type": "string",
+            "enum": [
+              "RABI",
+              "KHARIF"
+            ],
+            "title": "Season"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RANKED",
+              "TOO_FEW_CROPS",
+              "NOT_ENOUGH_CURRENT_EVIDENCE"
+            ],
+            "title": "Status"
+          },
+          "n_crops": {
+            "type": "integer",
+            "title": "N Crops"
+          },
+          "n_comparable": {
+            "type": "integer",
+            "title": "N Comparable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "season",
+          "status",
+          "n_crops",
+          "n_comparable"
+        ],
+        "title": "CropPlanSeason"
       },
       "DataSourceInfo": {
         "properties": {
@@ -4102,6 +4225,54 @@
           "is_stale"
         ],
         "title": "SeriesInfo"
+      },
+      "SupportPriceContext": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "OUTDATED",
+              "UNAVAILABLE"
+            ],
+            "title": "State"
+          },
+          "event": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PolicyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "age_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Days"
+          },
+          "max_age_days": {
+            "type": "integer",
+            "title": "Max Age Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "event",
+          "age_days",
+          "max_age_days"
+        ],
+        "title": "SupportPriceContext",
+        "description": "The latest wheat SUPPORT_PRICE item from the policy timeline: policy context, not a mandi price and not a\nprice anyone is promised."
       },
       "TokenResponse": {
         "properties": {
