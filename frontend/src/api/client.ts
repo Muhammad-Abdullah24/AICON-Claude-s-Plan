@@ -58,7 +58,10 @@ export type LoanIn = S['LoanIn']
 export const QUANTITY_MAX: number = spec.components.schemas.OfferCheckRequest.properties.quantity_maund.maximum
 export const QUESTION_MAX: number = spec.components.schemas.ChatRequest.properties.question.maxLength
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+// On Vercel, call the API through the site's own /api route (vercel.json forwards it to Render): same origin, so
+// no CORS setting can ever block it, whatever the site's address. Elsewhere (local dev), VITE_API_BASE_URL or ''.
+const ON_VERCEL = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
+const BASE = ON_VERCEL ? '' : (import.meta.env.VITE_API_BASE_URL ?? '')
 const TOKEN_KEY = 'farmsight.token'
 
 export class ApiError extends Error {
@@ -90,7 +93,34 @@ export function setToken(token: string | null) {
  * A saved login the server rejects (expired, or signed with a secret from before a restart) is dropped and the
  * request is sent again as a guest, so an old token never breaks the public screens.
  */
+// The free API host sleeps when idle and restarts on every deploy, answering with a network error or 502/503/504
+// for up to about a minute. A read waits that out (the screen keeps showing "Loading...") instead of failing.
+const RETRY_DELAYS_MS = [1500, 3000, 5000, 8000, 10000, 12000, 15000]
+
+function sleep(ms: number, signal?: AbortSignal | null): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id)
+      reject(new DOMException('Aborted', 'AbortError'))
+    })
+  })
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const isRead = !init?.method || init.method === 'GET'
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await requestOnce<T>(path, init)
+    } catch (e) {
+      const waking = e instanceof ApiError && (e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504)
+      if (!isRead || !waking || attempt >= RETRY_DELAYS_MS.length) throw e
+      await sleep(RETRY_DELAYS_MS[attempt], init?.signal)
+    }
+  }
+}
+
+async function requestOnce<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     return await send<T>(path, init, getToken())
   } catch (e) {
