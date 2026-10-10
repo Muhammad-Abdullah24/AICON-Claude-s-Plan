@@ -15,6 +15,7 @@ export function Home() {
   const { selection } = useAppState()
 
   const actions: { to: string; label: string; icon: IconName }[] = [
+    { to: '/loan', label: t('actions.loan'), icon: 'wallet' },
     { to: '/why', label: t('actions.why'), icon: 'why' },
     { to: '/compare', label: t('actions.compare'), icon: 'pin' },
     { to: '/grow', label: t('actions.grow'), icon: 'sprout' },
@@ -28,6 +29,13 @@ export function Home() {
       <div className="lg:col-start-1 lg:row-start-1">
         <SelectionBar withQuantity />
       </div>
+      {/* On a phone the answer comes first, right under the crop line; news and the voice demo follow. */}
+      <div className="lg:col-start-1 lg:row-start-3">
+        <WaitPlan />
+      </div>
+      <div className="empty:hidden lg:sticky lg:top-24 lg:col-start-2 lg:row-span-5 lg:row-start-1">
+        <NewsBanner crop={selection.crop} mandi={selection.mandi} />
+      </div>
       {/* The WhatsApp-style voice demo (KASHT): a full-page reload into a self-contained screen. */}
       <a
         href="/kasht"
@@ -36,12 +44,6 @@ export function Home() {
         <span aria-hidden>🎤</span>
         {t('actions.voice')}
       </a>
-      <div className="empty:hidden lg:sticky lg:top-24 lg:col-start-2 lg:row-span-5 lg:row-start-1">
-        <NewsBanner crop={selection.crop} mandi={selection.mandi} />
-      </div>
-      <div className="lg:col-start-1 lg:row-start-3">
-        <WaitPlan />
-      </div>
       <div className="empty:hidden lg:col-start-1 lg:row-start-4">
         <WeatherLine mandi={selection.mandi} />
       </div>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { api, type CropPlanItem } from '../api/client'
 import { useAppState } from '../appState'
 import { ChipGroup } from '../components/ChipGroup'
+import { HelpTip } from '../components/HelpTip'
 import { DataLabel } from '../components/DataLabel'
 import { ErrorBox, Loading } from '../components/Status'
 import type { Lang } from '../i18n'
@@ -87,7 +88,10 @@ export function Grow() {
         </div>
       </details>
 
-      <h2 className="text-xl font-bold">{t('grow.title')}</h2>
+      <h2 className="text-xl font-bold">
+        {t('grow.title')}
+        <HelpTip text={t('help.grow')} />
+      </h2>
       {state.status === 'loading' && <Loading />}
       {state.status === 'error' && <ErrorBox error={state.error} onRetry={reload} />}
       {state.status === 'ok' && (
@@ -220,7 +224,7 @@ function CropCard({ item }: { item: CropPlanItem }) {
         return (
           <p key={note.id} className="rounded-xl bg-wheat-soft p-3 text-sm">
             {t(line.key, line.params)}{' '}
-            <a href={note.url} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center underline">
+            <a href={note.url} target="_blank" rel="noreferrer" className="inline-flex min-h-12 min-w-12 items-center justify-center px-1 underline">
               {t('grow.noteSource')}
             </a>
           </p>

@@ -6,6 +6,7 @@ import { api, type ForecastResponse, type HoldHistory } from '../api/client'
 import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
 import { DirectionLine } from '../components/DirectionLine'
+import { HelpTip } from '../components/HelpTip'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
 import { Icon } from '../components/ui/Icon'
@@ -58,7 +59,10 @@ export function Why() {
       </section>
       {wait.status === 'ok' && wait.data.history && wait.data.history.seasons.length > 0 && (
         <section className="space-y-3 rounded-2xl border border-line bg-paper p-5 shadow-(--shadow-card) sm:p-6">
-          <h2 className="text-xl font-bold">{t('why.liquidityTitle')}</h2>
+          <h2 className="text-xl font-bold">
+            {t('why.liquidityTitle')}
+            <HelpTip text={t('help.liquidity')} />
+          </h2>
           <p className="text-sm text-slate">{t('why.liquidityNote', { months: wait.data.wait_months })}</p>
           <LiquidityChart history={wait.data.history} />
           <ul className="flex flex-wrap gap-x-4 text-xs text-slate">
