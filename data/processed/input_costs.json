@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "purpose": "Cash input cost per acre for the loan planner (docs/PIVOT.md 3.4, card D1). Cash items only: seed, fertiliser, sprays, land preparation, irrigation, and harvesting/threshing. Land rent and the farmer's own family labour are left out.",
+    "unit": "Rs per acre",
+    "confidence": "estimate",
+    "researched": "2026-10-10, docs/research/DATA_PACK.md and docs/research/input_costs_wheat.json",
+    "note": "Figures are escalated from the official 2023-24 cost table, not quoted today, so the loan planner always carries a COST_ESTIMATE warning."
+  },
+  "Wheat": {
+    "region": "Punjab",
+    "unit": "Rs per acre",
+    "confidence": "estimate",
+    "base": "Agriculture Policy Institute, Wheat Policy Analysis for 2023-24 Crop, Table-13 (Punjab)",
+    "source": "https://api.gov.pk/SiteImage/Policy/Wheat%20Policy%20Analysis%20For%202023-24%20Crop.pdf",
+    "method": "Non-fertiliser items x 1.119 (CPI FY25 1.045 x FY26 1.071). Fertiliser x 1.253: the Annex-X basket (1 DAP + 2 urea + 0.1 NP + application) re-priced at DAP 15,000 and urea 4,749 per 50 kg bag (data/processed/economics_inputs.json).",
+    "items": [
+      {"item": "land_preparation", "name_en": "Land preparation", "name_ur": "زمین کی تیاری", "rs_per_acre": 11190, "official_2023_24": 10000, "paid": "sowing",
+       "method": "CPI x 1.119", "source": "API Wheat 2023-24, Table-13"},
+      {"item": "seed", "name_en": "Seed and sowing", "name_ur": "بیج اور بوائی", "rs_per_acre": 11302, "official_2023_24": 10100, "paid": "sowing",
+       "method": "CPI x 1.119", "source": "API Wheat 2023-24, Table-13"},
+      {"item": "fertilizer", "name_en": "Fertiliser and its application", "name_ur": "کھاد اور ڈالائی", "rs_per_acre": 27176, "official_2023_24": 21689, "paid": "sowing",
+       "method": "Annex-X basket re-priced (DAP 15,000, urea 4,749 per 50 kg bag)", "source": "API Wheat 2023-24, Annex-X; data/processed/economics_inputs.json"},
+      {"item": "sprays", "name_en": "Plant protection and weeding", "name_ur": "سپرے اور گوڈی", "rs_per_acre": 2798, "official_2023_24": 2500, "paid": "season",
+       "method": "CPI x 1.119", "source": "API Wheat 2023-24, Table-13"},
+      {"item": "irrigation", "name_en": "Irrigation and watercourse cleaning", "name_ur": "آبپاشی اور کھال صفائی", "rs_per_acre": 10799, "official_2023_24": 9650, "paid": "season",
+       "method": "CPI x 1.119", "source": "API Wheat 2023-24, Table-13"},
+      {"item": "harvesting", "name_en": "Harvesting and threshing", "name_ur": "کٹائی اور گہائی", "rs_per_acre": 20730, "official_2023_24": 18525, "paid": "harvest",
+       "method": "CPI x 1.119", "source": "API Wheat 2023-24, Table-13"}
+    ],
+    "cash_total_rs_per_acre": 83995,
+    "sowing_cash_total_rs_per_acre": 63265,
+    "excluded": {
+      "land_rent": {"rs_per_acre": 39165, "note": "Add for tenants; not a cash input the crop needs."},
+      "other": {"official_2023_24": 7345, "note": "Mark-up, management and land tax: the loan's own cost is computed separately."}
+    }
+  }
+}

@@ -66,3 +66,38 @@ source. **Differences posted to the team are marked ⚠.**
 assumption dressed as a constant. Documented Pakistani wheat storage losses are a wide 2–18% depending on store type
 and handling. Suggest we either (a) label storage loss "estimate" in the UI and the backtest, or (b) show the hold
 result at two loss levels (3.5% and 10%), which the backtest already supports.
+
+## Pivot: loan options for the loan planner (D2, checked 10 Oct 2026)
+
+The static data is `data/processed/loan_options.json`; the API applies the per-farmer cap and eligibility (card B2).
+Cheapest first. `verified` = read on an official government or SBP page.
+
+| Option (`id`) | Rate/yr | Limit for a small farmer | Who | Source | Verified |
+|---|---|---|---|---|---|
+| CM Punjab Kissan Card (`kissan_card`) | 0% | Rs 30,000/acre, up to Rs 150,000/season; inputs only; 6 months + 1 month grace | 1–12.5 acres, Punjab | punjab.gov.pk/node/5690 | ✅ |
+| PM Youth Loan Tier 1 (`pm_youth`) | 0% | up to Rs 500,000, 3-year instalments | age 21–45, not a defaulter | sbp.org.pk/incen-others/PMYBALS.asp | ✅ |
+| Akhuwat (`akhuwat`) | 0% | small, Rs 15,000–50,000/season; two guarantors, apply at a branch | a 3–6 farmer group / community org | akhuwat.org.pk/?p=3423 | ⚠ amount not confirmed |
+| Zarkhez-e digital (`zarkhez_e`) | 18% (KIBOR + 8%, floor 18%) | Rs 100,000/acre, up to Rs 1,000,000; only 25% as cash | up to 12.5 acres, Punjab | ztbl.com.pk/agri-loan/zarkhez-e-assan-digital-zarai-qarza | ⚠ page not re-read today |
+| Bank crop loan (`bank`) | 16.5% | none | anyone | economics_inputs.json (policy rate 11.5% + 5%) | ⚠ rate derived |
+| Arhti advance (`arhti`) | 66% (≈ 4× the bank rate) | none | anyone | SBP 2014 bulletin; PIDE (see the rates table above) | ⚠ estimate within ~46–82% |
+
+## Pivot: cash input cost per acre for wheat (D1, checked 10 Oct 2026)
+
+`data/processed/input_costs.json`. **Cash inputs only** (seed, fertiliser, sprays, land preparation, irrigation,
+harvesting/threshing); land rent and family labour are left out. Escalated from the Agriculture Policy Institute's
+official 2023-24 wheat cost table (Table-13, Punjab;
+https://api.gov.pk/SiteImage/Policy/Wheat%20Policy%20Analysis%20For%202023-24%20Crop.pdf). Non-fertiliser items × 1.119
+(CPI FY25 × FY26); fertiliser × 1.253 (the Annex-X basket re-priced at DAP 15,000 and urea 4,749 per 50 kg bag,
+`economics_inputs.json`). Confidence: **estimate** — the loan planner always carries a `COST_ESTIMATE` warning.
+
+| Item | Rs/acre | Paid |
+|---|---|---|
+| Land preparation | 11,190 | sowing |
+| Seed and sowing | 11,302 | sowing |
+| Fertiliser and application | 27,176 | sowing |
+| Plant protection and weeding | 2,798 | season |
+| Irrigation and watercourse cleaning | 10,799 | season |
+| Harvesting and threshing | 20,730 | harvest |
+| **Cash total** | **83,995** | — |
+
+Sowing-time cash (what the Kissan Card / a crop loan has to cover first) is **Rs 63,265/acre**.
