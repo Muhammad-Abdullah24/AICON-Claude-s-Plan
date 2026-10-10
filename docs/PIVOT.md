@@ -4,51 +4,49 @@ The team agreed on 10 Oct to change the core question. Instead of asking "will t
 **"can you afford to wait, and with whose money?"** It also adds a free news feed, because in 2026 AMIS showed
 wheat capped at Rs 3,450 while the open market reached about Rs 5,300.
 
-Two phases run **at the same time**:
-- **Phase U** is Abd's (with Claude).
-- **Phase H** is Hamza's.
-
-Each phase owns its own files. The interfaces between the two (section 3) are fixed now, so neither side waits for or
-edits the other's code.
+**Reassigned 10 Oct, after U1 and U2:** Hamza builds the rest of the code (Phase H). Abd reviews, merges, deploys and
+runs the demo and pitch (Phase U). Abd touches only docs and deploy config, so the two phases can't conflict.
 
 ## 1. Rules that keep us conflict-free
 
-1. **Only edit files your phase owns** (section 2). If you need a change in the other side's file, say so in the team
+1. **Only edit files your phase owns** (section 2). Hamza: if you run several AI sessions at once, give each its own
+   branch and its own files (the batches in section 5 are cut that way), and merge one batch before starting work that
+   touches the same files. If you need a change in the other side's file, say so in the team
    chat and the owner makes it.
 2. **Branch from the latest `main`**: `abd/P-<task>` or `hamza/P-<task>`. Merge through a PR. Never push to `main`.
-3. **Interfaces (section 3) change only if both agree in chat.** `backend/app/schemas.py` belongs to Abd.
+3. **Interfaces (section 3) change only if both agree in chat.** The U1 schemas in `backend/app/schemas.py` are that contract.
 4. **No new dependencies.** Read the RSS feed with the standard library (`urllib`, `xml.etree`). Use Gemini through the
    existing `backend/app/chat/llm.py` (`get_llm()`). If you really need a package, ask first.
 5. **No new environment variables or keys.** The news feed needs no key. Put news settings as constants in
    `backend/app/news/config.py`.
-6. **Keep tests next to your code.** Hamza does not edit `backend/tests/` (it's Abd's); his tests go inside his packages,
-   as `channels/` and `chat/` already do.
-7. **Run the full suite before every push:** `pytest` from the repo root, then `npm test` and `npm run build` in `frontend/`.
+6. **Every change comes with tests:** next to new packages (as `channels/` and `chat/` do), and in `backend/tests/` for
+   the API.
+7. **Run the full suite before every push:** `pytest` from the repo root, then `npm run lint`, `npm run typecheck`, `npm test` and `npm run build` in `frontend/`. CI also fails if the API
+   changed and the front-end types were not regenerated.
 8. **Never let a forecast or a news item flip the advice** (agreed 10 Oct). News can only add a warning or lower confidence.
 
 ## 2. Who owns which files
 
-| Area | Phase U (Abd) | Phase H (Hamza) |
+| Area | Phase H (Hamza): all code | Phase U (Abd): review, docs, deploy |
 |---|---|---|
-| Decision engine | `ml/decision/**` (incl. new `wait.py`) | none |
-| Hold backtest | none | **new** `ml/backtest/**` |
-| News and policy | none | **new** `backend/app/news/**` (fetch, cache, tags, snapshot, policy events) |
-| API | `backend/app/main.py`, `schemas.py`, `services.py`, `config.py`, `db.py`, `alerts.py`, `export_openapi.py`, `backend/tests/**` | none |
-| WhatsApp | none | `backend/app/channels/**` |
-| Chat | none (no changes planned) | `backend/app/chat/**` (only if needed for news tagging) |
-| Front end | `frontend/**` (all of it) | none |
-| Docs | `BLUEPRINT.md`, `PLAN.md`, `PIVOT.md`, `DEMO.md`, `DEPLOY.md`, `README.md`, `CLAUDE.md` | `FACTS.md`, `MODEL_CARD.md`, `DATA_NOTES.md` |
-| Config and CI | `.github/**`, `render.yaml`, `frontend/vercel.json`, `requirements.txt`, `.env.example` | none |
+| Engine and backtest | `ml/decision/**`, new `ml/backtest/**` | none |
+| API | `backend/app/**` (incl. `services.py`, `schemas.py`, `main.py`, the new `news/`, `channels/`), `backend/tests/**` | none |
+| Front end | `frontend/**` | none |
+| Docs | `FACTS.md`, `MODEL_CARD.md`, `DATA_NOTES.md`, `URDU_REVIEW.md` | `BLUEPRINT.md`, `PLAN.md`, `PIVOT.md`, `DEMO.md`, `DEPLOY.md`, `README.md`, `CLAUDE.md` |
+| Config and CI | `requirements*.txt` (ask first: rule 4) | `.github/**`, `render.yaml`, `frontend/vercel.json`, `.env.example` |
 
-**Database:** Hamza's news cache creates its own table (`CREATE TABLE IF NOT EXISTS news_items ...`) inside
-`backend/app/news/`, using `backend.app.db.connect()`. He doesn't edit `db.py`.
+`schemas.py` is now Hamza's. A change to the U1 contract still needs a word in chat first, because the front end and
+WhatsApp both depend on it.
 
-**Rates the engine uses** (storage loss, arhti rate, bank rate) live in `ml/decision/config.py` (Abd). Hamza checks them
-and writes their sources in `FACTS.md`. If he finds a different value, he posts it in chat and Abd updates `config.py`.
+**Database:** put the news cache in its own table (`CREATE TABLE IF NOT EXISTS news_items ...`) inside
+`backend/app/news/`, using `backend.app.db.connect()`.
+
+**Rates the engine uses** (storage loss, arhti rate, bank rate) go in `ml/decision/config.py`, with their sources in
+`FACTS.md` (the table in section 5).
 
 ## 3. Interfaces (fixed now)
 
-### 3.1 Hold backtest (Hamza builds it, Abd's engine calls it)
+### 3.1 Hold backtest (H1; the wait engine B1 calls it)
 
 ```python
 # ml/backtest/hold.py
@@ -77,7 +75,7 @@ Check figures from Claude's quick run (`start_month=5`, later months 9 and 10, a
 
 The function uses a single later month, so its numbers will differ slightly. That's fine; just document the method.
 
-### 3.2 News (Hamza builds it, Abd's services and screens show it)
+### 3.2 News (H2, H3; services B2 and screens F3 show it)
 
 ```python
 # backend/app/news/service.py
@@ -123,10 +121,10 @@ def get_policy_events(crop_option: str, as_of: date | None = None) -> list[dict]
 
   Starting links are in section 7.
 
-**Abd owns what news does to the advice**, in `services.py`: the conflict banner (news price more than 10% away from
+**What news does to the advice** (B2, in `services.py`): the conflict banner (news price more than 10% away from
 AMIS) and lowering confidence by one level when a SUPPORT_PRICE, CAP_OR_BAN or IMPORT item is less than 14 days old.
 
-### 3.3 Wait plan (Abd builds it, Hamza's WhatsApp reply formats it)
+### 3.3 Wait plan (B1, B2; WhatsApp B3 and the home screen F1 show it)
 
 ```python
 # backend/app/services.py
@@ -158,32 +156,53 @@ labelled `data_source: "placeholder"`, `is_synthetic: True`, so H6 can call it t
 the same signature. `services.news()` and `services.policy_events()` are wired the same way, with placeholders until
 H2/H3. U4 then calls Hamza's `get_news` / `get_policy_events` from them.
 
-## 4. Phase U: Abd + Claude
+## 4. Phase U: Abd (light, saves tokens)
 
-| # | Task | Files | Depends on |
-|---|---|---|---|
-| U1 | Blueprint change (one page) and API contract: `WaitPlanResponse`, `NewsResponse` and `PolicyEvent` in `schemas.py`; routes returning sample data | `BLUEPRINT.md`, `schemas.py`, `main.py` | none (do this first, then push) |
-| U2 | Fix the contradiction copy: "the price may rise, but waiting costs more" | `frontend/src/locales/*`, `DirectionLine.tsx`, `SignalCard.tsx` | none |
-| U3 | Wait engine: the sell/hold split from the cash need, the three ways out, wheat only for HOLD | `ml/decision/wait.py`, `config.py`, tests | H1 (tests stub it) |
-| U4 | `services.wait_plan`, the news conflict and confidence rule, routes `/api/wait-plan`, `/api/news`, `/api/policy`, OpenAPI and `schema.d.ts` | `backend/app/*`, `backend/tests/*`, `frontend/src/api/*` | U3, H2 for real news |
-| U5 | New home screen: the questions (cash need, how long, whose money, storage, offer), then the split, ways out, history and worst year | `frontend/src/pages/Home.tsx` and new components | U4 |
-| U6 | Liquidity-tax chart: harvest price vs later price per year, with 2026 marked "AMIS capped" | `frontend/src/pages/Why.tsx` or `History.tsx` | H1 via U4 |
-| U7 | News banner and policy card | new `frontend/src/components/News*.tsx` | U4 |
-| U8 | Fix What to Grow (by season, a stale price never ranks first, rice water note, support-price card); in Compare, a stale price can't be "best" | `services.py`, `Grow.tsx`, `Compare.tsx` | none |
-| U9 | Demo script, README, deploy, rehearsal | `DEMO.md`, `README.md`, `DEPLOY.md` | everything |
+| # | Task | Status |
+|---|---|---|
+| U1 | API contract: schemas, the three routes with placeholder answers, blueprint section 0 | ✅ done 10 Oct |
+| U2 | Contradiction copy: beside SELL, an UP call adds "the price may rise, but probably not by more than the interest of waiting" | ✅ done 10 Oct |
+| U3 | Review and merge Hamza's PRs: pull, run the full suite (rule 7), click through the app in Urdu and English | as PRs arrive |
+| U4 | `DEMO.md`: the 27 Apr 2026 replay, then today with the news banner; real numbers from the running app | after B2 and B4 |
+| U5 | Deploy (Render + Vercel, `docs/DEPLOY.md`), demo-morning refresh of the news snapshot, rehearsal, pitch | demo eve and morning |
+| U6 | Get one real arhti deal from a farmer (voice note) for the pitch | any time |
 
-## 5. Phase H: Hamza
+## 5. Phase H: Hamza (the build)
 
-| # | Task | Files | Depends on |
-|---|---|---|---|
-| H1 | **Do this first.** `hold_history` per 3.1, with tests (no peeking past `as_of`, fewer than 3 seasons returns None, and the check figures in 3.1 roughly reproduce) | `ml/backtest/__init__.py`, `hold.py`, `test_hold.py` | none |
-| H2 | News: fetch, cache, Gemini tags with a rules fallback, price extraction, snapshot, `get_news` per 3.2, with tests (no network in tests; use a saved RSS file) | `backend/app/news/**` | none |
-| H3 | Policy events JSON and `get_policy_events` (respects `as_of`), with tests | `backend/app/news/policy_events.json`, `service.py` | none |
-| H4 | Check the rates against sources and record them in `FACTS.md`. Post any difference in chat. | `docs/FACTS.md` | none |
-| H5 | `MODEL_CARD.md` "Decision backtest" section (the new engine vs always-sell, using H1) and a `DATA_NOTES.md` note on AMIS being capped at Rs 3,450 in 2026 while the open market rose | `docs/MODEL_CARD.md`, `docs/DATA_NOTES.md` | H1 |
-| H6 | WhatsApp reply for the wait plan (`wait_text(plan)` in `reply.py`, wired into `whatsapp.py`), Urdu, under the message limit | `backend/app/channels/**` | 3.3 sample now; U4 for the real thing |
+Do the batches in order. Within a batch, the tasks touch different files, so separate AI sessions can run them in
+parallel. One PR per batch (or per task), named `hamza/P-<task>`.
 
-**Rates for H4** (the values in `ml/decision/config.py` after U3):
+**Batch 1: engine and data** (no front end)
+
+| # | Task | Files |
+|---|---|---|
+| H1 | `hold_history` per 3.1, with tests: no peeking past `as_of`; fewer than 3 seasons returns None; the check figures in 3.1 roughly reproduce | `ml/backtest/**` |
+| H2 | News: fetch, cache, Gemini tags with a rules fallback, price extraction, snapshot, `get_news` per 3.2. Tests use a saved RSS file, never the network. | `backend/app/news/**` (except the policy files) |
+| H3 | Policy events JSON and `get_policy_events` (respects `as_of`), with tests | `backend/app/news/policy_events.json`, `backend/app/news/policy.py` |
+| H4 | Check the rates in the table below and record them with sources in `FACTS.md` | `docs/FACTS.md` |
+
+**Batch 2: wire it up** (needs batch 1)
+
+| # | Task | Files |
+|---|---|---|
+| B1 | Wait engine, with tests. Sell-now maund = ceil(cash need / best net price), capped at the quantity. Hold the rest only for wheat, and only if `wins / n >= 0.5` and `median_net > 0` for the farmer's money and storage, else SELL_ALL. Exits: SELL_NOW, ARHTI_OFFER (if given) and HOLD (median and p10). Warnings per the `WaitWarning` list. | `ml/decision/wait.py`, `config.py`, `test_wait.py` |
+| B2 | Replace the placeholders in `services.wait_plan` / `news` / `policy_events` with B1, H2 and H3. Add the news rules: `NEWS_PRICE_CONFLICT` when a price for the crop in the last 14 days is more than 10% from AMIS (fill `news_check`); `POLICY_UNCERTAIN` and confidence down one level for a SUPPORT_PRICE, CAP_OR_BAN or IMPORT item in the last 14 days. Delete `placeholders.py`. Tighten the U1 tests in `backend/tests/test_api.py` to real numbers. | `backend/app/services.py`, `backend/tests/**` |
+| B3 | WhatsApp reply for the wait plan (`wait_text`), Urdu, under the message limit | `backend/app/channels/**` |
+| B4 | `MODEL_CARD.md` "Decision backtest" (the new engine vs always-sell) and a `DATA_NOTES.md` note on the 2026 AMIS cap | `docs/MODEL_CARD.md`, `docs/DATA_NOTES.md` |
+
+**Batch 3: screens** (needs B2 merged; regenerate types with
+`python -m backend.app.export_openapi && npm --prefix frontend run gen:api`)
+
+| # | Task | Files |
+|---|---|---|
+| F1 | New home screen: cash need, months, whose money (rate editable), storage, offer, then the split, the ways out in rupees, "waiting paid in N of M seasons with your setup" and the worst year. Keep the 18px / 48px readability rules and RTL-only logical classes (`rtl.test.ts`). Reuse `SelectionBar` / `ChipGroup`. | `frontend/src/pages/Home.tsx`, new `components/Wait*.tsx`, locales |
+| F2 | Liquidity-tax chart from `history.seasons`: start price vs later price per year, 2026 marked "AMIS capped" | `frontend/src/pages/Why.tsx` (or `History.tsx`), locales |
+| F3 | News banner (warnings and `news_check`, always with source, date and link) and policy card | new `components/News*.tsx`, used on Home, locales |
+| F4 | Fix What to Grow (compare only within a season, a stale price never ranks first, rice water note at Bahawalpur, wheat support-price card from `/api/policy`). In Compare, a stale price can't be "best". | `services.py` (`crop_plan`, `compare_mandis`), `ml/decision/**`, `Grow.tsx`, `Compare.tsx` |
+
+F1–F3 all add keys to `locales/*.json`: merge them one at a time, or have one session own the locale files for the batch.
+
+**Rates for H4** (they go in `ml/decision/config.py` in B1):
 
 | Rate | Value | Source to check |
 |---|---|---|
@@ -195,10 +214,9 @@ H2/H3. U4 then calls Hamza's `get_news` / `get_policy_events` from them.
 
 ## 6. Merge order
 
-1. Abd's two open branches (`abd/H-C21-engine-inputs` and `abd/nfr05-readable`), **before** anyone branches off.
-2. U1 (the contract) and H1 (the backtest), as early as possible, since U3 and U4 need them.
-3. Everything else in any order: the files don't overlap.
-4. Freeze on demo eve (time set by Abd), then deploy and rehearse in the morning.
+1. U1 + U2 into `main` (done when this file lands), **before** Hamza branches off.
+2. Batch 1 (any order), then batch 2, then batch 3. Abd reviews and merges each PR (U3).
+3. Freeze on demo eve (time set by Abd), then deploy and rehearse in the morning (U5).
 
 ## 7. Research links (starting points for H3 and H4)
 

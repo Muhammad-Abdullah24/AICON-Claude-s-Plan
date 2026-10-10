@@ -61,7 +61,8 @@
   "direction": {
     "UP": "Our model: the price is likely to rise in the next 4 weeks.",
     "DOWN": "Our model: the price is likely to fall in the next 4 weeks.",
-    "accuracy": "(It called {{pct}}% of the big moves in 2025 right. Not a price forecast.)"
+    "accuracy": "(It called {{pct}}% of the big moves in 2025 right. Not a price forecast.)",
+    "upButSell": "The price may rise, but probably not by more than the interest of waiting, so the advice is to sell."
   },
   "actions": {
     "why": "Why?",
