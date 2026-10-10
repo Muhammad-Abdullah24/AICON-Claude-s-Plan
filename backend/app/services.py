@@ -33,7 +33,7 @@ WAIT_THRESHOLD_PCT = decision.config.WAIT_THRESHOLD_PCT   # blueprint UC-03 (the
 TREND_FLAT_PCT = 3
 HORIZON_WEEKS = decision.config.HORIZON_WEEKS
 STALE_AFTER_DAYS = 56             # blueprint UC-01 A3: an 8-week-old price is shown in amber, confidence LOW
-OFFER_WINDOW_DAYS = 14
+OFFER_WINDOW_DAYS = decision.config.OFFER_WINDOW_DAYS   # the offer check's reference window
 HISTORY_WEEKS = 52
 BASELINE_MODEL = "baseline_persistence_band"
 OPTION_TO_AMIS = {v: k for k, v in fcfg.CROP_OPTION.items()}   # "IRRI" -> ("Rice", "IRRI")
@@ -290,12 +290,19 @@ def compare_mandis(crop_option: str, mandi: str, quantity_maund: float = 100,
     rows = []
     for r in ranked:
         if not r["has_price"]:
-            rows.append({"mandi": r["mandi"], "has_data": False})
+            rows.append({"mandi": r["mandi"], "has_data": False, "is_best": False})
             continue
         price_date = found[r["mandi"]][1]
+        ref = reference(crop_option, r["mandi"], as_of)
         rows.append({"mandi": r["mandi"], "price": r["current_price"], "transport_cost": r["transport_cost"] or 0.0,
                      "net_price": r["net_price"], "prices_as_of": price_date, "is_stale": is_stale(price_date, as_of),
-                     "has_data": True, "gain_vs_preferred": _round((r["net_price"] - own) * quantity_maund)})
+                     "has_data": True, "gain_vs_preferred": _round((r["net_price"] - own) * quantity_maund),
+                     "price_unchanged_since": ref["price_unchanged_since"], "reference_days": ref["reference_days"],
+                     "reference_strength": ref["reference_strength"], "is_best": False})
+    # "Best" only when the highest net price rests on a strong reference; a stale, frozen, thin or repeated price
+    # is never called best, and then no mandi is.
+    if rows and rows[0].get("has_data") and rows[0]["reference_strength"] == "STRONG":
+        rows[0]["is_best"] = True
     return rows
 
 
@@ -320,21 +327,70 @@ def alerts_status(phone: str) -> bool | None:
 
 # ---------------------------------------------------------------- offer check and margin
 
-def offer_check(crop_option: str, mandi: str, offer: float, quantity_maund: float = 100,
-                as_of: date | None = None) -> dict:
-    """A buyer's offer against the fair range: the lowest to highest AMIS price at this mandi in the last 14
-    days. The verdict is Owner B's `ml.decision.offer_check`."""
+def _window(points: list[tuple[str, float]]) -> list[float]:
+    """Every reported price in the OFFER_WINDOW_DAYS ending at the latest reported day."""
+    last = date.fromisoformat(points[-1][0])
+    return [p for d, p in points if (last - date.fromisoformat(d)).days < OFFER_WINDOW_DAYS]
+
+
+def _reference_inputs(crop_option: str, mandi: str, as_of: date | None) -> dict:
+    """The AMIS reference at one mandi on or before `as_of`: latest price and date, the window, stale, frozen."""
     series = _series(crop_option, mandi)
     points = _upto(_data()["daily"][series], as_of)
     if not points:
-        raise LookupError("no prices")
-    last = date.fromisoformat(points[-1][0])
-    window = [p for d, p in points if (last - date.fromisoformat(d)).days < OFFER_WINDOW_DAYS]
-    low, high = min(window), max(window)
-    r = decision.offer_check(offer, low, high, quantity_maund)
-    return {"fair_low": low, "fair_high": high, "verdict": r["status"].lower(),
-            "difference_per_maund": r["gap_per_40kg"], "difference_total": r["gap_total"],
-            "window_days": OFFER_WINDOW_DAYS, "prices_as_of": points[-1][0]}
+        raise LookupError(f"no AMIS price for {crop_option} at {mandi} on or before {as_of}")
+    day, price = points[-1]
+    return {"reference_price": price, "prices_as_of": day, "window_prices": _window(points),
+            "is_stale": is_stale(day, as_of), "price_unchanged_since": frozen_since(series, day)}
+
+
+def reference(crop_option: str, mandi: str, as_of: date | None = None) -> dict:
+    """The recent reported reference at a mandi, without any offer: what the offer check would compare with,
+    and how far it can be leaned on (Owner B's `ml.decision.reference_strength`)."""
+    r = _reference_inputs(crop_option, mandi, as_of)
+    strength, weak = decision.reference_strength(r["window_prices"], r["is_stale"], r["price_unchanged_since"])
+    codes = {"LIMITED_STALE": "STALE_REFERENCE", "LIMITED_FROZEN": "FROZEN_REFERENCE",
+             "LIMITED_FEW_DAYS": "FEW_REFERENCE_DAYS", "LIMITED_SAME_PRICE": "SAME_PRICE_ALL_WINDOW"}
+    return {"reference_price": r["reference_price"], "reference_price_as_of": r["prices_as_of"],
+            "reference_range_low": min(r["window_prices"]), "reference_range_high": max(r["window_prices"]),
+            "reference_days": len(r["window_prices"]), "window_days": OFFER_WINDOW_DAYS,
+            "is_stale": r["is_stale"], "price_unchanged_since": r["price_unchanged_since"],
+            "reference_strength": strength, "limitations": [codes[w] for w in weak]}
+
+
+def offer_check(crop_option: str, mandi: str, offer: float, quantity_maund: float = 100,
+                as_of: date | None = None, arhti_pct: float | None = None) -> dict:
+    """A buyer's offer against recent AMIS *reference* prices at this mandi (never a fair or guaranteed price),
+    plus every mandi after estimated transport (the farmer's own first). The offer is a gross quoted price;
+    `arhti_pct` is shown only if the farmer entered it and never changes the result. The classification and the
+    reference-strength rules (stale, frozen, too few days, one repeated price) are Owner B's
+    `ml.decision.offer_reference`."""
+    own = _reference_inputs(crop_option, mandi, as_of)
+    transport = _data()["transport"]
+    alternatives = []
+    for other in fcfg.CITY_ID:
+        if other == mandi:
+            continue
+        try:
+            r = _reference_inputs(crop_option, other, as_of)
+        except LookupError:
+            alternatives.append({"mandi": other, "reference_price": None})
+            continue
+        alternatives.append({"mandi": other, **r, "transport_cost": transport[(DISPLAY[mandi], other)]})
+    r = decision.offer_reference(offer, quantity_maund, own["window_prices"], own["reference_price"],
+                                 is_stale=own["is_stale"], price_unchanged_since=own["price_unchanged_since"],
+                                 own_transport_cost=transport[(DISPLAY[mandi], mandi)], arhti_pct=arhti_pct,
+                                 alternatives=alternatives, mandi=mandi, prices_as_of=own["prices_as_of"])
+    legacy = {"BELOW_REFERENCE_RANGE": "below", "WITHIN_REFERENCE_RANGE": "fair", "ABOVE_REFERENCE_RANGE": "above"}
+    last_day = own["prices_as_of"]
+    return {
+        **r, "reference_price_as_of": last_day, "window_days": OFFER_WINDOW_DAYS, "is_stale": own["is_stale"],
+        "price_unchanged_since": own["price_unchanged_since"],
+        # Deprecated aliases (kept for older clients): the range is a reference, not a "fair" range.
+        "fair_low": r["reference_range_low"], "fair_high": r["reference_range_high"],
+        "verdict": legacy[r["range_position"]], "difference_per_maund": r["difference_vs_range_per_maund"],
+        "difference_total": r["total_difference_vs_range"], "prices_as_of": last_day,
+    }
 
 
 def margin(crop_option: str, price: float, arhti_pct: float | None = None) -> dict:

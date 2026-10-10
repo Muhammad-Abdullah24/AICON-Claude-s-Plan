@@ -1,3 +1,4 @@
+import { AlertTriangle, Calendar, CheckCircle2, Clock, MapPin, Phone } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -6,16 +7,102 @@ import { api, type ForecastResponse } from '../api/client'
 import { useAppState } from '../appState'
 import { DataLabel } from '../components/DataLabel'
 import { DirectionLine } from '../components/DirectionLine'
+import { CannotKnow } from '../components/OfferResult'
 import { SelectionBar } from '../components/SelectionBar'
 import { ErrorBox, Loading } from '../components/Status'
+import { ButtonLink } from '../components/ui/Button'
+import { Note } from '../components/ui/Disclosure'
+import { StatusBadge } from '../components/ui/StatusBadge'
 import type { Lang } from '../i18n'
-import { addWeeks, formatMonth, formatNumber, formatRs } from '../lib/format'
+import { addWeeks, formatDate, formatMonth, formatNumber, formatRs } from '../lib/format'
+import { referenceBadge } from '../lib/status'
 import { CHART_MIN_TICK_GAP, CHART_TICK_PX, CHART_Y_AXIS_WIDTH, readTokens } from '../lib/tokens'
 import { useAsync } from '../lib/useAsync'
 
 const ARROW = { UP: '⬆', DOWN: '⬇', '': '•' } as const
 
-/** Plain reasons first; the price chart with the 4-week range sits behind "details" (blueprint UC-02). */
+/** How strong the reference is, in the "reference data is limited" layout when it is weak. */
+function ReferenceQuality() {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language as Lang
+  const { selection, cropName, mandiName } = useAppState()
+  const [ref, reload] = useAsync((signal) => api.reference(selection, signal), `${selection.crop}|${selection.mandi}`)
+  if (ref.status === 'loading') return <Loading label={t('home.reference.loading')} />
+  if (ref.status === 'error') return <ErrorBox error={ref.error} onRetry={reload} />
+  const r = ref.data
+  const strong = r.reference_strength === 'STRONG'
+  const when = formatDate(r.price_unchanged_since ?? r.reference_price_as_of, lang)
+  const Icon = r.reference_strength === 'LIMITED_STALE' ? Clock : strong ? CheckCircle2 : AlertTriangle
+  return (
+    <div className="space-y-4">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold lg:text-3xl">{t(strong ? 'details.titleStrong' : 'details.titleLimited')}</h1>
+        <p className="text-slate">
+          {cropName(r.crop)} · {mandiName(r.mandi)} ·{' '}
+          {t('details.reviewed', { date: formatDate(r.reference_price_as_of, lang) })}
+        </p>
+      </header>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-4">
+          <section
+            className={`space-y-3 rounded-[var(--radius-card)] border p-5 lg:p-6 ${
+              strong ? 'border-line bg-paper' : 'border-wheat/50 bg-wheat-soft'
+            }`}
+            data-testid="reference-quality"
+          >
+            <p className={`flex items-start gap-2 text-lg font-semibold ${strong ? 'text-field' : 'text-wheat-deep'}`}>
+              <Icon aria-hidden className="mt-1 size-6 shrink-0" />
+              {strong
+                ? t('details.strongHeadline')
+                : t(`offer.limited.${r.reference_strength}`, { days: r.reference_days, window: r.window_days, date: when })}
+            </p>
+            <p className="text-sm">{t('details.availableReference')}</p>
+            <p className="figures text-4xl">{formatRs(r.reference_price)}</p>
+            <DataLabel
+              isSynthetic={r.is_synthetic}
+              asOf={r.reference_price_as_of}
+              stale={r.is_stale}
+              unchangedSince={r.price_unchanged_since}
+            />
+            <StatusBadge kind={referenceBadge(r)} />
+            <p className={`text-sm ${strong ? 'text-slate' : 'text-wheat-deep'}`}>
+              {t(strong ? 'details.strongExplain' : 'details.limitedExplain')}
+            </p>
+          </section>
+          <Note>
+            {t('offer.reportedDays', { days: r.reference_days, window: r.window_days })}{' '}
+            {t('details.range', { low: formatRs(r.reference_range_low), high: formatRs(r.reference_range_high) })}
+          </Note>
+          <CannotKnow open />
+        </div>
+        <aside className="space-y-4">
+          <section className="card space-y-3 p-5">
+            <h2 className="text-lg font-semibold">{t('offer.whatYouCanDo.title')}</h2>
+            <p className="text-sm text-slate">{t('offer.whatYouCanDo.body')}</p>
+            <ButtonLink to="/compare" wide>
+              <MapPin aria-hidden className="size-5" />
+              {t('offer.whatYouCanDo.tryMandi')}
+            </ButtonLink>
+            <ButtonLink to="/history" variant="secondary" wide>
+              <Calendar aria-hidden className="size-5" />
+              {t('details.seeHistory')}
+            </ButtonLink>
+            <p className="flex items-center justify-center gap-2 py-2 text-center text-field">
+              <Phone aria-hidden className="size-5 shrink-0" />
+              {t('offer.whatYouCanDo.askMandi')}
+            </p>
+          </section>
+          <Note tone="caution">{t('offer.checkYourself')}</Note>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Data details: first how strong the AMIS reference is (stale, frozen, one repeated price, too few days), then
+ * the model's reasons and the price chart as background (market outlook context, never the offer's answer).
+ */
 export function Why() {
   const { t, i18n } = useTranslation()
   const lang = i18n.language as Lang
@@ -25,10 +112,14 @@ export function Why() {
   const [forecast] = useAsync((signal) => api.forecast(selection, signal), key)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <SelectionBar />
-      <section className="space-y-3 rounded-2xl bg-paper p-4 shadow-sm">
-        <h2 className="text-xl font-bold">{t('why.title')}</h2>
+      <ReferenceQuality />
+      <section className="card space-y-3 p-5" aria-labelledby="why-title">
+        <h2 id="why-title" className="text-xl font-bold">
+          {t('why.title')}
+        </h2>
+        <p className="text-sm text-slate">{t('outlook.context')}</p>
         {explain.status === 'loading' && <Loading />}
         {explain.status === 'error' && <ErrorBox error={explain.error} onRetry={reloadExplain} />}
         {explain.status === 'ok' && (
@@ -37,7 +128,10 @@ export function Why() {
             <ul className="space-y-2">
               {explain.data.reasons.map((r) => (
                 <li key={r.text_en} className="flex gap-2 text-base">
-                  <span aria-hidden className={r.direction === 'UP' ? 'text-field' : r.direction === 'DOWN' ? 'text-madder' : 'text-slate'}>
+                  <span
+                    aria-hidden
+                    className={r.direction === 'UP' ? 'text-field' : r.direction === 'DOWN' ? 'text-madder' : 'text-slate'}
+                  >
                     {ARROW[r.direction]}
                   </span>
                   <span>{lang === 'en' ? r.text_en : r.text_ur}</span>
@@ -51,8 +145,8 @@ export function Why() {
         )}
       </section>
       {forecast.status === 'ok' && (
-        <details className="rounded-2xl bg-paper p-4 shadow-sm">
-          <summary className="cursor-pointer py-2 font-bold">{t('why.chart')}</summary>
+        <details className="card p-5">
+          <summary className="min-h-12 cursor-pointer py-2 font-bold">{t('why.chart')}</summary>
           <ForecastChart f={forecast.data} lang={lang} />
         </details>
       )}
@@ -84,7 +178,7 @@ function ForecastChart({ f, lang }: { f: ForecastResponse; lang: Lang }) {
             <XAxis dataKey="date" tickFormatter={(d: string) => formatMonth(d, lang)} minTickGap={CHART_MIN_TICK_GAP}
               tick={{ fill: c.slate, fontSize: CHART_TICK_PX }} stroke={c.line} />
             <YAxis domain={['auto', 'auto']} tickFormatter={(v: number) => formatNumber(v)} width={CHART_Y_AXIS_WIDTH}
-              tick={{ fill: c.slate, fontSize: CHART_TICK_PX, fontFamily: 'IBM Plex Mono' }} stroke={c.line} />
+              tick={{ fill: c.slate, fontSize: CHART_TICK_PX, fontFamily: 'IBM Plex Sans' }} stroke={c.line} />
             <Tooltip formatter={(v) => (Array.isArray(v) ? v.map((x) => formatRs(Number(x))).join(' – ') : formatRs(Number(v)))} />
             <Area dataKey="band" name={t('why.legendRange')} stroke="none" fill={c.wheat} fillOpacity={0.35} isAnimationActive={false} />
             <Line dataKey="price" name={t('why.legendHistory')} stroke={c.ink} strokeWidth={2} dot={false} isAnimationActive={false} />

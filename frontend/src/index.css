@@ -1,69 +1,73 @@
 @import 'tailwindcss';
 
 /*
- * FarmSight visual system. Every colour and font in the app comes from here.
+ * FarmSight visual system: "a calm reference, a farmer's decision". Every colour and font in the app comes from
+ * here. Paper canvas, warm white cards, thin warm-grey borders, large legible numbers, restrained shadows.
+ * Charts read these same tokens at runtime (src/lib/tokens.ts), so change a colour here and the charts follow.
  *
- * Palette: ajrak, the indigo-and-madder block print of south Punjab and Sindh,
- * plus the crops themselves. Charts read these same tokens at runtime
- * (src/lib/tokens.ts), so change a colour here and the charts follow.
+ * Colour never carries meaning alone: every status has an icon and a word (components/ui/StatusBadge.tsx).
  *
- * Layout rule: use only logical utilities (ms-, me-, ps-, pe-, start-, end-,
- * text-start, text-end) so right-to-left Urdu mirrors automatically.
- * src/rtl.test.ts fails the build if left/right utilities sneak in.
+ * Layout rule: use only logical utilities (ms-, me-, ps-, pe-, start-, end-, text-start, text-end) so
+ * right-to-left Urdu mirrors automatically. src/rtl.test.ts fails the build if left/right utilities sneak in.
  */
 @theme {
-  --color-ink: #1b2559; /* indigo: text, primary surfaces */
-  --color-cotton: #f2f3ee; /* page background */
-  --color-paper: #ffffff; /* cards, the parchi */
-  --color-wheat: #d4a017; /* forecast band, highlights */
-  --color-wheat-soft: #f3e3ad;
-  --color-wheat-deep: #7a5800; /* amber text: old or repeated prices (readable on white) */
-  --color-madder: #a3302e; /* risk, the synthetic tape */
-  --color-field: #3e6b3a; /* gains */
-  --color-slate: #5b6178; /* secondary text */
-  --color-line: #d9dbe3; /* hairlines */
+  --color-cotton: #f5f2ea; /* paper: the app canvas */
+  --color-paper: #fffefa; /* surface: cards and fields */
+  --color-ink: #19333d; /* primary text */
+  --color-field: #285d43; /* field green: the primary action, a usable next step, fresh data */
+  --color-field-soft: #e4eee6; /* active navigation, fresh badge */
+  --color-wheat: #c79a32; /* chart band, highlights */
+  --color-wheat-soft: #f8edd3; /* caution backgrounds: limited, old or repeated data */
+  --color-wheat-deep: #876015; /* caution text (readable on white and on wheat-soft) */
+  --color-madder: #914b41; /* input errors, the synthetic tape */
+  --color-madder-soft: #f6e4e0;
+  --color-slate: #596971; /* secondary text */
+  --color-slate-soft: #eceeec; /* estimate / assumption badges, notes */
+  --color-line: #e3ddd0; /* warm hairlines */
 
-  --font-sans: 'IBM Plex Sans', 'Noto Nastaliq Urdu', system-ui, sans-serif;
-  --font-urdu: 'Noto Nastaliq Urdu', 'IBM Plex Sans', serif;
-  --font-figures: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-sans: 'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-urdu: 'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-latin: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-figures: 'IBM Plex Sans', system-ui, sans-serif;
 
-  /*
-   * Blueprint NFR-05: 18px minimum text for low-end phones in sunlight. The root size is 18px (19px in Urdu,
-   * since Nastaliq reads smaller than Latin at the same size), and Tailwind's two smaller steps are floored at
-   * 1rem, so no text-xs or text-sm can ever render below it. Secondary text is told apart by colour, not size.
-   */
-  --text-xs: 1rem;
-  --text-sm: 1rem;
+  --radius-control: 12px;
+  --radius-card: 18px;
 }
 
 @layer base {
+  /*
+   * One size scale for both languages, with an 18 px body: text-xs ≈ 14 px metadata, text-sm ≈ 16 px support
+   * copy, text-base 18 px body, text-xl ≈ 22 px section titles, text-2xl ≈ 27 px mobile and text-3xl ≈ 34 px
+   * desktop page titles.
+   */
   html {
     background: var(--color-cotton);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 18px;
     -webkit-text-size-adjust: 100%;
   }
 
-  /*
-   * Nastaliq is tall and slanted: it needs roughly double line height or lines
-   * collide and letters get clipped (PLAN.md 13). Tailwind's text-* size
-   * utilities each set their own tight line height, so in Urdu we widen those
-   * too; otherwise every text-sm or text-xs would clip.
-   */
+  /* Noto Sans Arabic (naskh-style sans) reads cleanly at a normal line height; Tailwind's text-* sizes set their
+     own tight heights, so Urdu gets a little more room at every size. */
   html:lang(ur) {
-    font-size: 19px;
-    line-height: 2.1;
-    --text-xs--line-height: 2.2;
-    --text-sm--line-height: 2.1;
-    --text-base--line-height: 2.1;
-    --text-lg--line-height: 2;
-    --text-xl--line-height: 2;
-    --text-2xl--line-height: 1.9;
-    --text-3xl--line-height: 1.9;
+    line-height: 1.65;
+    --text-xs--line-height: 1.7;
+    --text-sm--line-height: 1.7;
+    --text-base--line-height: 1.65;
+    --text-lg--line-height: 1.6;
+    --text-xl--line-height: 1.55;
+    --text-2xl--line-height: 1.45;
+    --text-3xl--line-height: 1.4;
   }
   html:lang(en) {
-    font-size: 18px;
+    font-family: var(--font-latin);
     line-height: 1.5;
+  }
+
+  body {
+    background: var(--color-cotton);
+    min-height: 100dvh;
   }
 
   :focus-visible {
@@ -82,12 +86,21 @@
 }
 
 @layer components {
-  /* Rupee figures: tabular, Latin digits, never mirrored. */
+  /* Rupee figures, quantities and dates: Latin digits, tabular, never reordered inside Urdu. */
   .figures {
     font-family: var(--font-figures);
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
     direction: ltr;
     unicode-bidi: isolate;
+  }
+
+  /* A card: warm white surface, thin warm border, a whisper of shadow. */
+  .card {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgb(25 51 61 / 0.04);
   }
 
   /* The "synthetic data" tape: diagonal stripes, impossible to miss. */
@@ -100,34 +113,14 @@
     color: white;
   }
 
-  /*
-   * The parchi: the slip an arhti hands a farmer. A perforated top edge, a
-   * dashed tear line, and a receipt-style total. It prints in once.
-   */
+  /* The market-outlook slip (SignalCard): now a plain card, no print animation. */
   .parchi {
-    --perf: 7px;
     background: var(--color-paper);
-    mask:
-      radial-gradient(circle var(--perf) at 50% 0, transparent 98%, black) 50% 0 / calc(var(--perf) * 3) 51% repeat-x,
-      linear-gradient(black, black) 0 100% / 100% 50% no-repeat;
-    padding-top: calc(var(--perf) + 1rem);
-    filter: drop-shadow(0 1px 0 var(--color-line)) drop-shadow(0 8px 18px rgb(27 37 89 / 0.1));
-    animation: parchi-print 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    padding-top: 1rem;
   }
   .tear {
-    border-top: 2px dashed var(--color-line);
-  }
-}
-
-@keyframes parchi-print {
-  from {
-    opacity: 0;
-    transform: translateY(-14px);
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-    clip-path: inset(0 0 0 0);
+    border-top: 1px dashed var(--color-line);
   }
 }

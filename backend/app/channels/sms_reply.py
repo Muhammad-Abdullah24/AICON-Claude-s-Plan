@@ -23,16 +23,18 @@ CROP_RU = {"Wheat": "Gandum", "Cotton": "Kapas", "IRRI": "Chawal IRRI", "SuperBa
 MANDI_RU = {"BahawalPur": "Bahawalpur", "Vehari": "Vehari", "RahimYarKhan": "Rahim Yar Khan"}
 SIGNAL_RU = {"SELL": "bech dein", "WAIT": "ruk jayen"}
 CONFIDENCE_RU = {"HIGH": "zyada", "MEDIUM": "darmiyana", "LOW": "kam"}
-CHOICE_RU = {"advice": "Rate/mashwara", "compare": "Mandiyan", "why": "Kyun", "alerts_on": "Alert on",
+CHOICE_RU = {"offer": "Offer check", "advice": "Rate/mashwara", "compare": "Mandiyan", "why": "Kyun/Data",
+             "alerts_on": "Alert on",
              "alerts_off": "Alert band", "menu": "Menu", "confirm": "Theek hai", "correct": "Durust karein"}
 
 BRAND = "FarmSight"
-MENU_TAIL = "Ya likhein: gandum bahawalpur 100 man"
+MENU_TAIL = "Ya likhein: gandum bahawalpur 100 man offer 3514"
 MENU_NOTE = {"expired": "Pichli baat ka waqt khatam.", "no_session": "Yeh number kis sawal ka hai, maloom nahi.",
              "voice_unclear": "Awaz saaf samajh nahi aayi."}
 INVALID = "Ghalat number."
 ASK = {"ask_crop": "Fasal?", "ask_variety": "Kon se chawal?", "ask_mandi": "Mandi?",
-       "ask_quantity": "Kitne man? Sirf number likhein, jaise 100."}
+       "ask_quantity": "Kitne man? Sirf number likhein, jaise 100.",
+       "ask_offer": "Khareedar ne fi man kitna diya? Sirf raqam likhein, jaise 3514."}
 SORRY = "Samajh nahi aya."
 NOT_READY = "Service abhi tayyar nahi. Thori der baad koshish karein."
 NOT_REGISTERED = "Yeh number FarmSight par register nahi. Alert ke liye app mein profile banayein."
@@ -87,10 +89,18 @@ def fit(required: Sequence[str], optional: Sequence[str] = (), choices=(), more:
     while kept and len(join(required, kept, [footer])) > limit:
         kept.pop()
     note = [more] if len(kept) < len(optional) else []
+    if note and len(join(required, kept, note, [footer])) > limit:
+        note = []   # the "rest is in the app" note never pushes out a required part
     text = join(required, kept, note, [footer])
-    if len(text) > limit:   # only if the required parts alone are too long: cut them, keep the choices
-        head = join(required, note)[: limit - len(footer) - 2].rstrip()
-        text = f"{head}. {footer}".strip() if footer else head
+    if len(text) > limit:
+        # Only if the required parts alone are too long. Keep whole parts, in order, never a cut sentence: a cut
+        # can reverse a meaning ("shamil nahi" -> "shamil"). Warnings come first, so they are the last to go.
+        keep, budget = [], limit - len(footer) - len(more) - 2
+        for part in required:
+            if len(join(keep, [part])) > budget:
+                break
+            keep.append(part)
+        text = join(keep, [more] if len(keep) < len(required) else [], [footer])
     return text
 
 
@@ -177,6 +187,10 @@ def render(r: Reply) -> str:
         return fit([NOT_REGISTERED], (), ch)
     if k == "no_data":
         return fit([NO_DATA.format(mandi=name(d["mandi"]), crop=name(d["crop_option"]))], (), ch)
+    if k == "offer":
+        return offer_sms(d["crop_option"], d["mandi"], d["result"], ch)
+    if k == "offer_compare":
+        return offer_compare_sms(d["crop_option"], d["result"], ch)
     if k == "not_ready":
         return NOT_READY
     if k == "voice_confirm":   # SMS has no voice notes; kept so every reply kind has an SMS form
@@ -185,3 +199,64 @@ def render(r: Reply) -> str:
         return fit([*invalid, heard], (), ch)
     # "chat": SMS has no AI chat (it would answer in Urdu script and cost a model call per text)
     return fit([SORRY], (), ch)
+
+
+# ---------------------------------------------------------------- buyer offer check
+
+# Short names for the offer SMS, the way farmers text them ("Gandum BWP"), so a whole check fits in two parts.
+SHORT_RU = {"Wheat": "Gandum", "Cotton": "Kapas", "IRRI": "IRRI", "SuperBasmati": "Basmati",
+            "BahawalPur": "BWP", "Vehari": "Vehari", "RahimYarKhan": "RYK"}
+
+OFFER_STATUS_RU = {
+    "BELOW_REFERENCE_RANGE": "Reference range se kam",
+    "WITHIN_REFERENCE_RANGE": "Reference range ke andar",
+    "ABOVE_REFERENCE_RANGE": "Reference range se zyada",
+    "REFERENCE_DATA_LIMITED": "Reference data mehdood",
+}
+LIMITED_RU = {
+    "LIMITED_SAME_PRICE": "AMIS: sab {days} din aik hi rate, pakki range nahi.",
+    "LIMITED_STALE": "DHYAN: purana rate ({date}), pakki range nahi.",
+    "LIMITED_FROZEN": "DHYAN: rate {date} se nahi badla, pakki range nahi.",
+    "LIMITED_FEW_DAYS": "Sirf {days}/{window} din rate, pakki range nahi.",
+}
+OFFER_CAVEAT_RU = "Waada nahi; grade/sharait shamil nahi."
+ALT_RU = {"better": "behtar (andaza)", "notBetter": "behtar nahi",
+          "higherNotBetter": "rate zyada, kiraye baad behtar nahi", "unknown": "data kamzor", "noData": "rate nahi"}
+
+
+def offer_sms(crop_option: str, mandi: str, r: Mapping, choices=()) -> str:
+    per, qty = r["difference_vs_reference_per_maund"], r["quantity_maund"]
+    crop, place = SHORT_RU.get(crop_option, crop_option), SHORT_RU.get(mandi, mandi)
+    required = [f"{BRAND} {crop} {place}: {OFFER_STATUS_RU[r['result_status']]}."]
+    if r["reference_strength"] != "STRONG":
+        when = r.get("price_unchanged_since") or r["reference_price_as_of"]
+        required.append(LIMITED_RU[r["reference_strength"]].format(days=r["reference_days"], window=r["window_days"],
+                                                                 date=when))
+    required += [
+        f"Offer {rs(r['buyer_offer_price'])}, reference {rs(r['reference_price'])}/man "
+        f"(AMIS {r['reference_price_as_of']}, {r['reference_days']}/{r['window_days']} din).",
+        OFFER_CAVEAT_RU,
+        f"Farq {signed_rs(per)}/man, {qty:g} man par {signed_rs(r['total_difference_vs_reference'])}.",
+    ]
+    optional = [f"Range {rs(r['reference_range_low'])}-{rs(r['reference_range_high'])}."]
+    c = r.get("estimated_commission")
+    if c:
+        optional.append(f"Aap ka commission {c['pct']:g}%: ~{rs(c['per_maund'])}/man (aap ka andaza).")
+    return fit(required, optional, choices)
+
+
+def offer_compare_sms(crop_option: str, r: Mapping, choices=()) -> str:
+    from backend.app.channels.reply import alternative_verdict  # noqa: PLC0415 (one mapping for both channels)
+    items = []
+    for a in r["alternative_mandis"]:
+        v = alternative_verdict(a)
+        if v == "noData":
+            items.append(f"{SHORT_RU.get(a['mandi'], a['mandi'])} {ALT_RU[v]};")
+            continue
+        old = " (purana)" if a.get("is_stale") else ""
+        own = " (apni)" if a.get("is_own_mandi") else ""
+        items.append(f"{SHORT_RU.get(a['mandi'], a['mandi'])}{own} net {rs(a['net_after_transport'])}, "
+                     f"{signed_rs(a['difference_vs_offer_total'])}{old}, {ALT_RU[v]};")
+    crop = SHORT_RU.get(crop_option, crop_option)
+    head = f"{BRAND} {crop} offer {rs(r['buyer_offer_price'])} vs mandiyan (kiraya andaza):"
+    return fit([head], [*items, "Jane se pehle khareedar/sharait tasdeeq karein."], choices)

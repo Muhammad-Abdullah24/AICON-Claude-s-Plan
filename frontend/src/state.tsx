@@ -8,10 +8,21 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useTranslation } from 'react-i18next'
 
 import { api, getToken, setToken, type Farmer, type Meta, type NamedItem } from './api/client'
-import { type AppState, AppStateContext, type Selection } from './appState'
+import { type AppState, AppStateContext, type LastCheck, type Selection } from './appState'
 import type { Lang } from './i18n'
+import { replayDate } from './lib/replay'
 
 const DEMO_DEFAULT: Selection = { crop: 'wheat', mandi: 'bahawalpur' }
+const LAST_CHECK_KEY = 'farmsight.lastCheck'
+
+function savedCheck(): LastCheck | null {
+  try {
+    const c = JSON.parse(sessionStorage.getItem(LAST_CHECK_KEY) ?? 'null') as LastCheck | null
+    return c && c.asOf === replayDate ? c : null
+  } catch {
+    return null // storage blocked or an old shape: start without one
+  }
+}
 const EXAMPLE_QUANTITY = 100
 
 function firstSelection(meta: Meta, farmer: Farmer | null): Selection {
@@ -28,6 +39,15 @@ export function AppStateProvider({ meta, children }: { meta: Meta; children: Rea
   const [farmer, setFarmerState] = useState<Farmer | null>(null)
   const [selection, setSelection] = useState<Selection>(() => firstSelection(meta, null))
   const [quantityOverride, setQuantityOverride] = useState<number | null>(null)
+  const [lastCheck, setLastCheckState] = useState<LastCheck | null>(savedCheck)
+  const setLastCheck = useCallback((c: LastCheck) => {
+    setLastCheckState(c)
+    try {
+      sessionStorage.setItem(LAST_CHECK_KEY, JSON.stringify(c))
+    } catch {
+      // not fatal: the check just is not remembered across reloads
+    }
+  }, [])
 
   // A saved login is restored once; an expired or unknown token simply leaves the farmer a guest.
   useEffect(() => {
@@ -95,6 +115,8 @@ export function AppStateProvider({ meta, children }: { meta: Meta; children: Rea
       quantity: quantityOverride ?? profileQty ?? EXAMPLE_QUANTITY,
       setQuantity: setQuantityOverride,
       farmer,
+      lastCheck,
+      setLastCheck,
       signIn,
       signOut,
       setFarmer: setFarmerState,
@@ -102,7 +124,8 @@ export function AppStateProvider({ meta, children }: { meta: Meta; children: Rea
       cropName: (id) => name(meta.crops.find((c) => c.id === id)),
       mandiName: (id) => name(meta.mandis.find((m) => m.id === id)),
     }
-  }, [meta, selection, setCrop, setMandi, mandisFor, quantityOverride, farmer, signIn, signOut, lang])
+  }, [meta, selection, setCrop, setMandi, mandisFor, quantityOverride, farmer, lastCheck, setLastCheck, signIn, signOut,
+    lang])
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
 }

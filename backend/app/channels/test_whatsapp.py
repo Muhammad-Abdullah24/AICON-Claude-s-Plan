@@ -59,6 +59,12 @@ class FakeProvider:
                 {"mandi": "BahawalPur", "net_price": 3820, "transport_cost": 0, "gain_vs_preferred": 0,
                  "has_data": True}]
 
+    def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
+        self.calls.append(("offer", crop_option, mandi, quantity_maund, offer_price))
+        if (crop_option, mandi) in self.missing:
+            raise LookupError
+        return offer_result(offer_price, quantity_maund)
+
     def set_alerts(self, phone, enabled):
         if phone not in self.alerts:
             return False
@@ -67,6 +73,32 @@ class FakeProvider:
 
     def alerts_enabled(self, phone):
         return self.alerts.get(phone)
+
+
+def offer_result(offer=3514.0, qty=100.0, **over):
+    """The shape services.offer_check returns (the real wheat / Bahawalpur answer of 10 Oct 2026 by default)."""
+    per = offer - 3820
+    return {
+        "buyer_offer_price": offer, "offer_price_basis": "GROSS_QUOTED", "quantity_maund": qty,
+        "reference_price": 3820.0, "reference_price_as_of": "2026-10-09", "reference_range_low": 3820.0,
+        "reference_range_high": 3820.0, "reference_days": 12, "window_days": 14, "is_stale": False,
+        "price_unchanged_since": None, "reference_strength": "LIMITED_SAME_PRICE",
+        "range_position": "BELOW_REFERENCE_RANGE", "result_status": "REFERENCE_DATA_LIMITED",
+        "difference_vs_reference_per_maund": per, "total_difference_vs_reference": round(per * qty),
+        "difference_vs_range_per_maund": per, "total_difference_vs_range": round(per * qty),
+        "estimated_transport_cost": 0.0, "estimated_commission": None,
+        "alternative_mandis": [
+            {"mandi": "Vehari", "has_data": True, "reference_price": 3475.2, "prices_as_of": "2026-07-17",
+             "is_stale": True, "price_unchanged_since": None, "reference_days": 1, "transport_cost": 165.1,
+             "net_after_transport": 3310.1, "difference_vs_offer_per_maund": 3310.1 - offer,
+             "difference_vs_offer_total": round((3310.1 - offer) * qty), "reference_strength": "LIMITED_STALE",
+             "better_after_transport": None, "higher_quote_not_better": False},
+            {"mandi": "RahimYarKhan", "has_data": False},
+        ],
+        "limitations": ["SAME_PRICE_ALL_WINDOW", "COMMISSION_NOT_INCLUDED", "TRANSPORT_IS_ESTIMATE",
+                        "QUALITY_GRADE_NOT_INCLUDED", "BUYER_TERMS_NOT_INCLUDED"],
+        **over,
+    }
 
 
 class FakeSender:
@@ -215,28 +247,84 @@ def test_voice_is_deferred():
 def test_zero_opens_the_menu_with_every_number():
     body = body_of(say(FakeProvider(), "0"))
     assert body.startswith(reply.MENU_HEAD)
-    for n, label in (("1", "ریٹ اور مشورہ"), ("2", "منڈیوں کا موازنہ"), ("3", "مشورے کی وجہ"),
-                     ("4", "الرٹ چالو"), ("5", "الرٹ بند"), ("0", "مینو")):
+    for n, label in (("1", "خریدار کی آفر چیک کریں"), ("2", "منڈیوں کا موازنہ"), ("3", "وجہ اور ڈیٹا کی تفصیل"),
+                     ("4", "الرٹ شروع کریں"), ("5", "الرٹ بند کریں"), ("0", "مینو")):
         assert f"{n}  {label}" in body
 
 
-def test_complete_wheat_flow_by_numbers():
+def test_complete_offer_check_by_numbers():
     provider = FakeProvider()
     assert reply.ASK_NUMBERED["ask_crop"] in body_of(say(provider, "0", "1"))
     assert reply.ASK_NUMBERED["ask_mandi"] in body_of(say(provider, CROP["Wheat"]))
     assert reply.ASK_QUANTITY in body_of(say(provider, MANDI["BahawalPur"]))
+    assert reply.ASK_OFFER in body_of(say(provider, "100"))
+    out = say(provider, "3514")
+    body = body_of(out)
+    assert provider.calls == [("offer", "Wheat", "BahawalPur", 100.0, 3514.0)]
+    for part in ("حوالہ ڈیٹا محدود ہے", "خریدار کی آفر: Rs 3,514", "Rs 3,820 (AMIS، 2026-10-09)",
+                 "14 میں سے 12 دن", "100 من پر −Rs 30,600", "تمام 12 دن ایک ہی حوالہ ریٹ", reply.OFFER_CAVEAT):
+        assert part in body, part
+    assert button_ids(out) == ["why", "compare", "start"]
+    check_limits(out)
+    compare = body_of(say(provider, "2"))            # after an offer, 2 compares the other mandis with it
+    assert "وہاڑی: حوالہ ریٹ کمزور" in compare and "پرانا ریٹ" in compare
+    assert "رحیم یار خان: ریٹ رپورٹ نہیں ہوا" in compare
+    assert provider.calls[-1] == ("offer", "Wheat", "BahawalPur", 100.0, 3514.0)
+
+
+def test_free_text_offer_query():
+    provider = FakeProvider()
+    body = body_of(say(provider, "گندم بہاولپور 100 من آفر 3514"))
+    assert provider.calls == [("offer", "Wheat", "BahawalPur", 100.0, 3514.0)] and "−Rs 30,600" in body
+
+
+def test_invalid_offer_value_asks_again():
+    provider = FakeProvider()
+    body = body_of(say(provider, "0", "1", CROP["Wheat"], MANDI["Vehari"], "100", "bohat"))
+    assert body.startswith(reply.INVALID) and reply.ASK_OFFER in body and provider.calls == []
+
+
+def test_stale_reference_offer_says_so():
+    class Stale(FakeProvider):
+        def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
+            return offer_result(offer_price, quantity_maund, reference_strength="LIMITED_STALE", is_stale=True,
+                                reference_price_as_of="2026-07-17")
+    body = body_of(say(Stale(), "gandum vehari 100 man offer 3000"))
+    assert "حوالہ ڈیٹا محدود ہے" in body and "2026-07-17 کا ہے، 8 ہفتے سے زیادہ پرانا" in body
+
+
+def test_strong_reference_gets_a_neutral_label_never_a_verdict_word():
+    class Strong(FakeProvider):
+        def offer(self, crop_option, mandi, quantity_maund, offer_price, phone):
+            return offer_result(offer_price, quantity_maund, reference_strength="STRONG",
+                                result_status="BELOW_REFERENCE_RANGE")
+    body = body_of(say(Strong(), "kapas bwp 60 man offer 8000"))
+    assert "حالیہ حوالہ حد سے کم" in body and "قابلِ اعتماد حد نہیں" not in body
+    for word in ("fair", "مناسب", "گارنٹی شدہ"):
+        assert word not in body
+
+
+def test_typed_number_and_button_give_the_same_after_an_offer():
+    a, b = FakeProvider(), FakeProvider()
+    by_number = body_of(say(a, "gandum bwp 100 man offer 3514", "2"))
+    by_button = body_of(say(b, "gandum bwp 100 man offer 3514", tap("compare", "منڈیاں")))
+    assert by_number == by_button
+
+
+def test_guided_advice_by_words_still_works():
+    provider = FakeProvider()
+    say(provider, "gandum", MANDI["BahawalPur"])
     out = say(provider, "100")
     assert "Rs 3,820" in body_of(out) and provider.calls == [("advice", "Wheat", "BahawalPur", 100.0)]
-    check_limits(out)
-    assert "+Rs 80" in body_of(say(provider, "2"))   # after the answer, 2 compares the same query
+    assert "+Rs 80" in body_of(say(provider, "2"))   # after advice, 2 compares mandis as before
 
 
 def test_rice_asks_the_variety():
     provider = FakeProvider()
     body = body_of(say(provider, "0", "1", CROP[conv.RICE]))
     assert reply.ASK_NUMBERED["ask_variety"] in body and "سپر باسمتی" in body and "اری" in body
-    say(provider, VARIETY["SuperBasmati"], MANDI["Vehari"], "30")
-    assert provider.calls == [("advice", "SuperBasmati", "Vehari", 30.0)]
+    say(provider, VARIETY["SuperBasmati"], MANDI["Vehari"], "30", "12000")
+    assert provider.calls == [("offer", "SuperBasmati", "Vehari", 30.0, 12000.0)]
 
 
 def test_invalid_option_repeats_the_choices():
@@ -282,8 +370,8 @@ def test_session_survives_a_restart(tmp_path):
     db.reset(path)
     say(provider, "0", "1", CROP["Cotton"])
     db.reset(path)   # the server restarts
-    say(provider, MANDI["Vehari"], "60")
-    assert provider.calls == [("advice", "Cotton", "Vehari", 60.0)]
+    say(provider, MANDI["Vehari"], "60", "8000")
+    assert provider.calls == [("offer", "Cotton", "Vehari", 60.0, 8000.0)]
 
 
 def test_free_text_query_works_in_the_middle_of_a_menu():
@@ -387,13 +475,13 @@ def test_signed_message_gets_one_reply_even_if_meta_retries(app_and_sender):
 
 def test_menu_flow_through_the_webhook(app_and_sender):
     client, sender = app_and_sender
-    for i, text in enumerate(["0", "1", CROP["Wheat"], MANDI["Vehari"], "100", "1", "0", "4"]):
+    for i, text in enumerate(["0", "1", CROP["Wheat"], MANDI["Vehari"], "100", "3514", "1", "0", "4"]):
         assert post(client, text_msg(text, mid=f"wamid.{i}")).json()["queued"] == 1
     bodies = [body_of(m) for _, m in sender.sent]
     assert bodies[0].startswith(reply.MENU_HEAD)
     assert reply.ASK_NUMBERED["ask_crop"] in bodies[1] and reply.ASK_NUMBERED["ask_mandi"] in bodies[2]
-    assert reply.ASK_QUANTITY in bodies[3] and "Rs 3,820" in bodies[4]
-    assert "پچھلے 4 ہفتوں" in bodies[5] and bodies[7].startswith(reply.STARTED)
+    assert reply.ASK_QUANTITY in bodies[3] and reply.ASK_OFFER in bodies[4] and "Rs 3,514" in bodies[5]
+    assert "پچھلے 4 ہفتوں" in bodies[6] and bodies[8].startswith(reply.STARTED)
 
 
 def test_button_reply_through_the_webhook(app_and_sender):

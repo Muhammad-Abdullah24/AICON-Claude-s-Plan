@@ -12,8 +12,9 @@ from ml.decision.advisory import (
     risk_badge,
     selling_window,
 )
+from ml.decision.offer import offer_reference, reference_strength
 
 __all__ = [
     "advise", "alert_check", "compare_mandis", "confidence", "crop_plan", "fair_price_range", "margin", "offer_check",
-    "risk_badge", "selling_window",
+    "offer_reference", "reference_strength", "risk_badge", "selling_window",
 ]

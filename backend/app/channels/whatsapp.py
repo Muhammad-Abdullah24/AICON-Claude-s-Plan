@@ -185,6 +185,12 @@ def render(r: conv.Reply, chat: ChatFn | None, phone: str) -> dict:
         return text_message("\n".join([*invalid, reply.ASK_NUMBERED[k], reply.choice_lines(ch)]))
     if k == "ask_quantity":
         return text_message("\n".join([*invalid, reply.ASK_QUANTITY, reply.choice_lines(ch)]))
+    if k == "ask_offer":
+        return text_message("\n".join([*invalid, reply.ASK_OFFER, reply.choice_lines(ch)]))
+    if k == "offer":
+        return _answer(reply.offer_text(d["crop_option"], d["mandi"], d["result"]), ch)
+    if k == "offer_compare":
+        return _answer(reply.offer_compare_text(d["crop_option"], d["result"]), ch)
     if k == "advice":
         return _answer(reply.advice_text(d["advice"], quantity_assumed=d["quantity_assumed"]), ch)
     if k == "why":

@@ -535,6 +535,11 @@
         ],
         "summary": "Offer Check",
         "operationId": "offer_check_api_offer_check_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "as_of",
@@ -573,6 +578,206 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OfferCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reference": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Reference",
+        "operationId": "reference_api_reference_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/preview": {
+      "get": {
+        "tags": [
+          "api"
+        ],
+        "summary": "Channels Preview",
+        "operationId": "channels_preview_api_channels_preview_get",
+        "parameters": [
+          {
+            "name": "crop",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "wheat",
+                "cotton",
+                "irri",
+                "super_basmati"
+              ],
+              "type": "string",
+              "title": "Crop"
+            }
+          },
+          {
+            "name": "mandi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "bahawalpur",
+                "vehari",
+                "rahim_yar_khan"
+              ],
+              "type": "string",
+              "title": "Mandi"
+            }
+          },
+          {
+            "name": "quantity_maund",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maund. Default: profile, else 100.",
+              "title": "Quantity Maund"
+            },
+            "description": "Maund. Default: profile, else 100."
+          },
+          {
+            "name": "offer_price",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1000000,
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Offer Price"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use only data on or before this date. Omit for the latest.",
+              "title": "As Of"
+            },
+            "description": "Use only data on or before this date. Omit for the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelPreview"
                 }
               }
             }
@@ -1882,6 +2087,115 @@
         ],
         "title": "AlertRunResponse"
       },
+      "ChannelPreview": {
+        "properties": {
+          "whatsapp_menu": {
+            "type": "string",
+            "title": "Whatsapp Menu"
+          },
+          "sms_menu": {
+            "type": "string",
+            "title": "Sms Menu"
+          },
+          "menu_choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Menu Choices"
+          },
+          "whatsapp_offer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Offer"
+          },
+          "whatsapp_offer_buttons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Whatsapp Offer Buttons"
+          },
+          "sms_offer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sms Offer"
+          },
+          "sms_offer_parts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sms Offer Parts"
+          },
+          "prices_as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices As Of"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChannelStatus"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "whatsapp_menu",
+          "sms_menu",
+          "menu_choices",
+          "status"
+        ],
+        "title": "ChannelPreview",
+        "description": "What WhatsApp and SMS would send, rendered by the channels' own code. Nothing is sent."
+      },
+      "ChannelStatus": {
+        "properties": {
+          "whatsapp_configured": {
+            "type": "boolean",
+            "title": "Whatsapp Configured"
+          },
+          "sms_provider_configured": {
+            "type": "boolean",
+            "title": "Sms Provider Configured"
+          },
+          "voice_notes_enabled": {
+            "type": "boolean",
+            "title": "Voice Notes Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "whatsapp_configured",
+          "sms_provider_configured",
+          "voice_notes_enabled"
+        ],
+        "title": "ChannelStatus",
+        "description": "Whether each channel is set up on this server. Flags only: no number, token or setting value."
+      },
       "ChatRequest": {
         "properties": {
           "question": {
@@ -2174,6 +2488,52 @@
               }
             ],
             "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Days"
+          },
+          "reference_strength": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STRONG",
+                  "LIMITED_STALE",
+                  "LIMITED_FROZEN",
+                  "LIMITED_FEW_DAYS",
+                  "LIMITED_SAME_PRICE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Strength"
+          },
+          "is_best": {
+            "type": "boolean",
+            "title": "Is Best",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -3713,6 +4073,176 @@
         ],
         "title": "NewsResponse"
       },
+      "OfferAlternative": {
+        "properties": {
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "is_own_mandi": {
+            "type": "boolean",
+            "title": "Is Own Mandi",
+            "default": false
+          },
+          "reference_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Price"
+          },
+          "prices_as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices As Of"
+          },
+          "is_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Days"
+          },
+          "transport_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport Cost"
+          },
+          "net_after_transport": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net After Transport"
+          },
+          "difference_vs_offer_per_maund": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Vs Offer Per Maund"
+          },
+          "difference_vs_offer_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference Vs Offer Total"
+          },
+          "reference_strength": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "STRONG",
+                  "LIMITED_STALE",
+                  "LIMITED_FROZEN",
+                  "LIMITED_FEW_DAYS",
+                  "LIMITED_SAME_PRICE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Strength"
+          },
+          "better_after_transport": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Better After Transport"
+          },
+          "higher_quote_not_better": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Higher Quote Not Better"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandi",
+          "has_data"
+        ],
+        "title": "OfferAlternative"
+      },
       "OfferCheckRequest": {
         "properties": {
           "crop": {
@@ -3746,6 +4276,19 @@
             "exclusiveMinimum": 0.0,
             "title": "Quantity Maund",
             "default": 100
+          },
+          "arhti_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arhti Pct"
           }
         },
         "additionalProperties": false,
@@ -3791,17 +4334,160 @@
             "const": "40kg",
             "title": "Unit"
           },
+          "buyer_offer_price": {
+            "type": "number",
+            "title": "Buyer Offer Price"
+          },
+          "offer_price_basis": {
+            "type": "string",
+            "const": "GROSS_QUOTED",
+            "title": "Offer Price Basis"
+          },
+          "quantity_maund": {
+            "type": "number",
+            "title": "Quantity Maund"
+          },
+          "reference_price": {
+            "type": "number",
+            "title": "Reference Price"
+          },
+          "reference_price_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Reference Price As Of"
+          },
+          "reference_range_low": {
+            "type": "number",
+            "title": "Reference Range Low"
+          },
+          "reference_range_high": {
+            "type": "number",
+            "title": "Reference Range High"
+          },
+          "reference_days": {
+            "type": "integer",
+            "title": "Reference Days"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_strength": {
+            "type": "string",
+            "enum": [
+              "STRONG",
+              "LIMITED_STALE",
+              "LIMITED_FROZEN",
+              "LIMITED_FEW_DAYS",
+              "LIMITED_SAME_PRICE"
+            ],
+            "title": "Reference Strength"
+          },
+          "range_position": {
+            "type": "string",
+            "enum": [
+              "BELOW_REFERENCE_RANGE",
+              "WITHIN_REFERENCE_RANGE",
+              "ABOVE_REFERENCE_RANGE"
+            ],
+            "title": "Range Position"
+          },
+          "result_status": {
+            "type": "string",
+            "enum": [
+              "BELOW_REFERENCE_RANGE",
+              "WITHIN_REFERENCE_RANGE",
+              "ABOVE_REFERENCE_RANGE",
+              "REFERENCE_DATA_LIMITED"
+            ],
+            "title": "Result Status"
+          },
+          "difference_vs_reference_per_maund": {
+            "type": "number",
+            "title": "Difference Vs Reference Per Maund"
+          },
+          "total_difference_vs_reference": {
+            "type": "integer",
+            "title": "Total Difference Vs Reference"
+          },
+          "difference_vs_range_per_maund": {
+            "type": "number",
+            "title": "Difference Vs Range Per Maund"
+          },
+          "total_difference_vs_range": {
+            "type": "integer",
+            "title": "Total Difference Vs Range"
+          },
+          "estimated_transport_cost": {
+            "type": "number",
+            "title": "Estimated Transport Cost"
+          },
+          "estimated_commission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfferCommission"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternative_mandis": {
+            "items": {
+              "$ref": "#/components/schemas/OfferAlternative"
+            },
+            "type": "array",
+            "title": "Alternative Mandis"
+          },
+          "limitations": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "STALE_REFERENCE",
+                "FROZEN_REFERENCE",
+                "FEW_REFERENCE_DAYS",
+                "SAME_PRICE_ALL_WINDOW",
+                "COMMISSION_FARMER_ESTIMATE",
+                "COMMISSION_NOT_INCLUDED",
+                "TRANSPORT_IS_ESTIMATE",
+                "SYNTHETIC_DATA",
+                "QUALITY_GRADE_NOT_INCLUDED",
+                "BUYER_TERMS_NOT_INCLUDED"
+              ]
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
           "offer_price": {
             "type": "number",
-            "title": "Offer Price"
+            "title": "Offer Price",
+            "deprecated": true
           },
           "fair_low": {
             "type": "number",
-            "title": "Fair Low"
+            "title": "Fair Low",
+            "deprecated": true
           },
           "fair_high": {
             "type": "number",
-            "title": "Fair High"
+            "title": "Fair High",
+            "deprecated": true
           },
           "verdict": {
             "type": "string",
@@ -3810,24 +4496,24 @@
               "fair",
               "above"
             ],
-            "title": "Verdict"
+            "title": "Verdict",
+            "deprecated": true
           },
           "difference_per_maund": {
             "type": "number",
-            "title": "Difference Per Maund"
+            "title": "Difference Per Maund",
+            "deprecated": true
           },
           "difference_total": {
             "type": "integer",
-            "title": "Difference Total"
-          },
-          "window_days": {
-            "type": "integer",
-            "title": "Window Days"
+            "title": "Difference Total",
+            "deprecated": true
           },
           "prices_as_of": {
             "type": "string",
             "format": "date",
-            "title": "Prices As Of"
+            "title": "Prices As Of",
+            "deprecated": true
           }
         },
         "additionalProperties": false,
@@ -3838,16 +4524,68 @@
           "crop",
           "mandi",
           "unit",
+          "buyer_offer_price",
+          "offer_price_basis",
+          "quantity_maund",
+          "reference_price",
+          "reference_price_as_of",
+          "reference_range_low",
+          "reference_range_high",
+          "reference_days",
+          "window_days",
+          "is_stale",
+          "price_unchanged_since",
+          "reference_strength",
+          "range_position",
+          "result_status",
+          "difference_vs_reference_per_maund",
+          "total_difference_vs_reference",
+          "difference_vs_range_per_maund",
+          "total_difference_vs_range",
+          "estimated_transport_cost",
+          "estimated_commission",
+          "alternative_mandis",
+          "limitations",
           "offer_price",
           "fair_low",
           "fair_high",
           "verdict",
           "difference_per_maund",
           "difference_total",
-          "window_days",
           "prices_as_of"
         ],
-        "title": "OfferCheckResponse"
+        "title": "OfferCheckResponse",
+        "description": "A buyer's offer against recent AMIS reference prices at the farmer's mandi: a reference for negotiation,\nnot a fair, true or guaranteed price. The numbers are always given; `reference_strength` says how far they can\nbe leaned on, and a weak reference makes `result_status` REFERENCE_DATA_LIMITED."
+      },
+      "OfferCommission": {
+        "properties": {
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          },
+          "per_maund": {
+            "type": "number",
+            "title": "Per Maund"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "source": {
+            "type": "string",
+            "const": "farmer",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pct",
+          "per_maund",
+          "total",
+          "source"
+        ],
+        "title": "OfferCommission"
       },
       "PolicyEvent": {
         "properties": {
@@ -4020,6 +4758,128 @@
           "direction"
         ],
         "title": "Reason"
+      },
+      "ReferenceResponse": {
+        "properties": {
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "wheat",
+              "cotton",
+              "irri",
+              "super_basmati"
+            ],
+            "title": "Crop"
+          },
+          "mandi": {
+            "type": "string",
+            "enum": [
+              "bahawalpur",
+              "vehari",
+              "rahim_yar_khan"
+            ],
+            "title": "Mandi"
+          },
+          "unit": {
+            "type": "string",
+            "const": "40kg",
+            "title": "Unit"
+          },
+          "reference_price": {
+            "type": "number",
+            "title": "Reference Price"
+          },
+          "reference_price_as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "Reference Price As Of"
+          },
+          "reference_range_low": {
+            "type": "number",
+            "title": "Reference Range Low"
+          },
+          "reference_range_high": {
+            "type": "number",
+            "title": "Reference Range High"
+          },
+          "reference_days": {
+            "type": "integer",
+            "title": "Reference Days"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "price_unchanged_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Unchanged Since"
+          },
+          "reference_strength": {
+            "type": "string",
+            "enum": [
+              "STRONG",
+              "LIMITED_STALE",
+              "LIMITED_FROZEN",
+              "LIMITED_FEW_DAYS",
+              "LIMITED_SAME_PRICE"
+            ],
+            "title": "Reference Strength"
+          },
+          "limitations": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "STALE_REFERENCE",
+                "FROZEN_REFERENCE",
+                "FEW_REFERENCE_DAYS",
+                "SAME_PRICE_ALL_WINDOW"
+              ]
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data_source",
+          "is_synthetic",
+          "crop",
+          "mandi",
+          "unit",
+          "reference_price",
+          "reference_price_as_of",
+          "reference_range_low",
+          "reference_range_high",
+          "reference_days",
+          "window_days",
+          "is_stale",
+          "price_unchanged_since",
+          "reference_strength",
+          "limitations"
+        ],
+        "title": "ReferenceResponse",
+        "description": "The recent reported AMIS reference at a mandi, without any offer (what an offer check compares with)."
       },
       "SeasonalPoint": {
         "properties": {

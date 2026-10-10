@@ -1,10 +1,12 @@
 # FarmSight
 
-**Sell now, sell at another mandi, or store and sell later.** FarmSight gives Pakistani farmers a costed decision in Urdu, on the web and on WhatsApp, built on mandi price forecasts with honest uncertainty.
+**Got a buyer's offer? Check it before you sell.** FarmSight is an independent pre-sale check for farmers in South Punjab: before accepting an offer, a farmer sees the recent reference mandi price and how fresh it is, the difference for their own quantity, and other mandis after estimated transport, in Urdu, on the web, on a WhatsApp numbered menu and (once a provider is connected) by SMS.
+
+It is a calculation and negotiation aid, not a replacement for arhtis, mandis, buyers, transport, storage or credit. Commission agents often provide real credit, logistics and settlement; FarmSight does not judge them, and it cannot see the grade of a crop or the terms of a deal. Market forecasts are kept as clearly labelled background ("market outlook"), not as the answer.
 
 Team Claude's Plan · Build With AI, AICON'26, SEECS NUST · Agricultural Operations
 
-> **Status (10 Oct 2026): real data end to end.** Every screen and endpoint runs on real AMIS mandi prices for wheat, cotton, IRRI and Super Basmati rice at Bahawalpur, Vehari and Rahim Yar Khan. The 4-week price forecast is a labelled baseline (today's price, with the range of past 4-week swings, which held the real price 81% of the time on 2025 data), because the trained XGBoost model did not beat it on prices; for wheat, the model's direction call ("likely to rise / fall", right on 72% of 2025's big moves) and its SHAP reasons are shown alongside ([`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)). The plan is in [`docs/PLAN.md`](docs/PLAN.md); the API contract is [`backend/app/schemas.py`](backend/app/schemas.py) and blueprint section 12.
+> **Status (10 Oct 2026): real data end to end; offer check first.** Every screen and endpoint runs on real AMIS mandi prices for wheat, cotton, IRRI and Super Basmati rice at Bahawalpur, Vehari and Rahim Yar Khan. The offer check compares a buyer's price with the AMIS prices reported at the mandi in the last 14 days and says how strong that reference is: a stale, frozen, one-repeated-price or thin (< 5 reported days) reference is shown as "reference data is limited", with every number still visible, never as a firm verdict. The 4-week price forecast is a labelled baseline (today's price, with the range of past 4-week swings, which held the real price 81% of the time on 2025 data), because the trained XGBoost model did not beat it on prices; for wheat, the model's direction call ("likely to rise / fall", right on 72% of 2025's big moves) and its SHAP reasons are shown alongside ([`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)). The plan is in [`docs/PLAN.md`](docs/PLAN.md); the API contract is [`backend/app/schemas.py`](backend/app/schemas.py) and blueprint section 12.
 
 ## Run locally
 
@@ -98,24 +100,22 @@ callback URL is `<backend>/webhooks/whatsapp`. Every request's `X-Hub-Signature-
 read. Meta only delivers free text within 24 hours of the farmer's last message; alerts outside that window need an
 approved template (`FS_WA_ALERT_TEMPLATE`).
 
-**Talking to it.** Free text works as before, in Urdu, Roman Urdu or English:
+**Talking to it.** The numbered menu needs no typing beyond digits; checking a buyer's offer is 1:
 
 ```
-Farmer: گندم بہاولپور 100 من
-FarmSight: 🟢 گندم، بہاولپور: بیچ دیں / آج: Rs 3,820 فی من (AMIS، 2026-10-09 تک) / ... /
-           1 کیوں؟ · 2 منڈیاں · 3 الرٹ بند · 0 مینو      [buttons: کیوں؟ | منڈیاں | الرٹ بند]
-```
-
-Or the numbered menu, which needs no typing beyond digits:
-
-```
-Farmer: 0      FarmSight: 1 ریٹ اور مشورہ  2 منڈیوں کا موازنہ  3 مشورے کی وجہ  4 الرٹ چالو  5 الرٹ بند  0 مینو
+Farmer: 0      FarmSight: 1 خریدار کی آفر چیک کریں  2 منڈیوں کا موازنہ  3 وجہ اور ڈیٹا کی تفصیل  4 الرٹ شروع کریں  5 الرٹ بند کریں  0 مینو
 Farmer: 1      FarmSight: کون سی فصل؟  1 گندم  2 کپاس (پھٹی)  3 چاول  0 مینو
 Farmer: 1      FarmSight: کون سی منڈی؟  1 بہاولپور  2 وہاڑی  3 رحیم یار خان  0 مینو
-Farmer: 1      FarmSight: کتنے من؟ صرف تعداد لکھیں، مثلاً 100
-Farmer: 100    FarmSight: (the same advice as above)
-Farmer: 1      FarmSight: (why: the model's reasons)
+Farmer: 100    (after "1" for Bahawalpur and the quantity question)
+Farmer: 3514   FarmSight: ⚖️ گندم، بہاولپور: حوالہ ڈیٹا محدود ہے / خریدار کی آفر: Rs 3,514 فی من /
+               منڈی کا آخری رپورٹ شدہ ریٹ: Rs 3,820 (AMIS، 2026-10-09) / ... 100 من پر −Rs 30,600 /
+               ⚠️ AMIS نے رپورٹ ہونے والے تمام 12 دن ایک ہی حوالہ ریٹ بتایا ... / 1 کیوں؟ · 2 منڈیاں · 3 الرٹ چالو · 0 مینو
+Farmer: 2      FarmSight: (every mandi after estimated transport, against this offer, the farmer's own first)
 ```
+
+Free text works too: "گندم بہاولپور 100 من آفر 3514" (or "gandum bwp 100 man offer Rs 3514") checks the offer at once.
+A price counts as the offer only after an offer word; two different prices, or none, are asked for, and no
+quantity is assumed for an offer. Plain "گندم بہاولپور 100 من" still answers with the market outlook as before.
 
 Rice asks Super Basmati or IRRI. A number means something only in the step the farmer is on. With no active
 session (or after 30 minutes), a bare "3" still stops alerts, as it always has, and any other bare number gets the
@@ -126,16 +126,16 @@ nothing changed.
 The same menu by SMS, in Roman Urdu (at most two SMS parts; warnings are never cut to save space):
 
 ```
-Farmer: 0      FarmSight: FarmSight: 1 Rate/mashwara 2 Mandiyan 3 Kyun 4 Alert on 5 Alert band 0 Menu. Ya likhein: gandum bahawalpur 100 man
+Farmer: 0      FarmSight: FarmSight: 1 Offer check 2 Mandiyan 3 Kyun/Data 4 Alert on 5 Alert band 0 Menu. Ya likhein: gandum bahawalpur 100 man offer 3514
 ...
-Farmer: 100    FarmSight: FarmSight Gandum Bahawalpur: bech dein. Aaj Rs3820/man (AMIS 2026-10-09). 4 hafte baad Rs3820
-               (Rs3607-Rs4071). Andaza hai, guarantee nahi. 100 man rukne ka farq -Rs4848 sood ke baad. Aitmaad darmiyana.
-               1 Kyun 2 Mandiyan 3 Alert band 0 Menu
+Farmer: 3514   FarmSight: FarmSight Gandum BWP: Reference data mehdood. AMIS: sab 12 din aik hi rate, pakki range nahi.
+               Offer Rs3514, reference Rs3820/man (AMIS 2026-10-09, 12/14 din). Waada nahi; grade/sharait shamil nahi.
+               Farq -Rs306/man, 100 man par -Rs30600. Range Rs3820-Rs3820. 1 Kyun/Data 2 Mandiyan 3 Alert on 0 Menu
 ```
 
 **SMS boundary.** `backend/app/channels/sms.py` has the vendor-neutral parts: the `SmsSender` interface (with a
 `NullSmsSender` when nothing is configured and a `FakeSmsSender` for tests), the inbound route, de-duplication, a
-per-number reply limit (`FS_SMS_REPLIES_PER_MIN`, default 5) and the Roman Urdu replies. To go live, the team picks a
+per-number reply limit (`FS_SMS_REPLIES_PER_MIN`, default 10) and the Roman Urdu replies. To go live, the team picks a
 vendor, writes its `SmsAdapter` from the vendor's official documentation (its signature or token check, payload,
 acknowledgement and sender), registers it in `sms.ADAPTERS` and sets `FS_SMS_PROVIDER` to its name. Until then
 `FS_SMS_PROVIDER` should stay empty.
@@ -162,6 +162,22 @@ the menu.
 - **Not logged:** phone numbers, message text or transcripts never go to the application logs.
 - **Sent to Gemini:** a free question asked on WhatsApp after an answer, with that answer's crop, mandi and numbers;
   never the phone number. SMS has no AI chat, so nothing from SMS goes to Gemini.
+
+## What FarmSight does not solve
+
+FarmSight gives a reference, not a deal. It does not and cannot:
+
+- release a farmer from **tied credit** (an advance from an arhti or input dealer that comes with selling terms);
+- provide **transport**: transport costs shown are estimates from road distance, not quotes or a truck;
+- provide **storage** or tell a farmer that holding the crop will pay (our forecasts were tested and are not reliable
+  enough for that: `docs/MODEL_CARD.md`);
+- know whether a **buyer is actually there** at another mandi, or their payment terms and deductions;
+- see the crop's **quality, grade or moisture**, which can move the price a buyer offers;
+- **guarantee a future price**, or prove that an offer is unfair. AMIS reports can be old, frozen or repeated, and the
+  app says so instead of judging the offer.
+
+No claim is made that FarmSight raises incomes: it has not been field-tested. Replaying a past week (`?as_of=`) shows
+**what reference information was available that day**, not money a farmer would have saved.
 
 ## Common tasks
 
@@ -215,8 +231,8 @@ Tools used for the data, outside this repo: Node.js scripts (built-in `http`) to
 - Backend: FastAPI, Pydantic, Uvicorn, python-dotenv, python-multipart, SQLite (Python standard library); tests with pytest and httpx2; lint with Ruff.
 - Forecast model: XGBoost (with its SHAP contributions) and NumPy (SciPy comes with XGBoost), for the wheat direction call and its reasons (`ml/forecast/`, `docs/MODEL_CARD.md`).
 - Live services: Open-Meteo forecast API (weather), Meta WhatsApp Cloud API (messages), Google Gemini API (`gemini-3.5-flash-lite`, free tier) for rephrasing chat answers; prompts word for word in `docs/PROMPTS.md`, and every number in an answer is checked against the farmer's own advice before it is shown.
-- Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint.
-- Fonts (bundled): Noto Nastaliq Urdu, IBM Plex Sans, IBM Plex Mono, all under the SIL Open Font License.
+- Front end: React, React Router, Vite, TypeScript, Tailwind CSS, Recharts, i18next / react-i18next, openapi-typescript, Vitest, oxlint, Lucide icons (`lucide-react`, ISC licence).
+- Fonts (bundled with `@fontsource`, never fetched at runtime): Noto Sans Arabic (Urdu interface text) and IBM Plex Sans (English, prices, dates and numbers), both under the SIL Open Font License.
 
 ### AI assistance
 

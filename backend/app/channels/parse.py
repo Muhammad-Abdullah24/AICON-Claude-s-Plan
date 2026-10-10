@@ -38,6 +38,7 @@ COMMANDS = {
     "compare": ["منڈیاں", "منڈی", "موازنہ", "mandiyan", "mandian", "compare", "2"],
     "stop": ["بند", "روکو", "stop", "band", "3"],
     "start": ["شروع", "start", "shuru"],
+    "offer": ["آفر", "افر", "پیشکش", "offer", "aafar", "afar", "peshkash"],
     "help": ["مدد", "help", "hi", "hello", "salam", "سلام", "السلام علیکم", "aoa"],
 }
 
@@ -47,7 +48,7 @@ KG_PER_MAUND = 40
 
 @dataclass
 class Parsed:
-    kind: str                     # query | why | compare | stop | start | help | unknown
+    kind: str                     # query | why | compare | stop | start | offer | help | unknown
     crop_option: str | None = None
     mandi: str | None = None
     quantity_maund: float | None = None
@@ -112,3 +113,52 @@ def parse(text: str) -> Parsed:
     if crop is None and mandi is None and "variety" not in missing:
         return Parsed("unknown")
     return Parsed("query", crop_option=crop, mandi=mandi, quantity_maund=_quantity(t), missing=missing)
+
+
+# ---------------------------------------------------------------- buyer offers (task A11, offer check)
+
+# A price only counts as the buyer's offer when one of these words comes right before it ("آفر 3514",
+# "offer Rs 3514"). Anything else is never read as an offer: we ask instead.
+OFFER_WORDS = ["آفر", "افر", "پیشکش", "offer", "aafar", "afar", "aufer", "peshkash", "pesh kash"]
+_CURRENCY = {"rs", "روپے", "روپیہ", "روپئے", "rupay", "rupees", "rupee"}
+_PER = {"فی", "fi", "per", "man", "من", "maund", "mann", "mun", "40kg"}
+_AMOUNT = re.compile(r"^\d+(?:\.\d+)?$")
+
+
+@dataclass
+class OfferClause:
+    mentioned: bool            # an offer word appears
+    offer: float | None        # the price after it, if exactly one clear number follows
+    rest: str                  # the message without the offer clause (crop, mandi, quantity)
+
+
+def extract_offer(text: str) -> OfferClause:
+    words = normalise(text).split()
+    starts = [i for i, w in enumerate(words) if w in OFFER_WORDS]
+    if not starts:
+        return OfferClause(False, None, text)
+    found, drop = [], set()
+    for i in starts:
+        j = i + 1
+        drop.add(i)
+        while j < len(words) and words[j] in _CURRENCY:
+            drop.add(j)
+            j += 1
+        if j < len(words) and _AMOUNT.match(words[j]):
+            found.append(float(words[j]))
+            drop.add(j)
+            j += 1
+            while j < len(words) and (words[j] in _PER or words[j] in _CURRENCY):   # "روپے فی من" after it
+                drop.add(j)
+                j += 1
+    rest = " ".join(w for k, w in enumerate(words) if k not in drop)
+    offer = found[0] if len(set(found)) == 1 and found[0] > 0 else None   # two different prices: ask
+    return OfferClause(True, offer, rest)
+
+
+def amount(text: str) -> float | None:
+    """One price on its own ("3514", "Rs 3514", "3514 روپے فی من"), or None."""
+    words = [w for w in normalise(text).split() if w not in _CURRENCY and w not in _PER]
+    if len(words) == 1 and _AMOUNT.match(words[0]):
+        return float(words[0])
+    return None

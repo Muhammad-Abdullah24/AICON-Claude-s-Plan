@@ -5,6 +5,7 @@ import { api, ApiError, type CropId, type MandiId } from '../api/client'
 import { useAppState } from '../appState'
 import { ChipGroup } from '../components/ChipGroup'
 import { ErrorBox } from '../components/Status'
+import { Note, Toggle } from '../components/ui/Disclosure'
 import { parseTypedNumber } from '../lib/format'
 
 const input = 'min-h-12 w-full rounded-xl border-2 border-line bg-paper px-3 py-2 focus:border-ink focus:outline-none'
@@ -14,9 +15,12 @@ export function Profile() {
   const { t } = useTranslation()
   const { farmer } = useAppState()
   return (
-    <div className="space-y-5">
-      <h2 className="text-xl font-bold">{t('profile.title')}</h2>
-      {farmer ? <Signed /> : <Guest />}
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold lg:text-3xl">{t('profile.title')}</h1>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {farmer ? <Signed /> : <Guest />}
+        <AlertsCard />
+      </div>
     </div>
   )
 }
@@ -37,18 +41,35 @@ function Signed() {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl bg-paper p-4 shadow-sm">
+    <section className="card space-y-3 p-5">
       <p className="font-bold">{t('profile.loggedInAs', { name: farmer.name })}</p>
       <p className="figures text-sm text-slate">{farmer.phone}</p>
-      <label className="flex items-center gap-2">
-        <input type="checkbox" checked={farmer.alerts_enabled} onChange={(e) => toggleAlerts(e.target.checked)} className="size-5" />
-        {t('profile.alerts')}
-      </label>
+      <Toggle
+        label={t(farmer.alerts_enabled ? 'profile.alertsOn' : 'profile.alertsOff')}
+        checked={farmer.alerts_enabled}
+        onChange={toggleAlerts}
+      />
       {saved && <p className="text-sm text-field">{t('profile.saved')}</p>}
       {error !== null && <ErrorBox error={error} />}
       <button type="button" onClick={signOut} className="rounded-xl border-2 border-ink px-4 py-2">
         {t('profile.logout')}
       </button>
+    </section>
+  )
+}
+
+/** Price alerts: opt-in, at most one a week, information only. A guest is told what is needed. */
+function AlertsCard() {
+  const { t } = useTranslation()
+  const { farmer } = useAppState()
+  return (
+    <section className="card space-y-3 p-5" aria-labelledby="alerts-title">
+      <h2 id="alerts-title" className="text-lg font-bold">{t('profile.alertsTitle')}</h2>
+      {!farmer && (
+        <Toggle label={t('profile.alertsOff')} checked={false} onChange={() => {}} disabled />
+      )}
+      <p className="text-sm text-slate">{t(farmer ? 'profile.alertsHelp' : 'profile.alertsNeedProfile')}</p>
+      <Note>{t('profile.alertsNotPromise')}</Note>
     </section>
   )
 }
@@ -96,7 +117,7 @@ function Guest() {
   return (
     <>
       <p className="text-slate">{t('profile.guest')}</p>
-      <form onSubmit={login} className="space-y-2 rounded-2xl bg-paper p-4 shadow-sm">
+      <form onSubmit={login} className="space-y-2 card p-5">
         <label htmlFor="login-phone" className="block font-bold">{t('profile.login')}</label>
         <input id="login-phone" inputMode="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)}
           placeholder="+92…" className={`${input} figures`} />
@@ -107,7 +128,7 @@ function Guest() {
         </button>
       </form>
 
-      <form onSubmit={register} className="space-y-3 rounded-2xl bg-paper p-4 shadow-sm">
+      <form onSubmit={register} className="space-y-3 card p-5">
         <p className="font-bold">{t('profile.register')}</p>
         <label className="block text-sm text-slate">{t('profile.name')}
           <input value={reg.name} onChange={(e) => setReg({ ...reg, name: e.target.value })} className={`${input} mt-1`} />

@@ -145,7 +145,7 @@ def test_low_confidence_or_unusable_goes_to_the_menu(voice_on, text, confidence)
     voice_on(text, confidence)
     provider = FakeProvider()
     body = body_of(whatsapp.respond(note(), provider, now=NOW))
-    assert body.startswith(reply.MENU_NOTE["voice_unclear"]) and "1  ریٹ اور مشورہ" in body
+    assert body.startswith(reply.MENU_NOTE["voice_unclear"]) and "1  خریدار کی آفر چیک کریں" in body
     assert provider.calls == [] and conv.load("whatsapp", PHONE).draft_crop is None
 
 
