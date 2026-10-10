@@ -94,6 +94,37 @@ def compare_text(crop_option: str, rows: Sequence[Mapping]) -> str:
     return "\n".join(lines)
 
 
+# ---------------------------------------------------------------- SMS number menu (channels/sms_menu.py)
+
+SMS_MENU = ("نمبر بھیجیں:\n"
+            "1 خریدار کی آفر جانچیں\n"
+            "2 منڈیوں کا موازنہ\n"
+            "3 کیوں؟ (وجہ اور ڈیٹا)\n"
+            "4 الرٹ شروع\n"
+            "5 الرٹ بند\n"
+            "یا فصل، منڈی اور مقدار لکھیں، مثلاً: گندم بہاولپور 100 من")
+SMS_MENU_WORD = "مینو"
+OFFER_ASK_QUERY = "کس فصل اور منڈی کی آفر؟ مثلاً: گندم بہاولپور 100 من"
+OFFER_ASK_PRICE = "{crop}، {mandi}: خریدار نے فی من کتنا ریٹ دیا؟ صرف رقم لکھیں، مثلاً 3900"
+OFFER_ASK_PRICE_AGAIN = "فی من ریٹ صرف رقم میں لکھیں، مثلاً 3900۔ مینو کے لیے 0 بھیجیں۔"
+OFFER_VERDICT = {"below": "⚠️ مناسب حد سے {diff} فی من کم", "fair": "✅ مناسب حد کے اندر",
+                 "above": "✅ مناسب حد سے {diff} فی من زیادہ"}
+
+
+def offer_text(crop_option: str, mandi: str, offer: float, o: Mapping, quantity_maund: float | None) -> str:
+    """The buyer-offer check (services.offer_check), in the app's own words. Only the numbers it gives."""
+    lines = [
+        f"{CROP_UR.get(crop_option, crop_option)}، {MANDI_UR.get(mandi, mandi)}: خریدار کی آفر {rs(offer)} فی من",
+        OFFER_VERDICT[o["verdict"]].format(diff=rs(abs(o["difference_per_maund"]))),
+        f"مناسب حد (اس منڈی میں پچھلے {o['window_days']} دن): {rs(o['fair_low'])} سے {rs(o['fair_high'])}"
+        f" (AMIS، {o['prices_as_of']} تک)",
+    ]
+    if quantity_maund and o["verdict"] != "fair" and o.get("difference_total") is not None:
+        lines.append(f"{quantity_maund:g} من پر: {signed_rs(o['difference_total'])}")
+    lines.append(DISCLAIMER)
+    return "\n".join(lines)
+
+
 def clip(text: str, limit: int = MAX_BODY) -> str:
     return text if len(text) <= limit else text[: limit - 1] + "…"
 

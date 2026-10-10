@@ -19,6 +19,8 @@ class AdviceProvider(Protocol):
     def compare(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> list[dict]: ...
     def wait_plan(self, crop_option: str, mandi: str, quantity_maund: float, phone: str) -> dict: ...
     def loan_plan(self, crop_option: str, phone: str) -> dict: ...
+    def offer_check(self, crop_option: str, mandi: str, offer: float, quantity_maund: float | None,
+                    phone: str) -> dict: ...
     def set_alerts(self, phone: str, enabled: bool) -> None: ...
 
 
@@ -66,6 +68,12 @@ class ServicesProvider:
             raise LookupError("no land area on file")
         plan = self._fn("loan_plan")(crop_option, acres)
         return {**plan, "crop_option": crop_option}
+
+    def offer_check(self, crop_option, mandi, offer, quantity_maund, phone):
+        """services.offer_check: the offer against the mandi's last 14 days. Without a quantity only the per-maund
+        gap is meaningful (the service's default total is not shown)."""
+        fn = self._fn("offer_check")
+        return fn(crop_option, mandi, offer, quantity_maund) if quantity_maund else fn(crop_option, mandi, offer)
 
     def set_alerts(self, phone, enabled):
         self._fn("set_alerts")(phone, enabled)
