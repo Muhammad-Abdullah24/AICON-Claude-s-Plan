@@ -59,8 +59,8 @@ LABELS: dict[str, dict[str, str]] = {
 TEMPLATES = {
     ("en", "UP"): "Because of {label}, the price may rise by about Rs {rs} per 40 kg.",
     ("en", "DOWN"): "Because of {label}, the price may fall by about Rs {rs} per 40 kg.",
-    ("ur", "UP"): "{label} کی وجہ سے قیمت تقریباً {rs} روپے فی من بڑھ سکتی ہے۔",
-    ("ur", "DOWN"): "{label} کی وجہ سے قیمت تقریباً {rs} روپے فی من کم ہو سکتی ہے۔",
+    ("ur", "UP"): "{label} کی وجہ سے ریٹ تقریباً {rs} روپے فی من بڑھ سکتا ہے۔",
+    ("ur", "DOWN"): "{label} کی وجہ سے ریٹ تقریباً {rs} روپے فی من کم ہو سکتا ہے۔",
 }
 
 DEFAULT_TOP_N = 3
