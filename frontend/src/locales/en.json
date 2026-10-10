@@ -105,7 +105,7 @@
     "priceOf": "price of {{date}}"
   },
   "grow": {
-    "title": "What to grow: expected profit at harvest",
+    "title": "What to grow: crops of the same season, side by side",
     "land": "Your land",
     "acres": "acres",
     "profitTotal": "Expected profit on your land",
@@ -127,8 +127,36 @@
     "harvest": "Harvest",
     "sell": "Best sell",
     "notAvailable": "No price data at this mandi for: {{crops}}",
-    "estimateNote": "Estimate: today's price times how prices usually move until harvest, minus the official cost of production. Not a guarantee.",
-    "landInvalid": "Enter your land in acres, above 0"
+    "estimateNote": "Estimate from reference data: today's price times how prices usually move until harvest, minus the official cost of production. Crops are compared only with crops of the same season, and only when their prices are current. Not a guarantee.",
+    "landInvalid": "Enter your land in acres, above 0",
+    "seasons": {
+      "RABI": "Rabi (winter crops)",
+      "KHARIF": "Kharif (summer crops)"
+    },
+    "seasonStatus": {
+      "RANKED": "Eligible comparison: {{comparable}} of {{n}} crops have current reference prices, ordered by estimated profit.",
+      "TOO_FEW_CROPS": "No comparison: we track too few crops of this season here ({{n}}), so none is ranked.",
+      "NOT_ENOUGH_CURRENT_EVIDENCE": "Not enough comparable evidence: only {{comparable}} of {{n}} crops have current, reliable reference prices, so none is put first."
+    },
+    "notRanked": "Not ranked:",
+    "issues": {
+      "STALE_PRICE": "the reference price is old",
+      "FROZEN_PRICE": "AMIS showed the same price for weeks",
+      "FEW_YEARS": "too few years of price history"
+    },
+    "policy": {
+      "title": "Wheat support price: policy context",
+      "limit": "Policy news, not a mandi price, and not a price you are guaranteed to get.",
+      "CURRENT": "Latest: {{text}} ({{source}}, {{date}})",
+      "OUTDATED": "The latest we have is from {{date}} ({{source}}): {{text}}. It may have changed since.",
+      "UNAVAILABLE": "No current support-price information. Check with the agriculture department before relying on one.",
+      "link": "Read the source",
+      "uncertain": "Policy changed in the last {{days}} days: treat the support price as uncertain."
+    },
+    "notes": {
+      "RICE_WATER_BAHAWALPUR": "Water check: rice is a summer crop here (sown {{sow}}, harvested {{harvest}}), and canal water in Bahawalpur division has run short before ({{source}}, {{date}}). Before choosing rice, check that your canal turns or tubewell can water it through the season. A consideration, not advice against rice."
+    },
+    "noteSource": "Source"
   },
   "history": {
     "title": "Price history",

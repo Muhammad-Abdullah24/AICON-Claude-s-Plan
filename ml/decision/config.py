@@ -46,3 +46,30 @@ HOLD_MIN_MEDIAN_PCT = 1.0
 NEWS_CONFLICT_PCT = 10.0
 # A policy/news item within this many days counts as "recent" (POLICY_UNCERTAIN, confidence down one level).
 POLICY_RECENT_DAYS = 14
+
+
+# ---------------------------------------------------------------- What to Grow, made cautious (F4, ml/decision/grow.py)
+# Crops are ranked only against crops of the same season (crops.csv `season`: RABI or KHARIF), and only when at
+# least this many of them have reliable current evidence. Fewer, and the screen says the comparison is unavailable
+# instead of naming a winner. 2 is the minimum for a comparison to mean anything; raise it to be stricter.
+MIN_COMPARABLE_CROPS = 2
+
+# The wheat support-price context comes from the curated policy timeline (H3). The latest SUPPORT_PRICE item older
+# than this is shown as out of date ("the latest we have, from <date>; it may have changed"). An assumption for the
+# team to confirm: about two months, since the decision for a crop year can move within weeks around sowing.
+SUPPORT_PRICE_CONTEXT_MAX_AGE_DAYS = 60
+
+# Context notes shown on a crop card, each scoped to the crops and mandis it is about and carrying its source.
+# Only verified facts: the note text (locale block "grow.notes") says no more than these sources and the project's
+# own crop calendar support. Add a note here, never in the screen.
+CONTEXT_NOTES = (
+    {
+        "id": "RICE_WATER_BAHAWALPUR",
+        "crop_options": ("IRRI", "SuperBasmati"),
+        "mandis": ("BahawalPur",),
+        # Canal water short in Bahawalpur division (farmers' leaders and irrigation officials; read 10 Oct 2026).
+        "source": "Dawn",
+        "source_date": "2025-01-05",
+        "url": "https://www.dawn.com/news/1883087",
+    },
+)

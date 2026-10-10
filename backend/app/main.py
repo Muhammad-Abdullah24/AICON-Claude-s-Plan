@@ -247,7 +247,8 @@ def crop_plan(mandi: MandiId | None = None,
     p = services.crop_plan(MANDI_TO_DATA[where], acres, as_of)
     items = [{**{k: v for k, v in i.items() if k != "crop_option"}, "crop": CROP_FROM_DATA[i["crop_option"]]}
              for i in p["items"]]
-    return CropPlanResponse(**LABEL, mandi=where, land_area_acres=acres, items=items,
+    return CropPlanResponse(**LABEL, mandi=where, land_area_acres=acres, items=items, seasons=p["seasons"],
+                            support_price_context=p["support_price_context"],
                             not_available=[CROP_FROM_DATA[c] for c in p["not_available"]], is_estimate=True)
 
 
