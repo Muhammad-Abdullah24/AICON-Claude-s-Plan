@@ -268,8 +268,10 @@ def wait_plan(crop: CropId, mandi: MandiId, quantity_maund: Quantity = None,
               as_of: AsOf = None,
               farmer: dict | None = Depends(optional_farmer)) -> WaitPlanResponse:  # noqa: B008
     qty = _quantity(farmer, crop, quantity_maund)
+    loans = db.list_loans(farmer["id"]) if farmer else []
     p = _guard(services.wait_plan, CROP_TO_DATA[crop], MANDI_TO_DATA[mandi], qty, cash_need_rs, wait_months,
-               money, annual_rate, storage, offer, None, as_of, household_spend_rs_month, other_income_rs_month)
+               money, annual_rate, storage, offer, None, as_of, household_spend_rs_month, other_income_rs_month,
+               loans)
     exits = [{**e, "mandi": MANDI_FROM_DATA[e["mandi"]] if e.get("mandi") else None} for e in p["exits"]]
     return WaitPlanResponse(**{**p, "exits": exits}, crop=crop, mandi=mandi)
 

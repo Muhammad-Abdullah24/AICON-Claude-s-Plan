@@ -287,48 +287,77 @@ def test_policy_respects_as_of(client):
     assert all(e["source"] and e["url"].startswith("http") and e["text_ur"] for e in events)
 
 
-def test_wait_plan_echoes_the_household_budget_fields(client):
-    # L2a: the household-budget inputs are echoed; deriving the cash need from them is B2 (loans_due stays 0).
-    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur",
+def test_wait_plan_derives_cash_need_from_the_household_budget(client):
+    # B2: with no explicit cash_need, the need = loans due + max(0, household - other income) x months.
+    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "wait_months": 4,
                                              "household_spend_rs_month": 30000, "other_income_rs_month": 5000}).json()
-    assert p["household_spend_rs_month"] == 30000 and p["other_income_rs_month"] == 5000 and p["loans_due_rs"] == 0
+    assert p["household_spend_rs_month"] == 30000 and p["other_income_rs_month"] == 5000
+    assert p["loans_due_rs"] == 0                                            # a guest has no loans
+    assert p["cash_need_rs"] == (30000 - 5000) * 4                           # 100,000 derived from the budget
 
 
-# ---------------------------------------------------------------- loan planner (L2a: placeholder, shape only)
+# ---------------------------------------------------------------- loan planner (B2: real engine + data)
 
-def test_loan_plan_is_a_labelled_placeholder_with_a_cheapest_first_ladder(client):
+def test_loan_plan_runs_on_real_tables_with_a_cheapest_first_ladder(client):
     p = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "savings_rs": 0}).json()
     assert p["crop"] == "wheat" and p["acres"] == 5
-    assert p["data_source"] == "placeholder" and p["is_synthetic"] is True   # not real numbers yet
-    assert "COST_ESTIMATE" in p["warnings"]                                   # costs are always an estimate
-    assert p["input_items"] and p["input_need_rs"] > 0
-    assert p["borrow_needed_rs"] == p["input_need_rs"]                        # no savings -> borrow it all
-    assert p["months_to_harvest"] >= 1
+    assert p["data_source"] == "official_tables" and p["is_synthetic"] is False
+    assert "COST_ESTIMATE" in p["warnings"]                                  # costs are escalated, always flagged
+    assert p["input_need_rs"] == round(83995 * 5)                            # Rs 83,995/acre (D1) x 5 acres
+    assert p["borrow_needed_rs"] == p["input_need_rs"]                       # no savings -> borrow it all
+    assert p["months_to_harvest"] >= 1 and p["plan_comparison"] == "NOT_REQUESTED"
     rates = [s_rate(p, slice_["id"]) for slice_ in p["ladder"]]
-    assert rates == sorted(rates)                                            # cheapest money first
+    assert rates == sorted(rates)                                           # cheapest money first
     assert p["ladder"][0]["id"] == "kissan_card" and p["ladder"][0]["interest_rs"] == 0
-    assert p["harvest_due_rs"] == round(p["borrow_needed_rs"] + p["ladder_interest_rs"])
+    assert p["ladder"][0]["amount_rs"] == min(30000 * 5, 150000)            # Kissan Card capped
+    assert p["harvest_due_rs"] == round(sum(s["amount_rs"] + s["interest_rs"] for s in p["ladder"]))
 
 
 def test_loan_plan_eligibility_rules(client):
-    small = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5}).json()
-    by_id = {o["id"]: o for o in small["options"]}
-    assert by_id["pm_youth"]["eligible"] is False and by_id["pm_youth"]["why_not_en"]   # no age given
-    assert client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "age": 30}).json()
+    small = {o["id"]: o for o in client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5}).json()["options"]}
+    assert small["pm_youth"]["eligible"] is False and small["pm_youth"]["why_not_en"]   # no age given
+    assert small["kissan_card"]["eligible"] is True and small["kissan_card"]["verified"] is True
     with_age = {o["id"]: o for o in
                 client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "age": 30}).json()["options"]}
     assert with_age["pm_youth"]["eligible"] is True
     big = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 20}).json()
     assert "NOT_SMALL_FARMER" in big["warnings"]
     big_by_id = {o["id"]: o for o in big["options"]}
-    assert big_by_id["kissan_card"]["eligible"] is False                     # Kissan Card is 1-12.5 acres
+    assert big_by_id["kissan_card"]["eligible"] is False                    # Kissan Card is 1-12.5 acres
+    assert big_by_id["bank"]["eligible"] is True                            # a bank loan still covers it
 
 
 def test_loan_plan_flags_over_borrowing(client):
     p = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "planned_borrow_rs": 900_000,
                                              "planned_lender": "arhti"}).json()
     assert "OVER_BORROWING" in p["warnings"] and p["over_borrow_rs"] > 0
+    assert p["plan_comparison"] == "COMPARED"
     assert p["planned_interest_rs"] > p["ladder_interest_rs"] and p["extra_cost_rs"] > 0
+
+
+def test_loan_plan_without_a_rate_is_insufficient_not_free(client):
+    # A planned loan with no lender (so no rate) must not be priced as 0% (L1 safety rule).
+    p = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "planned_borrow_rs": 900_000}).json()
+    assert p["plan_comparison"] == "INSUFFICIENT_INFORMATION"
+    assert p["planned_interest_rs"] is None and p["extra_cost_rs"] is None
+    assert "planned_rate_pct" in p["missing_inputs"] and p["over_borrow_rs"] > 0   # over-borrowing still shown
+
+
+def test_loan_plan_404_for_a_crop_without_a_cost_table(client):
+    assert client.get("/api/loan-plan", params={"crop": "cotton", "acres": 5}).status_code == 404
+
+
+def test_wait_plan_cash_need_comes_from_a_logged_in_farmers_loans(client):
+    # B2: a loan due before the later sale raises the cash need, so more must be sold now.
+    headers = _login(client)
+    loan = client.post("/api/farmers/me/loans", headers=headers,
+                       json={"lender": "arhti", "amount_rs": 150000, "annual_rate_pct": 66,
+                             "due_date": "2027-01-31"}).json()   # due within the wait window of the latest data
+    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur", "wait_months": 6},
+                   headers=headers).json()
+    assert p["loans_due_rs"] == 150000 and p["cash_need_rs"] >= 150000
+    assert p["sell_now_maund"] > 0                                           # the loan forces some selling now
+    client.delete(f"/api/farmers/me/loans/{loan['id']}", headers=headers)   # leave the shared db clean
 
 
 def s_rate(plan: dict, lender_id: str) -> float:
