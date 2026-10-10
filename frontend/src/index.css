@@ -23,6 +23,7 @@
   --color-madder-soft: #f7e9e5; /* error panel background */
   --color-field: #285d43; /* field green: the next step, gains, fresh data */
   --color-field-soft: #e7efe8; /* selected chip, active navigation, fresh badge */
+  --color-field-bar: #2f6a4d; /* the phone's bottom bar: a shade lighter than the title bar (white text 6.3:1) */
   --color-slate: #596971; /* secondary text */
   --color-mist: #edebe4; /* quiet information panel, estimate badge */
   --color-line: #e3dccb; /* warm hairlines and borders */

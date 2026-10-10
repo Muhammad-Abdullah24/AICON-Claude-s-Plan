@@ -167,15 +167,16 @@ function BottomNav() {
   // "More" is its own page; it stays marked while one of the screens it lists is open.
   const moreActive = pathname === MORE_PATH || MORE_ITEMS.some((i) => i.to === pathname)
 
+  // On the green bar: the open screen is a white pill with green text (7.6:1); the others are white at 85% (5.1:1).
   const tab = (active: boolean) =>
-    `flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-center text-sm leading-tight ${
-      active ? 'bg-field-soft font-semibold text-field' : 'text-slate hover:text-ink'
+    `flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-center text-sm leading-tight focus-visible:outline-paper ${
+      active ? 'bg-paper font-semibold text-field' : 'text-paper/85 hover:text-paper'
     }`
 
   return (
     <nav
       aria-label={t('app.name')}
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 bg-field-bar px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-2px_8px_rgb(25_51_61/0.12)] lg:hidden"
     >
       {/* Same tab order in both languages; only the labels change (each in its own reading direction). */}
       <ul dir="ltr" className="flex gap-0.5">
