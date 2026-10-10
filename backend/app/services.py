@@ -584,8 +584,12 @@ def loan_plan(crop_option: str, acres: float, savings_rs: float = 0, age: int | 
     if table is None:
         raise LookupError(f"no input-cost table for {crop_option} yet (wheat is covered)")
     months = months_to_harvest(crop_option, as_of)
+    # The loan covers what must be paid before the crop is sold. Harvesting and threshing are paid in April, from
+    # the crop (often in grain): borrowing them in October would pay six months' interest for nothing. They are
+    # reported separately as a harvest-time cash need instead (review of 10 Oct).
     items = [{"item": i["item"], "name_ur": i["name_ur"], "name_en": i["name_en"], "rs_per_acre": i["rs_per_acre"]}
-             for i in table["items"]]
+             for i in table["items"] if i.get("paid") != "harvest"]
+    harvest_cost = sum(i["rs_per_acre"] for i in table["items"] if i.get("paid") == "harvest") * acres
     small = acres <= SMALL_FARMER_MAX_ACRES
 
     options, eligible_for_engine = [], []
@@ -617,6 +621,7 @@ def loan_plan(crop_option: str, acres: float, savings_rs: float = 0, age: int | 
         "input_items": items,
         "input_cost_note": table.get("method", "Escalated from the official wheat cost table (D1)."),
         "input_need_rs": float(e["input_need_rs"]), "borrow_needed_rs": float(e["borrow_needed_rs"]),
+        "harvest_cost_rs": float(round(harvest_cost)),
         "options": options,
         "ladder": [{"id": s["id"], "amount_rs": float(s["amount_rs"]), "interest_rs": float(s["interest_rs"])}
                    for s in e["ladder"]],

@@ -4006,6 +4006,11 @@
             "type": "number",
             "title": "Borrow Needed Rs"
           },
+          "harvest_cost_rs": {
+            "type": "number",
+            "title": "Harvest Cost Rs",
+            "default": 0
+          },
           "options": {
             "items": {
               "$ref": "#/components/schemas/LoanOption"

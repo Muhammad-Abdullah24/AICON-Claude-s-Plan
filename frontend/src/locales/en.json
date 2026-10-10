@@ -176,7 +176,8 @@
     "support": "Government support price: {{price}} ({{year}}, {{status}})",
     "supportStatus": {
       "PROCURED": "government bought at this price",
-      "ANNOUNCED_NOT_PROCURED": "announced, not bought"
+      "ANNOUNCED_NOT_PROCURED": "announced, not bought",
+      "INDICATIVE": "indicative price: private aggregators bought, not the government"
     },
     "costNote": "Cost of production: Punjab official tables, updated for inflation ({{confidence}})."
   },
@@ -318,7 +319,7 @@
       "bank": "Bank loan",
       "arhti": "Arhti"
     },
-    "needs": "Your wheat on {{acres}} acres needs, in cash",
+    "needs": "Your wheat on {{acres}} acres needs, in cash, before you sell",
     "perAcre": "Cost per acre",
     "costSource": "Official API cost table (2023-24), fertiliser at 2026 prices, the rest adjusted for inflation. An estimate.",
     "borrowOnly": "After your own money, borrow only {{amount}}",
@@ -352,6 +353,7 @@
     "from": "Lender",
     "amount": "Amount (Rs)",
     "due": "Due date",
-    "addButton": "Add"
+    "addButton": "Add",
+    "harvestApart": "Not included: about {{amount}} for harvesting and threshing, paid in April from the crop. Don’t borrow it now."
   }
 }

@@ -195,6 +195,9 @@ function Plan({ plan }: { plan: LoanPlanResponse }) {
           </ul>
           <p className="mt-1 text-xs text-slate">{t('loan.costSource')}</p>
         </details>
+        {plan.harvest_cost_rs > 0 && (
+          <p className="text-sm text-slate">{t('loan.harvestApart', { amount: formatRs(plan.harvest_cost_rs) })}</p>
+        )}
         {plan.savings_rs > 0 && (
           <p className="text-sm">{t('loan.borrowOnly', { amount: formatRs(plan.borrow_needed_rs) })}</p>
         )}

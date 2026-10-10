@@ -151,7 +151,7 @@ def support_prices_table(econ: dict) -> list[dict]:
     by_year = econ["support_and_government_prices_rs_per_40kg"]["wheat"]["by_crop_year"]
     for label, e in by_year.items():
         price = e["value"] if e.get("value") is not None else e.get("announced_notional")
-        if price is None or e.get("status") not in ("PROCURED", "ANNOUNCED_NOT_PROCURED"):
+        if price is None or e.get("status") not in ("PROCURED", "INDICATIVE", "ANNOUNCED_NOT_PROCURED"):
             continue  # unknown, not announced or not yet announced: left out on purpose
         rows.append({
             "crop_option": "Wheat",
