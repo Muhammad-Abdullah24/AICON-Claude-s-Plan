@@ -46,6 +46,13 @@ export type PolicyResponse = S['PolicyResponse']
 export type PolicyEvent = S['PolicyEvent']
 export type Money = WaitPlanResponse['money']
 export type Storage = WaitPlanResponse['storage']
+export type LoanPlanResponse = S['LoanPlanResponse']
+export type LoanOption = S['LoanOption']
+export type LoanInputItem = S['LoanInputItem']
+export type LoanLadderSlice = S['LoanLadderSlice']
+export type LenderId = LoanOption['id']
+export type Loan = S['Loan']
+export type LoanIn = S['LoanIn']
 
 /** Input limits, read from the backend's schema so the two can never disagree. */
 export const QUANTITY_MAX: number = spec.components.schemas.OfferCheckRequest.properties.quantity_maund.maximum
@@ -118,6 +125,7 @@ async function send<T>(path: string, init: RequestInit | undefined, token: strin
     }
     throw new ApiError(res.status, detail)
   }
+  if (res.status === 204) return undefined as T // no content (e.g. DELETE)
   return (await res.json()) as T
 }
 
@@ -153,9 +161,25 @@ export const api = {
       annual_rate?: number | null
       storage?: Storage
       offer?: number | null
+      household_spend_rs_month?: number
+      other_income_rs_month?: number
     },
     signal?: AbortSignal,
   ) => request<WaitPlanResponse>(`/api/wait-plan${priced(p)}`, { signal }),
+  loanPlan: (
+    p: {
+      crop: string
+      acres: number
+      savings_rs?: number
+      age?: number | null
+      planned_borrow_rs?: number | null
+      planned_lender?: LenderId | null
+    },
+    signal?: AbortSignal,
+  ) => request<LoanPlanResponse>(`/api/loan-plan${priced(p)}`, { signal }),
+  loans: (signal?: AbortSignal) => request<Loan[]>('/api/farmers/me/loans', { signal }),
+  addLoan: (body: LoanIn) => request<Loan>('/api/farmers/me/loans', post(body)),
+  deleteLoan: (id: string) => request<void>(`/api/farmers/me/loans/${id}`, { method: 'DELETE' }),
   // News is today's, never replayed (like weather), so it does not carry the replay date.
   news: (p: { crop?: string; mandi?: string }, signal?: AbortSignal) =>
     request<NewsResponse>(`/api/news${query(p)}`, { signal }),

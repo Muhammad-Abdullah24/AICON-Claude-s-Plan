@@ -350,6 +350,9 @@ class WaitPlanResponse(Labelled):
     unit: Unit
     quantity_maund: float
     cash_need_rs: float
+    household_spend_rs_month: float     # the household's monthly spending while it waits
+    other_income_rs_month: float        # steady income that offsets it (milk, labour)
+    loans_due_rs: float                 # loans falling due before the later sale (0 until wired in B2)
     wait_months: int
     money: Money
     annual_rate_pct: float          # the rate used: the farmer's own, else the default for `money`
@@ -399,6 +402,84 @@ class PolicyEvent(Strict):
 class PolicyResponse(Labelled):
     crop: CropId
     events: list[PolicyEvent]       # newest first, none after as_of
+
+
+# ---------------------------------------------------------------- loan planner and loan list (docs/PIVOT.md 3.4)
+
+LenderId = Literal["kissan_card", "pm_youth", "akhuwat", "zarkhez_e", "bank", "arhti"]
+LoanWarning = Literal[
+    "OVER_BORROWING",       # the farmer plans to borrow more than the crop needs
+    "NOT_SMALL_FARMER",     # land over 12.5 acres (the Kissan Card limit): out of scope
+    "COST_ESTIMATE",        # always: input costs are escalated from the official table, not quoted today
+    "UNCOVERED",            # the eligible options cannot cover everything the crop needs
+]
+
+
+class LoanInputItem(Strict):
+    item: str                       # "seed", "fertilizer", "sprays", ...
+    name_ur: str
+    name_en: str
+    rs_per_acre: float
+
+
+class LoanOption(Strict):
+    id: LenderId
+    name_ur: str
+    name_en: str
+    annual_rate_pct: float
+    max_rs: float | None            # the season cap for this farmer (acres applied); None when there is no limit
+    eligible: bool
+    why_not_ur: str | None = None   # set when eligible is False
+    why_not_en: str | None = None
+    conditions_ur: str
+    conditions_en: str
+    source_url: str
+    verified: bool                  # checked on the official page (data/processed/loan_options.json)
+
+
+class LoanLadderSlice(Strict):
+    id: LenderId
+    amount_rs: float
+    interest_rs: float              # amount x annual_rate_pct x months_to_harvest / 12
+
+
+class LoanPlanResponse(Labelled):
+    crop: CropId
+    acres: float
+    savings_rs: float
+    age: int | None = None
+    months_to_harvest: int          # from the crop calendar and as_of
+    input_items: list[LoanInputItem]
+    input_cost_note: str            # where the per-acre costs came from and how they were escalated
+    input_need_rs: float            # sum(rs_per_acre) x acres
+    borrow_needed_rs: float         # max(0, input_need - savings)
+    options: list[LoanOption]       # cheapest first; ineligible options are listed too, with the reason
+    ladder: list[LoanLadderSlice]   # borrow_needed filled from the cheapest eligible option up
+    ladder_interest_rs: float
+    harvest_due_rs: float           # borrow_needed + ladder_interest
+    uncovered_rs: float             # borrow_needed the eligible options cannot cover
+    planned_borrow_rs: float | None = None
+    planned_lender: LenderId | None = None
+    planned_interest_rs: float | None = None    # planned x planned rate x months / 12
+    over_borrow_rs: float | None = None         # max(0, planned - borrow_needed)
+    extra_cost_rs: float | None = None          # planned_interest - ladder_interest
+    warnings: list[LoanWarning]
+
+
+class LoanIn(Strict):
+    lender: str = Field(min_length=1, max_length=100)
+    amount_rs: float = Field(gt=0, le=100_000_000)
+    annual_rate_pct: float = Field(ge=0, le=200)
+    due_date: dt.date
+
+
+class Loan(Strict):
+    id: str
+    lender: str
+    amount_rs: float
+    annual_rate_pct: float
+    due_date: dt.date
+    created_at: dt.datetime
 
 
 # ---------------------------------------------------------------- weather

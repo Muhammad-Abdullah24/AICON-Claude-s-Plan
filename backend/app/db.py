@@ -80,6 +80,15 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     used_fallback INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS farmer_loans (
+    id TEXT PRIMARY KEY,
+    farmer_id TEXT NOT NULL REFERENCES farmers(id) ON DELETE CASCADE,
+    lender TEXT NOT NULL,
+    amount_rs REAL NOT NULL,
+    annual_rate_pct REAL NOT NULL,
+    due_date TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 """
 
 # The demo profile from the blueprint's demo script. Invented, not a real person.
@@ -216,6 +225,45 @@ def alerts_enabled_by_phone(phone: str) -> bool:
 def list_alert_farmers() -> list[dict]:
     conn = connect()
     return [_farmer(r, conn) for r in conn.execute("SELECT * FROM farmers WHERE alerts_enabled = 1")]
+
+
+# ---------------------------------------------------------------- loans (the farmer's own loan list, docs/PIVOT.md 3.4)
+
+_LOAN_COLS = "id, lender, amount_rs, annual_rate_pct, due_date, created_at"
+
+
+def list_loans(farmer_id: str, conn: sqlite3.Connection | None = None) -> list[dict]:
+    conn = conn or connect()
+    return [dict(r) for r in conn.execute(
+        f"SELECT {_LOAN_COLS} FROM farmer_loans WHERE farmer_id = ? ORDER BY due_date, created_at", (farmer_id,))]
+
+
+def get_loan(farmer_id: str, loan_id: str, conn: sqlite3.Connection | None = None) -> dict | None:
+    conn = conn or connect()
+    row = conn.execute(f"SELECT {_LOAN_COLS} FROM farmer_loans WHERE id = ? AND farmer_id = ?",
+                       (loan_id, farmer_id)).fetchone()
+    return dict(row) if row else None
+
+
+def add_loan(farmer_id: str, loan: dict, conn: sqlite3.Connection | None = None) -> dict:
+    """`loan` has lender, amount_rs, annual_rate_pct and due_date (an ISO date string)."""
+    conn = conn or connect()
+    loan_id = str(uuid.uuid4())
+    with conn:
+        conn.execute(
+            "INSERT INTO farmer_loans (id, farmer_id, lender, amount_rs, annual_rate_pct, due_date, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (loan_id, farmer_id, loan["lender"], loan["amount_rs"], loan["annual_rate_pct"],
+             loan["due_date"], now()))
+    return get_loan(farmer_id, loan_id, conn)
+
+
+def delete_loan(farmer_id: str, loan_id: str, conn: sqlite3.Connection | None = None) -> bool:
+    """Returns False if no such loan belongs to this farmer."""
+    conn = conn or connect()
+    with conn:
+        cur = conn.execute("DELETE FROM farmer_loans WHERE id = ? AND farmer_id = ?", (loan_id, farmer_id))
+    return cur.rowcount > 0
 
 
 # ---------------------------------------------------------------- logs

@@ -285,3 +285,88 @@ def test_policy_respects_as_of(client):
     assert events and all(e["date"] <= "2026-04-01" for e in events)
     assert not any(e["date"] == "2026-04-28" for e in events)   # the late-April cap is not yet known
     assert all(e["source"] and e["url"].startswith("http") and e["text_ur"] for e in events)
+
+
+def test_wait_plan_echoes_the_household_budget_fields(client):
+    # L2a: the household-budget inputs are echoed; deriving the cash need from them is B2 (loans_due stays 0).
+    p = client.get("/api/wait-plan", params={"crop": "wheat", "mandi": "bahawalpur",
+                                             "household_spend_rs_month": 30000, "other_income_rs_month": 5000}).json()
+    assert p["household_spend_rs_month"] == 30000 and p["other_income_rs_month"] == 5000 and p["loans_due_rs"] == 0
+
+
+# ---------------------------------------------------------------- loan planner (L2a: placeholder, shape only)
+
+def test_loan_plan_is_a_labelled_placeholder_with_a_cheapest_first_ladder(client):
+    p = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "savings_rs": 0}).json()
+    assert p["crop"] == "wheat" and p["acres"] == 5
+    assert p["data_source"] == "placeholder" and p["is_synthetic"] is True   # not real numbers yet
+    assert "COST_ESTIMATE" in p["warnings"]                                   # costs are always an estimate
+    assert p["input_items"] and p["input_need_rs"] > 0
+    assert p["borrow_needed_rs"] == p["input_need_rs"]                        # no savings -> borrow it all
+    assert p["months_to_harvest"] >= 1
+    rates = [s_rate(p, slice_["id"]) for slice_ in p["ladder"]]
+    assert rates == sorted(rates)                                            # cheapest money first
+    assert p["ladder"][0]["id"] == "kissan_card" and p["ladder"][0]["interest_rs"] == 0
+    assert p["harvest_due_rs"] == round(p["borrow_needed_rs"] + p["ladder_interest_rs"])
+
+
+def test_loan_plan_eligibility_rules(client):
+    small = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5}).json()
+    by_id = {o["id"]: o for o in small["options"]}
+    assert by_id["pm_youth"]["eligible"] is False and by_id["pm_youth"]["why_not_en"]   # no age given
+    assert client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "age": 30}).json()
+    with_age = {o["id"]: o for o in
+                client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "age": 30}).json()["options"]}
+    assert with_age["pm_youth"]["eligible"] is True
+    big = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 20}).json()
+    assert "NOT_SMALL_FARMER" in big["warnings"]
+    big_by_id = {o["id"]: o for o in big["options"]}
+    assert big_by_id["kissan_card"]["eligible"] is False                     # Kissan Card is 1-12.5 acres
+
+
+def test_loan_plan_flags_over_borrowing(client):
+    p = client.get("/api/loan-plan", params={"crop": "wheat", "acres": 5, "planned_borrow_rs": 900_000,
+                                             "planned_lender": "arhti"}).json()
+    assert "OVER_BORROWING" in p["warnings"] and p["over_borrow_rs"] > 0
+    assert p["planned_interest_rs"] > p["ladder_interest_rs"] and p["extra_cost_rs"] > 0
+
+
+def s_rate(plan: dict, lender_id: str) -> float:
+    return next(o["annual_rate_pct"] for o in plan["options"] if o["id"] == lender_id)
+
+
+# ---------------------------------------------------------------- loan list (L2a)
+
+def _login(client):
+    t = client.post("/api/auth/login", json={"phone": "+92 000 0000001"}).json()
+    return {"Authorization": f"Bearer {t['token']}"}
+
+
+def test_loan_list_needs_auth(client):
+    assert client.get("/api/farmers/me/loans").status_code == 401
+
+
+def test_loan_list_add_list_and_delete(client):
+    headers = _login(client)
+    before = len(client.get("/api/farmers/me/loans", headers=headers).json())
+    created = client.post("/api/farmers/me/loans", headers=headers,
+                          json={"lender": "arhti", "amount_rs": 200000, "annual_rate_pct": 66,
+                                "due_date": "2027-04-30"})
+    assert created.status_code == 201
+    loan = created.json()
+    assert loan["id"] and loan["lender"] == "arhti" and loan["due_date"] == "2027-04-30"
+    listed = client.get("/api/farmers/me/loans", headers=headers).json()
+    assert len(listed) == before + 1 and any(x["id"] == loan["id"] for x in listed)
+    assert client.delete(f"/api/farmers/me/loans/{loan['id']}", headers=headers).status_code == 204
+    assert client.delete(f"/api/farmers/me/loans/{loan['id']}", headers=headers).status_code == 404
+    assert len(client.get("/api/farmers/me/loans", headers=headers).json()) == before
+
+
+def test_loan_rejects_bad_input(client):
+    headers = _login(client)
+    assert client.post("/api/farmers/me/loans", headers=headers,
+                       json={"lender": "", "amount_rs": 1, "annual_rate_pct": 0,
+                             "due_date": "2027-04-30"}).status_code == 422
+    assert client.post("/api/farmers/me/loans", headers=headers,
+                       json={"lender": "bank", "amount_rs": -5, "annual_rate_pct": 0,
+                             "due_date": "2027-04-30"}).status_code == 422
