@@ -5,6 +5,8 @@ import { QUANTITY_MAX } from '../api/client'
 import { useAppState } from '../appState'
 import { formatNumber, parseTypedNumber } from '../lib/format'
 import { ChipGroup } from './ChipGroup'
+import { Icon } from './ui/Icon'
+import { inputClass, labelClass } from './ui/styles'
 
 /**
  * Crop and mandi as large chips, and optionally the farmer's quantity. Shared by every screen.
@@ -31,22 +33,24 @@ export function SelectionBar({ withQuantity = false }: { withQuantity?: boolean 
     .join(' · ')
 
   return (
-    <details className="group rounded-2xl bg-paper shadow-sm">
+    <details className="group rounded-2xl border border-line bg-paper shadow-(--shadow-card)">
       {/* The browser opens and closes it. An error can only appear while typing in the open panel, so the one
           case to stop is closing it then: that tap is cancelled, and the error is never hidden. */}
       <summary
         onClick={(e) => problem !== null && e.preventDefault()}
-        className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden"
+        className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-5 py-2 [&::-webkit-details-marker]:hidden"
       >
-        <span className="font-bold">{summary}</span>
-        <span className="shrink-0 rounded-full border-2 border-line px-3 text-sm text-slate group-open:hidden">
-          {t('select.change')}
+        <span className="flex min-w-0 items-center gap-2 font-bold text-ink">
+          <Icon name="pin" className="size-5 text-field" />
+          <span>{summary}</span>
         </span>
-        <span className="hidden shrink-0 rounded-full border-2 border-line px-3 text-sm text-slate group-open:inline">
-          {t('select.done')}
+        <span className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-xl border-2 border-field/60 px-3 text-sm font-semibold text-field">
+          <span className="group-open:hidden">{t('select.change')}</span>
+          <span className="hidden group-open:inline">{t('select.done')}</span>
+          <Icon name="chevron" className="size-4 transition-transform group-open:rotate-180" />
         </span>
       </summary>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-5 border-t border-line px-5 pt-4 pb-5">
         <ChipGroup
           label={t('select.crop')}
           options={meta.crops.map((c) => ({ value: c.id, label: name(c) }))}
@@ -61,7 +65,7 @@ export function SelectionBar({ withQuantity = false }: { withQuantity?: boolean 
         />
         {withQuantity && (
           <div>
-            <label htmlFor="qty" className="mb-1 block text-sm text-slate">
+            <label htmlFor="qty" className={`${labelClass} mb-2`}>
               {t('select.quantity')}
             </label>
             <div className="flex items-center gap-2">
@@ -77,9 +81,9 @@ export function SelectionBar({ withQuantity = false }: { withQuantity?: boolean 
                 }}
                 aria-invalid={problem !== null}
                 aria-describedby={problem ? 'qty-error' : undefined}
-                className="figures w-32 rounded-xl border-2 border-line bg-paper px-3 py-2 text-xl focus:border-ink focus:outline-none"
+                className={`${inputClass} figures w-36 text-xl font-semibold`}
               />
-              <span className="text-base">{t('select.maund')}</span>
+              <span className="text-base text-slate">{t('select.maund')}</span>
             </div>
             {problem && (
               <p id="qty-error" className="mt-1 text-sm text-madder">

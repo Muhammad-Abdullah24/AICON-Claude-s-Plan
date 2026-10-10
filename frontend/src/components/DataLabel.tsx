@@ -2,10 +2,12 @@ import { useTranslation } from 'react-i18next'
 
 import type { Lang } from '../i18n'
 import { formatDate } from '../lib/format'
+import { Badge } from './ui/primitives'
 
 /**
  * States where a number came from, next to the number: real or synthetic, the AMIS source, the unit, and
- * the date of the price. An old price shows its date in amber; a price AMIS has repeated for weeks says so.
+ * the date of the price. An old price shows its date with an "old" badge; a price AMIS has repeated for weeks
+ * gets a "repeated" badge. Each badge has an icon and words, so the warning never rests on colour.
  */
 export function DataLabel({
   isSynthetic,
@@ -21,23 +23,22 @@ export function DataLabel({
   const { t, i18n } = useTranslation()
   const lang = i18n.language as Lang
   return (
-    <div className="space-y-0.5 text-xs text-slate">
-      <p className="flex flex-wrap items-center gap-x-2">
-        <span className={`rounded px-1.5 font-semibold ${isSynthetic ? 'tape' : 'bg-field text-paper'}`}>
-          {isSynthetic ? t('data.synthetic') : t('data.real')}
-        </span>
+    <div className="space-y-2 border-t border-line pt-3 text-sm text-slate">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <Badge kind={isSynthetic ? 'synthetic' : 'fresh'}>{isSynthetic ? t('data.synthetic') : t('data.real')}</Badge>
         <span>{t('data.source')}</span>
         <span>· {t('data.per40kg')}</span>
       </p>
-      {asOf && (
-        <p className={stale ? 'font-semibold text-wheat-deep' : undefined}>
-          {stale
-            ? t('data.stale', { date: formatDate(asOf, lang) })
-            : t('data.asOf', { date: formatDate(asOf, lang) })}
-        </p>
-      )}
+      {asOf &&
+        (stale ? (
+          <Badge kind="stale">{t('data.stale', { date: formatDate(asOf, lang) })}</Badge>
+        ) : (
+          <p>{t('data.asOf', { date: formatDate(asOf, lang) })}</p>
+        ))}
       {unchangedSince && (
-        <p className="font-semibold text-wheat-deep">{t('data.unchanged', { date: formatDate(unchangedSince, lang) })}</p>
+        <p>
+          <Badge kind="frozen">{t('data.unchanged', { date: formatDate(unchangedSince, lang) })}</Badge>
+        </p>
       )}
     </div>
   )
