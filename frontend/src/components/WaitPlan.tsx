@@ -144,6 +144,17 @@ function Answer({ plan }: { plan: WaitPlanResponse }) {
           {t('wait.historyPaid', { wins: plan.history.wins, n: plan.history.n })}
         </p>
       )}
+      {/* Selling everything while "hold" shows a bigger total reads as a contradiction: say why (E1). */}
+      {plan.verdict === 'SELL_ALL' && plan.history && (
+        <p className="text-sm">
+          {plan.history.median_net_per_maund > 0
+            ? t('wait.whySellSmall', {
+                gain: formatRs(plan.history.median_net_per_maund),
+                worst: formatRs(Math.abs(plan.history.worst_p10_net_per_maund)),
+              })
+            : t('wait.whySellLoss', { loss: formatRs(Math.abs(plan.history.median_net_per_maund)) })}
+        </p>
+      )}
       <p className="text-xs text-slate">{t('wait.confidence', { level: t(`signal.confidenceLevels.${plan.confidence}`) })}</p>
 
       {plan.warnings.map((w) => (

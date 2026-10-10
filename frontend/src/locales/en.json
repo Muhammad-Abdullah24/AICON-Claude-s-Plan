@@ -253,7 +253,9 @@
     "otherIncome": "Other income a month: milk, labour (Rs)",
     "fromLoans": "Includes {{amount}} of your loans due before you'd sell.",
     "cashUsed": "Cash needed now: {{amount}}",
-    "more": "Household and other income"
+    "more": "Household and other income",
+    "whySellSmall": "Waiting gains only about {{gain}} a maund in a typical year, too little for the risk: in a bad year you lose about {{worst}} a maund.",
+    "whySellLoss": "With your money and store, waiting loses about {{loss}} a maund in a typical year."
   },
   "news": {
     "title": "Market news",
