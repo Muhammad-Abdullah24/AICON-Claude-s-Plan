@@ -216,3 +216,26 @@ The README's "Pre-existing work" currently says the AMIS data was collected "wit
 event". In fact the scraping scripts were written and run on **9 Oct 2026**, with Claude Code's help, and are
 kept outside the repo. Whether that counts as "before the event" depends on when the build period officially
 started. Fix the wording to match the facts before submitting.
+
+## A8: AMIS wheat was administratively capped in 2026, not just stale (H5, 10 Oct 2026)
+
+Section A7 notes that Bahawalpur AMIS wheat sat at exactly Rs 3,450 for 75 reported days (27 Jun – 24 Sep 2026) and
+called it stale reporting. The policy timeline we collected for the news feed (`backend/app/news/policy_events.json`)
+shows it was more than stale: it was a **price cap**.
+
+- Jan 2026: Punjab's wheat policy set an indicative Rs 3,500 per 40 kg, bought through private aggregators rather than
+  direct government procurement.
+- **28 Apr 2026: Punjab made selling wheat above Rs 3,500 per 40 kg a criminal offence** (The News,
+  https://www.thenews.pk/print/1412565). A reported mandi rate of Rs 3,450 under a Rs 3,500 legal ceiling is a capped
+  number, not a free-market one.
+- Through 2026 the open market pulled away from the cap: aggregators ran short of bank money (Apr), a 1-million-tonne
+  import was decided (Jul), the aggregator model missed its target (Jul), and by October the open market reached about
+  Rs 5,300 (ARY News) while the support price for the next crop was still undecided (Punjab leaning Rs 4,200, Sindh
+  Rs 5,000). Full links in `policy_events.json` and `docs/PIVOT.md` section 7.
+
+**Why this matters for the model and the app.** The flat Rs 3,450 summer is an administrative artefact, so a forecast
+or backtest that treats it as a real market price understates how far a farmer could actually have sold. This is the
+data reason behind the pivot: the gap between the AMIS mandi number and what wheat really fetched is itself the story.
+The app handles it honestly — it labels a frozen price "price unchanged since …" and lowers confidence (H-C7), shows
+the policy timeline next to the price, and never lets a news price flip the advice (only warn), so the capped AMIS
+figure is shown for what it is, with the open-market context beside it.
